@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.7.2';
+const VERSION = '1.8.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -628,7 +628,7 @@ function refreshSheet() {
 function drawList(l) {
   const now = Date.now();
   const rows = l.ids.map(id => S.rows.find(r => r.ID === id)).filter(Boolean);
-  $('sheet').innerHTML = `<div class="grab"></div><button class="x" id="shX" aria-label="Fechar">✕</button>
+  $('sheet').innerHTML = `<button class="fechar" id="shX" aria-label="Fechar" title="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
     <h3 id="shTitle">${esc(l.titulo)}</h3><div class="sub">${esc(l.sub)}</div>
     <div class="lst">${rows.map(r => hiRow(r, now, true)).join('') || '<div class="empty">Os chamados dessa lista não estão mais no arquivo.</div>'}</div>`;
   $('shX').onclick = () => history.back();
@@ -643,17 +643,16 @@ function drawDet(id, list) {
   const extra = S.cols.filter(c => !KNOWN.includes(c) && !OCULTAS.includes(c));
   const hist = S.log.filter(c => c.id === id);
   const msExp = window.PSPainel ? PSPainel.msExpediente({ ini: r._ini, fimCalc: new Date(endOf(r, now)) }) : null;
-  $('sheet').innerHTML = `<div class="grab"></div><button class="x" id="shX" aria-label="Fechar">✕</button>
+  $('sheet').innerHTML = `<button class="fechar" id="shX" aria-label="Fechar" title="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
     ${list ? '<button class="volta" id="shVolta">‹ Voltar à lista</button>' : ''}
-    <h3 id="shTitle" class="dt-h"><span class="cap-id num" title="ID da solicitação no sistêmico">ID ${esc(r.ID)}</span><span class="nm">${esc(r.SISTEMA)}</span><span class="stl">${statusTag(r.STATUS)}</span></h3>
-    ${temChamado(r.CHAMADO)
+    <h3 id="shTitle" class="dt-h"><span class="cap-id num" title="ID da solicitação no sistêmico">ID ${esc(r.ID)}</span><span class="nm">${esc(r.SISTEMA)}</span><span class="stl"><span class="cap-t k-${t.k}">${esc(t.longo)}</span>${statusTag(r.STATUS)}</span></h3>
+    <div class="big">
+      ${temChamado(r.CHAMADO)
       ? `<button class="cham" id="shCham" data-cham="${esc(r.CHAMADO)}" aria-label="Copiar o chamado ${esc(r.CHAMADO)}"><span class="tx"><small>Chamado</small><b>${esc(r.CHAMADO)}</b></span><span class="cp" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span></button>`
       : `<div class="cham sem"><span class="tx"><small>Chamado</small><b>Sem chamado</b></span></div>`}
-    <div class="big">
+      <div><small>Duração</small><b class="num" ${open ? `data-since="${r._ini.getTime()}"` : ''}>${fDur(endOf(r, now) - r._ini)}</b></div>
       <div><small>Início</small><b class="num">${fFull(r._ini)}</b></div>
       <div><small>Fim</small><b class="num">${r._fim ? fFull(r._fim) : (open ? 'em andamento' : '—')}</b></div>
-      <div><small>Duração</small><b class="num" ${open ? `data-since="${r._ini.getTime()}"` : ''}>${fDur(endOf(r, now) - r._ini)}</b></div>
-      <div><small>Tipo de falha</small><b><span class="tf" style="--fc:${t.c};font-size:15px;color:var(--ink)"><i></i>${esc(t.n)}</span></b></div>
     </div>
     <dl class="kv">
       ${row('Segmento', esc(r.SEGMENTO))}
