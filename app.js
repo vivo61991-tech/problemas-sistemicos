@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.6.0';
+const VERSION = '1.6.1';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -654,13 +654,13 @@ function drawDet(id, list) {
       <div><small>Tipo de falha</small><b><span class="tf" style="--fc:${t.c};font-size:15px;color:var(--ink)"><i></i>${esc(t.n)}</span></b></div>
     </div>
     <dl class="kv">
-      ${row('Evolução', esc(r.EVOLUCAO))}
-      ${row('Impacto', esc(r.IMPACTO_OPERACIONAL))}
       ${row('Segmento', esc(r.SEGMENTO))}
       ${msExp != null ? row('No expediente (08h–21h)', msExp ? fDur(msExp) : 'fora do expediente') : ''}
       ${row('Área acionada', esc(r.AREA_ACIONADA))}
       ${row('Grupos responsáveis', esc(r.GRUPOS_RESPONSAVEIS))}
       ${row('Grupos impactados', esc(r.GRUPOS_IMPACTADOS))}
+      ${row('Evolução', esc(r.EVOLUCAO))}
+      ${row('Impacto', esc(r.IMPACTO_OPERACIONAL))}
       ${'ALERTA_ENVIADO' in r ? row('Alerta enviado', yn(r.ALERTA_ENVIADO)) : ''}
     </dl>
     ${extra.length ? `<h4>Outras colunas</h4><dl class="kv">${extra.map(c => row(esc(c), esc(r[c]) || '—')).join('')}</dl>` : ''}
