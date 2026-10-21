@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.1.0';
+const VERSION = '1.1.1';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -16,6 +16,9 @@ const KNOWN = ['ID', 'SISTEMA', 'CHAMADO', 'STATUS', 'CRITICIDADE', 'EVOLUCAO', 
   'ALERTA_ENVIADO', 'DATA_ATUALIZACAO', 'DADO_ATUALIZADO', 'TEMPO_DECORRIDO'];
 // campos acompanhados: mudança em qualquer um entra em "Últimas mudanças"
 const TRACK = [['STATUS', 'Status'], ['EVOLUCAO', 'Evolução'], ['DATA_FIM', 'Fim'], ['CRITICIDADE', 'Criticidade'], ['TIPO_FALHA', 'Tipo de falha']];
+
+// colunas que continuam sendo lidas (mudanças, conferência), mas não aparecem nos cards nem no detalhe
+const OCULTAS = ['FLAG', 'TEMPO_DECORRIDO', 'DADO_ATUALIZADO', 'DATA_ATUALIZACAO'];
 
 const K = { data: 'ps.data', snap: 'ps.snap', log: 'ps.log', bell: 'ps.bell' };
 
@@ -366,7 +369,6 @@ function renderOpen() {
   }
   $('open').innerHTML = open.map(r => {
     const t = tipo(r), rk = recentKind(r.ID, now);
-    const upd = r._upd ? `atualizado <span data-ago="${r._upd.getTime()}">${fAgo(now - r._upd)}</span>` : '';
     return `<button class="oc" data-id="${esc(r.ID)}" style="--fc:${t.c}">
       <div class="h"><span class="sis">${esc(r.SISTEMA)}</span>
         ${r.CRITICIDADE ? `<span class="tag t-crit ${critClass(r.CRITICIDADE)}">${esc(r.CRITICIDADE)}</span>` : ''}
@@ -376,7 +378,7 @@ function renderOpen() {
       ${r.IMPACTO_OPERACIONAL ? `<div class="imp">${esc(r.IMPACTO_OPERACIONAL)}</div>` : ''}
       <div class="meta">${r.CHAMADO ? `<span>${esc(r.CHAMADO)}</span>` : ''}${r.SEGMENTO ? `<span>${esc(r.SEGMENTO)}</span>` : ''}${r.AREA_ACIONADA ? `<span>${esc(r.AREA_ACIONADA)}</span>` : ''}</div>
       <div class="ft"><div class="timer num"><small>aberto há</small><span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span></div>
-        <div class="when">início ${sameDay(r._ini, new Date()) ? '' : fDM(r._ini) + ' '}${fHM(r._ini)}<br>${upd}</div></div>
+        <div class="when">início ${sameDay(r._ini, new Date()) ? '' : fDM(r._ini) + ' '}${fHM(r._ini)}</div></div>
     </button>`;
   }).join('');
 }
@@ -581,7 +583,7 @@ function drawDet(id, list) {
   const now = Date.now(), t = tipo(r), open = isOpen(r);
   const yn = v => (v === '1' ? 'Sim' : v === '0' ? 'Não' : esc(v || '—'));
   const row = (k, v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : '';
-  const extra = S.cols.filter(c => !KNOWN.includes(c));
+  const extra = S.cols.filter(c => !KNOWN.includes(c) && !OCULTAS.includes(c));
   const hist = S.log.filter(c => c.id === id);
   const msExp = window.PSPainel ? PSPainel.msExpediente({ ini: r._ini, fimCalc: new Date(endOf(r, now)) }) : null;
   $('sheet').innerHTML = `<div class="grab"></div><button class="x" id="shX" aria-label="Fechar">✕</button>
@@ -603,9 +605,6 @@ function drawDet(id, list) {
       ${row('Grupos responsáveis', esc(r.GRUPOS_RESPONSAVEIS))}
       ${row('Grupos impactados', esc(r.GRUPOS_IMPACTADOS))}
       ${'ALERTA_ENVIADO' in r ? row('Alerta enviado', yn(r.ALERTA_ENVIADO)) : ''}
-      ${row('Atualizado em', r._upd ? fFull(r._upd) : '')}
-      ${row('Dado atualizado', parseDate(r.DADO_ATUALIZADO) ? fFull(parseDate(r.DADO_ATUALIZADO)) : esc(r.DADO_ATUALIZADO))}
-      ${row('Tempo decorrido (arquivo)', esc(r.TEMPO_DECORRIDO))}
     </dl>
     ${extra.length ? `<h4>Outras colunas</h4><dl class="kv">${extra.map(c => row(esc(c), esc(r[c]) || '—')).join('')}</dl>` : ''}
     <h4>Mudanças registradas</h4>

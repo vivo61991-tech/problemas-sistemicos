@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.1.0)
+# Problemas Sistêmicos (v1.1.1)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -12,8 +12,9 @@ PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, 
 ## Formato do arquivo
 TXT do SQL Developer, separado por **tabulação**, cabeçalho na 1ª linha.
 - **Obrigatórias:** `ID, SISTEMA, STATUS, DATA_INICIO`.
-- **Usadas na tela:** `CHAMADO, CRITICIDADE, EVOLUCAO, SEGMENTO, IMPACTO_OPERACIONAL, DATA_FIM, TIPO_FALHA, GRUPOS_RESPONSAVEIS, GRUPOS_IMPACTADOS, AREA_ACIONADA, ALERTA_ENVIADO, DATA_ATUALIZACAO, DADO_ATUALIZADO, TEMPO_DECORRIDO`.
+- **Usadas na tela:** `CHAMADO, CRITICIDADE, EVOLUCAO, SEGMENTO, IMPACTO_OPERACIONAL, DATA_FIM, TIPO_FALHA, GRUPOS_RESPONSAVEIS, GRUPOS_IMPACTADOS, AREA_ACIONADA, ALERTA_ENVIADO`.
 - **Coluna nova:** pode entrar em qualquer posição; aparece no detalhe, em "Outras colunas".
+- **Não aparecem na tela:** `FLAG, TEMPO_DECORRIDO, DADO_ATUALIZADO, DATA_ATUALIZACAO`. Continuam sendo lidas: a `DATA_ATUALIZACAO` serve para registrar "dados atualizados" nas mudanças e para escolher a linha mais recente quando um ID vem repetido.
 - **Datas:** `20/10/26 08:22:00,000000000` (também aceita `20/10/2026 08:22` e `2026-10-20 08:22:00`).
 
 ## Páginas (menu de baixo)
