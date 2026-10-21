@@ -168,9 +168,14 @@ h2.sec .rt{white-space:nowrap;font-size:12.5px;text-transform:none;letter-spacin
 .lst .hi:first-child{border-top:0}
 .hi .bar{align-self:stretch;border-radius:4px;background:var(--fc,var(--fOutro))}
 .hi.ind .bar{background:repeating-linear-gradient(45deg,var(--ink3) 0 3px,transparent 3px 6px)}
-.hi .s{font-weight:700;font-size:14.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hi .s{font-weight:700;font-size:14.5px;min-width:0;display:flex;align-items:center;gap:7px}
+.hi .s .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ID em cápsula só com borda (listas) */
+.idc{flex:none;font-size:11px;font-weight:700;line-height:1.35;border:1.5px solid currentColor;border-radius:999px;padding:0 7px;color:var(--p700);background:transparent}
+@media (prefers-color-scheme: dark){.idc{color:#d3b5f0}}
+.fi .fn{display:inline-flex;align-items:center;gap:6px;vertical-align:middle}
 .hi .d{font-size:12.5px;color:var(--ink2);margin-top:1px}
-.hi.ind .s{color:var(--ink2);text-decoration:line-through;text-decoration-color:var(--ink3)}
+.hi.ind .s .nm{color:var(--ink2);text-decoration:line-through;text-decoration-color:var(--ink3)}
 .hi .du{font-weight:700;font-size:14px;text-align:right;white-space:nowrap}
 .hi .du small{display:block;font-weight:600;font-size:11.5px;color:var(--ink3)}
 .hi.aberto{background:color-mix(in srgb,var(--badbg) 55%,transparent)}
@@ -340,19 +345,23 @@ table.tsel tbody tr.sel td:last-child{border-right-color:var(--selln)}
 .sheet:not(.show){visibility:hidden;transition:transform .22s ease,visibility 0s .22s}
 .sheet.show{transform:none}
 .sheet .grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 10px}
-.sheet h3{margin:0 0 2px;font-size:20px;letter-spacing:-.3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-right:44px}
+.sheet h3{margin:0 0 12px;font-size:20px;letter-spacing:-.3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-right:44px}
+.sheet h3 .cap-id{color:var(--p700);font-size:12.5px;letter-spacing:0}
+@media (prefers-color-scheme: dark){.sheet h3 .cap-id{color:#d3b5f0}}
+.sheet h3 .nm{min-width:0;overflow-wrap:anywhere}
 .sheet .sub{color:var(--ink2);font-size:13.5px;margin-bottom:12px}
 .sheet .x{position:absolute;right:12px;top:12px;width:36px;height:36px;border-radius:50%;border:0;background:var(--bg);cursor:pointer;font-size:18px;line-height:1}
 .sheet .volta{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:5px 12px;font-weight:650;font-size:13px;cursor:pointer;margin-bottom:8px;color:var(--ink2)}
-.sheet .cham{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 12px;border:1.5px solid var(--p200);background:var(--p50);color:var(--ink);border-radius:14px;padding:10px 14px;text-align:left;cursor:pointer}
+/* chamado: mesmo tamanho das caixas Início/Fim (título 12px, valor 17px) */
+.sheet .cham{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 8px;border:1px solid var(--p200);background:var(--p50);color:var(--ink);border-radius:12px;padding:10px 12px;text-align:left;cursor:pointer}
 .sheet .cham:active{transform:scale(.99)}
-.sheet .cham small{display:block;font-size:11.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--p700)}
-.sheet .cham b{display:block;font-size:22px;font-weight:800;letter-spacing:.3px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.sheet .cham small{display:block;font-size:12px;color:var(--ink2)}
+.sheet .cham b{display:block;font-size:17px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .sheet .cham .tx{flex:1;min-width:0}
-.sheet .cham .cp{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:700;color:var(--p700)}
-.sheet .cham .cp svg{width:22px;height:22px}
-.sheet .cham.sem{cursor:default;border-style:dashed;background:none}
-.sheet .cham.sem b{font-size:16px;color:var(--ink2)}
+.sheet .cham .cp{flex:none;display:grid;place-items:center;color:var(--p700)}
+.sheet .cham .cp svg{width:16px;height:16px}
+.sheet .cham.sem{cursor:default;border-style:dashed;background:var(--bg)}
+.sheet .cham.sem b{color:var(--ink2)}
 @media (prefers-color-scheme: dark){.sheet .cham{background:#2a1c3d;border-color:#4a3466}.sheet .cham small,.sheet .cham .cp{color:#d3b5f0}}
 .sheet .big{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
 .sheet .big div{background:var(--bg);border-radius:12px;padding:10px 12px}

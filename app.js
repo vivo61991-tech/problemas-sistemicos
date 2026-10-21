@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.6.1';
+const VERSION = '1.7.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -344,6 +344,8 @@ function recentKind(id, now) {
 const openRows = () => S.rows.filter(isOpen).sort((a, b) => critRank(a.CRITICIDADE) - critRank(b.CRITICIDADE) || a._ini - b._ini);
 
 // linha de chamado (Chamados de hoje, Histórico e listas do Painel)
+// ID da solicitação no sistêmico: cápsula só com borda, à esquerda do nome do sistema (todas as listas)
+const idCap = id => id ? `<span class="idc num" title="ID ${esc(id)}">${esc(id)}</span>` : '';
 function hiRow(r, now, comDia) {
   const t = tipo(r), ind = isInd(r), ab = isOpen(r);
   const d0 = comDia ? fDM(r._ini) + ' ' : '';
@@ -351,7 +353,7 @@ function hiRow(r, now, comDia) {
   const du = ab ? `<span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span>` : r._fim ? fDur(r._fim - r._ini) : '–';
   const st = ab ? 'em andamento' : ind ? 'Indevido' : cap(r.EVOLUCAO || r.STATUS);
   return `<button class="hi${ind ? ' ind' : ''}${ab ? ' aberto' : ''}" data-id="${esc(r.ID)}" style="--fc:${t.c}"><span class="bar"></span>
-    <div style="min-width:0"><div class="s">${esc(r.SISTEMA)}</div><div class="d num">${range} · ${esc(t.n)}${r.CHAMADO ? ' · ' + esc(r.CHAMADO) : ''}</div></div>
+    <div style="min-width:0"><div class="s">${idCap(r.ID)}<span class="nm">${esc(r.SISTEMA)}</span></div><div class="d num">${range} · ${esc(t.n)}${r.CHAMADO ? ' · ' + esc(r.CHAMADO) : ''}</div></div>
     <div class="du num">${du}<small>${esc(st)}</small></div></button>`;
 }
 
@@ -427,14 +429,15 @@ function feedItem(c, now) {
   const d = new Date(c.at);
   const hr = `<div class="hr num">${fHM(d)}${sameDay(d, new Date(now)) ? '' : `<small>${fDM(d)}</small>`}</div>`;
   let tx;
-  if (c.kind === 'novo') tx = `<b>${esc(c.sis)}</b> · novo chamado<div class="tr">${statusTag(c.st)}${c.evo ? ' ' + esc(c.evo) : ''}</div>`;
-  else if (c.kind === 'muda') tx = `<b>${esc(c.sis)}</b>${c.inc ? ' · ' + esc(c.inc) : ''}` + c.ch.map(x => {
+  const nome = `<span class="fn">${idCap(c.id)}<b>${esc(c.sis)}</b></span>`;
+  if (c.kind === 'novo') tx = `${nome} · novo chamado<div class="tr">${statusTag(c.st)}${c.evo ? ' ' + esc(c.evo) : ''}</div>`;
+  else if (c.kind === 'muda') tx = `${nome}${c.inc ? ' · ' + esc(c.inc) : ''}` + c.ch.map(x => {
     if (x.f === 'STATUS') return `<div class="tr">${statusTag(x.de)} → ${statusTag(x.para)}</div>`;
     if (x.f === 'DATA_FIM') { const f = parseDate(x.para); return `<div class="tr">${f ? 'normalizado às ' + fHM(f) + (sameDay(f, new Date(now)) ? '' : ' de ' + fDM(f)) : 'fim retirado'}</div>`; }
     return `<div class="tr">${esc(x.label)}: ${esc(x.de || '—')} → <b>${esc(x.para || '—')}</b></div>`;
   }).join('');
-  else if (c.kind === 'dados') tx = `<b>${esc(c.sis)}</b>${c.inc ? ' · ' + esc(c.inc) : ''}<div class="tr">dados do chamado atualizados</div>`;
-  else if (c.kind === 'saiu') tx = `<b>${esc(c.sis)}</b>${c.inc ? ' · ' + esc(c.inc) : ''}<div class="tr">saiu do arquivo</div>`;
+  else if (c.kind === 'dados') tx = `${nome}${c.inc ? ' · ' + esc(c.inc) : ''}<div class="tr">dados do chamado atualizados</div>`;
+  else if (c.kind === 'saiu') tx = `${nome}${c.inc ? ' · ' + esc(c.inc) : ''}<div class="tr">saiu do arquivo</div>`;
   else tx = `<b>${c.n} chamados saíram do arquivo</b><div class="tr">IDs ${esc(c.ids.slice(0, 12).join(', '))}${c.ids.length > 12 ? '…' : ''}</div>`;
   const clickable = c.id && S.rows.some(r => r.ID === c.id);
   return `<button class="fi" ${clickable ? `data-id="${esc(c.id)}"` : 'disabled'}>${hr}<div class="tx">${tx}</div></button>`;
@@ -642,10 +645,9 @@ function drawDet(id, list) {
   const msExp = window.PSPainel ? PSPainel.msExpediente({ ini: r._ini, fimCalc: new Date(endOf(r, now)) }) : null;
   $('sheet').innerHTML = `<div class="grab"></div><button class="x" id="shX" aria-label="Fechar">✕</button>
     ${list ? '<button class="volta" id="shVolta">‹ Voltar à lista</button>' : ''}
-    <h3 id="shTitle">${esc(r.SISTEMA)} ${r.CRITICIDADE ? `<span class="tag t-crit ${critClass(r.CRITICIDADE)}">${esc(r.CRITICIDADE)}</span>` : ''} ${statusTag(r.STATUS)}</h3>
-    <div class="sub">ID ${esc(r.ID)}</div>
+    <h3 id="shTitle"><span class="cap-id num" title="ID da solicitação no sistêmico">ID ${esc(r.ID)}</span><span class="nm">${esc(r.SISTEMA)}</span>${statusTag(r.STATUS)}</h3>
     ${temChamado(r.CHAMADO)
-      ? `<button class="cham" id="shCham" data-cham="${esc(r.CHAMADO)}" aria-label="Copiar o chamado ${esc(r.CHAMADO)}"><span class="tx"><small>Chamado</small><b>${esc(r.CHAMADO)}</b></span><span class="cp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>copiar</span></button>`
+      ? `<button class="cham" id="shCham" data-cham="${esc(r.CHAMADO)}" aria-label="Copiar o chamado ${esc(r.CHAMADO)}"><span class="tx"><small>Chamado</small><b>${esc(r.CHAMADO)}</b></span><span class="cp" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span></button>`
       : `<div class="cham sem"><span class="tx"><small>Chamado</small><b>Sem chamado</b></span></div>`}
     <div class="big">
       <div><small>Início</small><b class="num">${fFull(r._ini)}</b></div>
