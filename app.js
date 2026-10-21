@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -93,8 +93,8 @@ function isOpen(r) {
 const isInd = r => up(r.STATUS) === 'INDEVIDO';
 function tipo(r) {
   const t = up(r.TIPO_FALHA);
-  if (t.includes('TOTAL')) return { k: 'total', c: 'var(--fTotal)', n: 'Total' };
-  if (t.includes('PARCIAL')) return { k: 'parcial', c: 'var(--fParcial)', n: 'Parcial' };
+  if (t.includes('TOTAL')) return { k: 'total', c: 'var(--fTotal)', n: 'Indisp. total' };
+  if (t.includes('PARCIAL')) return { k: 'parcial', c: 'var(--fParcial)', n: 'Indisp. parcial' };
   if (t.includes('INTERMIT')) return { k: 'interm', c: 'var(--fInterm)', n: 'Intermitência' };
   if (t.includes('LENTID')) return { k: 'lent', c: 'var(--fLent)', n: 'Lentidão' };
   return { k: 'outro', c: 'var(--fOutro)', n: r.TIPO_FALHA ? cap(r.TIPO_FALHA) : 'Sem tipo' };
@@ -107,7 +107,8 @@ function critClass(c) {
   return '';
 }
 const critRank = c => { const n = parseInt(String(c || '').replace(/\D/g, ''), 10); return isNaN(n) ? 9 : n; };
-function stClass(s) { s = up(s); return s === 'ABERTO' ? 'a' : s === 'FECHADO' ? 'f' : s === 'INDEVIDO' ? '' : 'e'; }
+// aberto = falha (vermelho); fechado e indevido = neutro; outros status = em atenção
+function stClass(s) { s = up(s); return s === 'ABERTO' ? 'a' : s === 'FECHADO' || s === 'INDEVIDO' || !s ? '' : 'e'; }
 const statusTag = s => `<span class="st ${stClass(s)}">${esc(s || '—')}</span>`;
 
 /* ---------- leitura do arquivo ---------- */
@@ -224,8 +225,8 @@ const S = {
   snap: load(K.snap, null),
   apiPauseUntil: 0,
   busy: false,
-  filter: 'todos', q: '', histDays: HIST_STEP, feedAll: false,
-  sheetId: null,
+  filter: 'todos', q: '', fSis: '', histDays: HIST_STEP, feedAll: false,
+  tab: 'oc', sheet: null,       // sheet: {mode:'det'|'list', id, list:{titulo, sub, ids, onClose}}
 };
 if (!Array.isArray(S.log)) S.log = [];
 
@@ -311,11 +312,12 @@ let toastT;
 function toast(msg, toFeed) {
   const t = $('toast');
   t.textContent = msg;
-  t.onclick = () => { t.classList.remove('show'); if (toFeed) $('feed').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+  t.onclick = () => { t.classList.remove('show'); if (toFeed) { setTab('oc'); $('feed').scrollIntoView({ behavior: 'smooth', block: 'center' }); } };
   t.classList.add('show');
   clearTimeout(toastT);
   toastT = setTimeout(() => t.classList.remove('show'), 5000);
 }
+
 
 /* ---------- desenho ---------- */
 function unionMs(list, from, to) {
@@ -335,28 +337,31 @@ function recentKind(id, now) {
   }
   return '';
 }
+const openRows = () => S.rows.filter(isOpen).sort((a, b) => critRank(a.CRITICIDADE) - critRank(b.CRITICIDADE) || a._ini - b._ini);
 
-function renderKpis() {
-  const now = Date.now();
-  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
-  const open = S.rows.filter(isOpen);
-  const today = S.rows.filter(r => !isInd(r) && (r._ini >= d0 || isOpen(r) || (r._fim && r._fim >= d0)));
-  const ms = unionMs(today.map(r => [r._ini.getTime(), endOf(r, now)]), d0.getTime(), now);
-  const startedToday = S.rows.filter(r => !isInd(r) && r._ini >= d0).length;
-  $('kpis').innerHTML =
-    `<div class="kpi ${open.length ? 'hot' : 'calm'}"><div class="v num">${open.length}</div><div class="l">em andamento</div></div>` +
-    `<div class="kpi"><div class="v num">${startedToday}</div><div class="l">abertos hoje</div></div>` +
-    `<div class="kpi"><div class="v num" style="font-size:${ms >= 36e5 ? 20 : 26}px;white-space:nowrap">${ms ? fDur(ms) : '0'}</div><div class="l">com falha hoje</div></div>`;
+// linha de chamado (Chamados de hoje, Histórico e listas do Painel)
+function hiRow(r, now, comDia) {
+  const t = tipo(r), ind = isInd(r), ab = isOpen(r);
+  const d0 = comDia ? fDM(r._ini) + ' ' : '';
+  const range = r._fim ? (sameDay(r._ini, r._fim) ? `${d0}${fHM(r._ini)}–${fHM(r._fim)}` : `${fDM(r._ini)} ${fHM(r._ini)}–${fDM(r._fim)} ${fHM(r._fim)}`) : `${d0}${fHM(r._ini)}–${ab ? 'agora' : 'sem fim'}`;
+  const du = ab ? `<span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span>` : r._fim ? fDur(r._fim - r._ini) : '–';
+  const st = ab ? 'em andamento' : ind ? 'Indevido' : cap(r.EVOLUCAO || r.STATUS);
+  return `<button class="hi${ind ? ' ind' : ''}${ab ? ' aberto' : ''}" data-id="${esc(r.ID)}" style="--fc:${t.c}"><span class="bar"></span>
+    <div style="min-width:0"><div class="s">${esc(r.SISTEMA)}</div><div class="d num">${range} · ${esc(t.n)}${r.CHAMADO ? ' · ' + esc(r.CHAMADO) : ''}</div></div>
+    <div class="du num">${du}<small>${esc(st)}</small></div></button>`;
 }
 
+/* ---- 1) Ocorrências: ativas (cards grandes) + chamados de hoje + últimas mudanças ---- */
 function renderOpen() {
   const now = Date.now();
-  const open = S.rows.filter(isOpen).sort((a, b) => critRank(a.CRITICIDADE) - critRank(b.CRITICIDADE) || a._ini - b._ini);
+  const open = openRows();
   $('ctOpen').textContent = open.length;
+  $('ctOpen').classList.toggle('hot', open.length > 0);
+  const bd = $('navBd'); bd.hidden = !open.length; bd.textContent = open.length;
   if (!open.length) {
     const last = S.rows.filter(r => !isInd(r) && r._fim).sort((a, b) => b._fim - a._fim)[0];
-    $('open').innerHTML = `<div class="calm-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg><div><b>Nenhum chamado em andamento</b>` +
-      (last ? `<span>Último normalizado: ${esc(last.SISTEMA)} · ${sameDay(last._fim, new Date()) ? 'hoje' : fDM(last._fim)} às ${fHM(last._fim)}</span>` : '<span>Sem chamados no arquivo.</span>') + `</div></div>`;
+    $('open').innerHTML = `<div class="calm-card" role="status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg><div><b>Nenhuma ocorrência ativa</b>` +
+      (last ? `<span>Todos os sistemas operando. Último normalizado: ${esc(last.SISTEMA)} · ${sameDay(last._fim, new Date()) ? 'hoje' : fDM(last._fim)} às ${fHM(last._fim)}</span>` : '<span>Todos os sistemas operando.</span>') + `</div></div>`;
     return;
   }
   $('open').innerHTML = open.map(r => {
@@ -374,6 +379,18 @@ function renderOpen() {
         <div class="when">início ${sameDay(r._ini, new Date()) ? '' : fDM(r._ini) + ' '}${fHM(r._ini)}<br>${upd}</div></div>
     </button>`;
   }).join('');
+}
+// chamados de hoje: abertos hoje, encerrados hoje ou ainda em andamento (os abertos primeiro)
+function renderHoje() {
+  const now = Date.now();
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+  const list = S.rows.filter(r => r._ini >= d0 || isOpen(r) || (r._fim && r._fim >= d0))
+    .sort((a, b) => (isOpen(b) - isOpen(a)) || b._ini - a._ini);
+  const val = list.filter(r => !isInd(r));
+  const ms = unionMs(val.map(r => [r._ini.getTime(), endOf(r, now)]), d0.getTime(), now);
+  $('hojeRes').innerHTML = list.length ? `${val.length} chamado${val.length === 1 ? '' : 's'}${ms ? ' · ' + fDur(ms) : ''}` : '';
+  $('hoje').innerHTML = list.length ? `<div class="lst">${list.map(r => hiRow(r, now, !sameDay(r._ini, new Date(now)))).join('')}</div>`
+    : `<div class="lst"><div class="empty okt">Nenhum chamado hoje.</div></div>`;
 }
 
 function feedItem(c, now) {
@@ -401,41 +418,62 @@ function renderFeed() {
     : `<div class="empty">As mudanças de status aparecem aqui assim que acontecerem. O app confere o arquivo a cada minuto.</div>`;
 }
 
-const CHIPS = [['todos', 'Todos'], ['total', 'Total', 'var(--fTotal)'], ['parcial', 'Parcial', 'var(--fParcial)'], ['interm', 'Intermitência', 'var(--fInterm)'], ['lent', 'Lentidão', 'var(--fLent)'], ['ind', 'Indevidos']];
+/* ---- 2) Histórico: busca, filtro por sistema e por tipo de falha ---- */
+const CHIPS = [['todos', 'Todos'], ['total', 'Indisp. total', 'var(--fTotal)'], ['parcial', 'Indisp. parcial', 'var(--fParcial)'], ['interm', 'Intermitência', 'var(--fInterm)'], ['lent', 'Lentidão', 'var(--fLent)'], ['ind', 'Indevidos']];
 function renderChips() {
   $('chips').innerHTML = CHIPS.map(([k, n, c]) => `<button class="chip" data-f="${k}" aria-pressed="${S.filter === k}"${c ? ` style="--fc:${c}"` : ''}>${c ? '<i></i>' : ''}${n}</button>`).join('');
+}
+function renderSisSelect() {
+  const cont = new Map();
+  S.rows.forEach(r => { if (!isInd(r)) cont.set(r.SISTEMA, (cont.get(r.SISTEMA) || 0) + 1); else if (!cont.has(r.SISTEMA)) cont.set(r.SISTEMA, 0); });
+  const nomes = [...cont.keys()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  if (S.fSis && !cont.has(S.fSis)) S.fSis = '';
+  $('fSis').innerHTML = `<option value="">Todos os sistemas (${nomes.length})</option>` + nomes.map(n => `<option value="${esc(n)}"${n === S.fSis ? ' selected' : ''}>${esc(n)} · ${cont.get(n)}</option>`).join('');
 }
 function renderHist() {
   const now = new Date();
   const q = S.q.trim().toLowerCase();
-  let list = S.rows.filter(r => !isOpen(r));
+  let list = S.rows.slice();
+  if (S.fSis) list = list.filter(r => r.SISTEMA === S.fSis);
   if (S.filter === 'ind') list = list.filter(isInd);
   else if (S.filter !== 'todos') list = list.filter(r => tipo(r).k === S.filter);
-  if (q) list = list.filter(r => [r.ID, r.SISTEMA, r.CHAMADO, r.IMPACTO_OPERACIONAL, r.EVOLUCAO, r.AREA_ACIONADA, r.TIPO_FALHA, r.SEGMENTO].join(' ').toLowerCase().includes(q));
+  if (q) list = list.filter(r => [r.ID, r.SISTEMA, r.CHAMADO, r.IMPACTO_OPERACIONAL, r.EVOLUCAO, r.AREA_ACIONADA, r.TIPO_FALHA, r.SEGMENTO, r.STATUS].join(' ').toLowerCase().includes(q));
   list.sort((a, b) => b._ini - a._ini);
+  const val = list.filter(r => !isInd(r));
+  const ms = val.reduce((a, r) => a + (endOf(r, now.getTime()) - r._ini), 0);
+  $('hres').innerHTML = list.length ? `<span>${list.length} chamado${list.length > 1 ? 's' : ''}${list.length - val.length ? ` (${list.length - val.length} indevido${list.length - val.length > 1 ? 's' : ''})` : ''}</span><span>${fDur(ms)} somados</span>` : '';
   const groups = [];
   for (const r of list) {
     const k = dayKey(r._ini);
     if (!groups.length || groups[groups.length - 1].k !== k) groups.push({ k, d: r._ini, rows: [] });
     groups[groups.length - 1].rows.push(r);
   }
-  if (!groups.length) { $('hist').innerHTML = `<div class="day"><div class="empty">${q || S.filter !== 'todos' ? 'Nada encontrado com esse filtro.' : 'Sem histórico no arquivo.'}</div></div>`; return; }
+  if (!groups.length) { $('hist').innerHTML = `<div class="day"><div class="empty">${q || S.filter !== 'todos' || S.fSis ? 'Nada encontrado com esse filtro.' : 'Sem chamados no arquivo.'}</div></div>`; return; }
   const shown = groups.slice(0, S.histDays);
   $('hist').innerHTML = shown.map(g => {
-    const valid = g.rows.filter(r => !isInd(r));
+    const v = g.rows.filter(r => !isInd(r));
     const d0 = new Date(g.d); d0.setHours(0, 0, 0, 0);
-    const ms = unionMs(valid.map(r => [r._ini.getTime(), endOf(r, Date.now())]), d0.getTime(), d0.getTime() + 864e5);
-    return `<div class="day"><div class="dh"><b>${esc(dayLabel(g.d, now))}</b><span class="num">${g.rows.length} chamado${g.rows.length > 1 ? 's' : ''}${ms ? ' · ' + fDur(ms) : ''}</span></div>` +
-      g.rows.map(r => {
-        const t = tipo(r), ind = isInd(r);
-        const range = r._fim ? (sameDay(r._ini, r._fim) ? `${fHM(r._ini)}–${fHM(r._fim)}` : `${fHM(r._ini)}–${fDM(r._fim)} ${fHM(r._fim)}`) : `${fHM(r._ini)}–sem fim`;
-        return `<button class="hi${ind ? ' ind' : ''}" data-id="${esc(r.ID)}" style="--fc:${t.c}"><span class="bar"></span>
-          <div style="min-width:0"><div class="s">${esc(r.SISTEMA)}</div><div class="d num">${range} · ${esc(t.n)}${r.CHAMADO ? ' · ' + esc(r.CHAMADO) : ''}</div></div>
-          <div class="du num">${r._fim ? fDur(r._fim - r._ini) : '–'}<small>${ind ? 'Indevido' : esc(cap(r.EVOLUCAO || r.STATUS))}</small></div></button>`;
-      }).join('') + `</div>`;
+    const dms = unionMs(v.map(r => [r._ini.getTime(), endOf(r, Date.now())]), d0.getTime(), d0.getTime() + 864e5);
+    return `<div class="day"><div class="dh"><b>${esc(dayLabel(g.d, now))}</b><span class="num">${g.rows.length} chamado${g.rows.length > 1 ? 's' : ''}${dms ? ' · ' + fDur(dms) : ''}</span></div>` +
+      g.rows.map(r => hiRow(r, Date.now(), false)).join('') + `</div>`;
   }).join('') + (groups.length > S.histDays ? `<button class="more" id="btMore">Mostrar mais ${Math.min(HIST_STEP, groups.length - S.histDays)} dias</button>` : '');
 }
 
+/* ---- 3) Painel ---- */
+function itensPainel(now) {
+  return S.rows.map(r => ({ id: r.ID, sistema: r.SISTEMA, tipo: up(r.TIPO_FALHA), ini: r._ini, fimCalc: new Date(endOf(r, now)), indevido: isInd(r), aberto: isOpen(r) }));
+}
+function renderPainel() {
+  const root = $('pgPainel');
+  if (!window.PSPainel || PSPainel.versao !== VERSION) { root.innerHTML = `<div class="banner bad">O painel está numa versão diferente do app. Feche e abra o app de novo para atualizar.</div>`; return; }
+  if (!S.rows.length) { root.innerHTML = `<div class="card empty">Sem dados para o painel.</div>`; return; }
+  const now = Date.now();
+  const inicio = S.rows.reduce((m, r) => (!m || r._ini < m ? r._ini : m), null);
+  PSPainel.render({ root, now, inicio, itens: itensPainel(now), rerender: renderPainel, abrirLista: openList });
+  S.painelAt = now;
+}
+
+/* ---- topo, avisos e dados ---- */
 function renderSync() {
   const dot = $('syncDot'), tx = $('syncTx');
   dot.className = 'dot';
@@ -448,8 +486,8 @@ function renderSync() {
 }
 function renderBanners() {
   const b = [];
-  if (S.saveErr) b.push(['bad', '<b>Não foi possível guardar os dados no aparelho.</b> O painel funciona, mas sem internet ele não terá a última cópia e o registro de mudanças pode se perder. Libere espaço do navegador ou saia da aba anônima.']);
-  if (S.fileErr) b.push(['bad', `<b>O arquivo recebido tem erro:</b> ${esc(S.fileErr)}. O painel continua com os últimos dados válidos${S.loadedAt ? ' (de ' + fFull(new Date(S.loadedAt)) + ')' : ''}.`]);
+  if (S.saveErr) b.push(['bad', '<b>Não foi possível guardar os dados no aparelho.</b> O app funciona, mas sem internet ele não terá a última cópia e o registro de mudanças pode se perder. Libere espaço do navegador ou saia da aba anônima.']);
+  if (S.fileErr) b.push(['bad', `<b>O arquivo recebido tem erro:</b> ${esc(S.fileErr)}. O app continua com os últimos dados válidos${S.loadedAt ? ' (de ' + fFull(new Date(S.loadedAt)) + ')' : ''}.`]);
   if (S.goneWarn) b.push(['warn', `<b>${S.goneWarn} chamados sumiram do arquivo de uma vez.</b> Confira se o arquivo veio completo.`]);
   if (S.warns.length) b.push(['warn', `${S.warns.length} aviso${S.warns.length > 1 ? 's' : ''} na leitura do arquivo. <a href="#dados" style="color:inherit;font-weight:700" id="lnDados">Ver detalhes</a>`]);
   $('banners').innerHTML = b.map(([c, h]) => `<div class="banner ${c}">${h}</div>`).join('');
@@ -470,9 +508,26 @@ function renderDados() {
   </dl>` + (S.warns.length ? `<ul class="warnlist">${S.warns.slice(0, 50).map(w => `<li>${esc(w)}</li>`).join('')}${S.warns.length > 50 ? `<li>… e mais ${S.warns.length - 50}</li>` : ''}</ul>` : '');
 }
 
+/* ---- páginas ---- */
+const TABS = { oc: 'pgOc', hist: 'pgHist', painel: 'pgPainel' };
+function renderTab() {
+  if (S.tab === 'oc') { renderOpen(); renderHoje(); renderFeed(); }
+  else if (S.tab === 'hist') { renderSisSelect(); renderChips(); renderHist(); }
+  else renderPainel();
+}
+function setTab(t) {
+  if (!TABS[t] || t === S.tab) return;
+  S.tab = t;
+  Object.entries(TABS).forEach(([k, id]) => { $(id).hidden = k !== t; });
+  document.querySelectorAll('#tabs button').forEach(b => { const on = b.dataset.v === t; b.classList.toggle('on', on); b.setAttribute('aria-current', on ? 'page' : 'false'); });
+  renderTab();
+  window.scrollTo(0, 0);
+}
 function render() {
-  renderSync(); renderBanners(); renderKpis(); renderOpen(); renderFeed(); renderChips(); renderHist(); renderDados();
-  if (S.sheetId) openSheet(S.sheetId, true);
+  renderSync(); renderBanners(); renderDados();
+  renderOpen();               // também mantém o número no menu de baixo
+  renderTab();
+  if (S.sheet) refreshSheet();
 }
 
 function tick() {
@@ -480,31 +535,70 @@ function tick() {
   document.querySelectorAll('[data-since]').forEach(el => { el.textContent = fDur(now - +el.dataset.since); });
   document.querySelectorAll('[data-ago]').forEach(el => { el.textContent = fAgo(now - +el.dataset.ago); });
   renderSync();
-  if (S.rows.length) renderKpis();
+  if (S.tab === 'oc' && S.rows.length) renderHoje();
+  // painel com chamado em andamento: redesenha a cada minuto (o tempo do aberto cresce)
+  if (S.tab === 'painel' && !S.sheet && S.rows.some(isOpen) && now - (S.painelAt || 0) >= 60000) {
+    const y = window.scrollY; renderPainel(); window.scrollTo(0, y);
+  }
 }
 
-/* ---------- detalhe ---------- */
-function openSheet(id, refresh) {
+/* ---------- folha: lista (do Painel) e detalhe ---------- */
+function showSheet() {
+  $('sheetBg').style.display = 'block';
+  document.body.classList.add('sheet-on');
+  requestAnimationFrame(() => $('sheet').classList.add('show'));
+  history.pushState({ sheet: 1 }, '');
+}
+function openSheet(id) {
+  const novo = !S.sheet;
+  S.sheet = { mode: 'det', id, list: null };
+  if (!refreshSheet()) { S.sheet = null; return; }
+  if (novo) showSheet();
+}
+function openList(titulo, sub, ids, onClose) {
+  const novo = !S.sheet;
+  S.sheet = { mode: 'list', id: null, list: { titulo, sub, ids, onClose } };
+  refreshSheet();
+  if (novo) showSheet();
+}
+function refreshSheet() {
+  const sh = S.sheet; if (!sh) return false;
+  if (sh.mode === 'list') { drawList(sh.list); return true; }
+  return drawDet(sh.id, sh.list);
+}
+function drawList(l) {
+  const now = Date.now();
+  const rows = l.ids.map(id => S.rows.find(r => r.ID === id)).filter(Boolean);
+  $('sheet').innerHTML = `<div class="grab"></div><button class="x" id="shX" aria-label="Fechar">✕</button>
+    <h3 id="shTitle">${esc(l.titulo)}</h3><div class="sub">${esc(l.sub)}</div>
+    <div class="lst">${rows.map(r => hiRow(r, now, true)).join('') || '<div class="empty">Os chamados dessa lista não estão mais no arquivo.</div>'}</div>`;
+  $('shX').onclick = () => history.back();
+  $('sheet').scrollTop = 0;
+}
+function drawDet(id, list) {
   const r = S.rows.find(x => x.ID === id);
-  if (!r) { if (refresh) closeSheet(); return; }
+  if (!r) return false;
   const now = Date.now(), t = tipo(r), open = isOpen(r);
   const yn = v => (v === '1' ? 'Sim' : v === '0' ? 'Não' : esc(v || '—'));
   const row = (k, v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : '';
   const extra = S.cols.filter(c => !KNOWN.includes(c));
   const hist = S.log.filter(c => c.id === id);
+  const msExp = window.PSPainel ? PSPainel.msExpediente({ ini: r._ini, fimCalc: new Date(endOf(r, now)) }) : null;
   $('sheet').innerHTML = `<div class="grab"></div><button class="x" id="shX" aria-label="Fechar">✕</button>
+    ${list ? '<button class="volta" id="shVolta">‹ Voltar à lista</button>' : ''}
     <h3 id="shTitle">${esc(r.SISTEMA)} ${r.CRITICIDADE ? `<span class="tag t-crit ${critClass(r.CRITICIDADE)}">${esc(r.CRITICIDADE)}</span>` : ''} ${statusTag(r.STATUS)}</h3>
     <div class="sub">${esc(r.CHAMADO || 'Sem chamado')} · ID ${esc(r.ID)}</div>
     <div class="big">
       <div><small>Início</small><b class="num">${fFull(r._ini)}</b></div>
       <div><small>Fim</small><b class="num">${r._fim ? fFull(r._fim) : (open ? 'em andamento' : '—')}</b></div>
-      <div><small>Duração</small><b class="num" ${open && !r._fim ? `data-since="${r._ini.getTime()}"` : ''}>${fDur(endOf(r, now) - r._ini)}</b></div>
+      <div><small>Duração</small><b class="num" ${open ? `data-since="${r._ini.getTime()}"` : ''}>${fDur(endOf(r, now) - r._ini)}</b></div>
       <div><small>Tipo de falha</small><b><span class="tf" style="--fc:${t.c};font-size:15px;color:var(--ink)"><i></i>${esc(t.n)}</span></b></div>
     </div>
     <dl class="kv">
       ${row('Evolução', esc(r.EVOLUCAO))}
       ${row('Impacto', esc(r.IMPACTO_OPERACIONAL))}
       ${row('Segmento', esc(r.SEGMENTO))}
+      ${msExp != null ? row('No expediente (08h–20h)', msExp ? fDur(msExp) : 'fora do expediente') : ''}
       ${row('Área acionada', esc(r.AREA_ACIONADA))}
       ${row('Grupos responsáveis', esc(r.GRUPOS_RESPONSAVEIS))}
       ${row('Grupos impactados', esc(r.GRUPOS_IMPACTADOS))}
@@ -517,17 +611,16 @@ function openSheet(id, refresh) {
     <h4>Mudanças registradas</h4>
     ${hist.length ? `<div class="feed">${hist.map(c => feedItem(c, now).replace(/data-id="[^"]*"/, 'disabled')).join('')}</div>` : '<div class="empty" style="padding:0">Nenhuma mudança registrada neste aparelho.</div>'}`;
   $('shX').onclick = () => history.back();
-  if (!refresh) {
-    S.sheetId = id;
-    $('sheetBg').style.display = 'block';
-    requestAnimationFrame(() => $('sheet').classList.add('show'));
-    history.pushState({ sheet: id }, '');
-  }
+  if (list) $('shVolta').onclick = () => { S.sheet = { mode: 'list', id: null, list }; refreshSheet(); };
+  return true;
 }
 function closeSheet() {
-  S.sheetId = null;
+  const l = S.sheet && S.sheet.list;
+  S.sheet = null;
   $('sheet').classList.remove('show');
   $('sheetBg').style.display = 'none';
+  document.body.classList.remove('sheet-on');
+  if (l && l.onClose) l.onClose();
 }
 
 /* ---------- avisos no aparelho ---------- */
@@ -537,7 +630,7 @@ function renderBell() {
   $('btBell').setAttribute('aria-pressed', on ? 'true' : 'false');
 }
 async function toggleBell() {
-  if (!('Notification' in window)) { toast('Este aparelho não permite avisos pelo navegador. As mudanças continuam aparecendo no painel.'); return; }
+  if (!('Notification' in window)) { toast('Este aparelho não permite avisos pelo navegador. As mudanças continuam aparecendo no app.'); return; }
   if (load(K.bell, false) && Notification.permission === 'granted') {
     save(K.bell, false); renderBell(); toast('Avisos no aparelho desligados.'); return;
   }
@@ -561,18 +654,27 @@ function init() {
 
   document.addEventListener('click', e => {
     const it = e.target.closest('[data-id]');
-    if (it && !it.disabled && (it.closest('#open') || it.closest('#feed') || it.closest('#hist'))) { openSheet(it.dataset.id); return; }
-    const ch = e.target.closest('.chip');
+    if (it && !it.disabled) {
+      if (it.closest('#sheet')) {   // item da lista do Painel: abre o detalhe com "Voltar à lista"
+        if (S.sheet && S.sheet.mode === 'list') { S.sheet = { mode: 'det', id: it.dataset.id, list: S.sheet.list }; refreshSheet(); $('sheet').scrollTop = 0; }
+        return;
+      }
+      if (it.closest('#pgOc') || it.closest('#pgHist')) { openSheet(it.dataset.id); return; }
+    }
+    const ch = e.target.closest('#chips .chip');
     if (ch) { S.filter = ch.dataset.f; S.histDays = HIST_STEP; renderChips(); renderHist(); return; }
     if (e.target.id === 'btMore') { S.histDays += HIST_STEP; renderHist(); }
   });
+  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => setTab(b.dataset.v));
   $('btFeed').onclick = () => { S.feedAll = !S.feedAll; renderFeed(); };
   $('btRefresh').onclick = () => poll(true);
   $('btBell').onclick = toggleBell;
   let qT; $('q').addEventListener('input', e => { clearTimeout(qT); qT = setTimeout(() => { S.q = e.target.value; S.histDays = HIST_STEP; renderHist(); }, 150); });
+  $('fSis').addEventListener('change', e => { S.fSis = e.target.value; S.histDays = HIST_STEP; renderHist(); });
   $('sheetBg').onclick = () => history.back();
-  window.addEventListener('popstate', () => { if (S.sheetId) closeSheet(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.sheetId) history.back(); });
+  window.addEventListener('popstate', () => { if (S.sheet) closeSheet(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.sheet) history.back(); });
+  if (window.PSPainel) PSPainel.gesto($('pgPainel'), () => S.tab === 'painel');
 
   document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - S.checkedAt > 15000) poll(); });
   window.addEventListener('online', () => poll());

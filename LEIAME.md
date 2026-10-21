@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.0.0)
+# Problemas Sistêmicos (v1.1.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -16,20 +16,34 @@ TXT do SQL Developer, separado por **tabulação**, cabeçalho na 1ª linha.
 - **Coluna nova:** pode entrar em qualquer posição; aparece no detalhe, em "Outras colunas".
 - **Datas:** `20/10/26 08:22:00,000000000` (também aceita `20/10/2026 08:22` e `2026-10-20 08:22:00`).
 
+## Páginas (menu de baixo)
+1. **Ocorrências**: no topo, um card grande para cada chamado em andamento (tempo "aberto há" correndo ao vivo). Sem ocorrência, aparece o card verde "Nenhuma ocorrência ativa". Embaixo, os **chamados de hoje** (abertos primeiro, depois os encerrados) e as **últimas mudanças** de status. O número de ocorrências ativas aparece no ícone do menu.
+2. **Histórico**: todos os chamados por dia, com busca por texto, filtro por **sistema** e por tipo de falha (ou só indevidos).
+3. **Painel**: o mesmo painel do app de NS: Dia / Semana / Mês (botão ou arrastar para o lado), filtro do dia da semana no modo Dia, seleção de coluna (toque no gráfico, na tabela ou no cabeçalho da matriz), cards, gráficos, matriz sistemas × períodos e tabela.
+
+## Como o Painel monta os períodos
+O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pelo app:
+- **Dia**: os 7 últimos dias (com filtro: as 7 últimas ocorrências daquele dia da semana).
+- **Semana**: as 7 últimas semanas, de segunda a domingo.
+- **Mês**: os 7 últimos meses do calendário.
+- Um chamado conta em todos os períodos em que esteve ativo. O tempo é o trecho dentro do **expediente 08h–20h**; no total, sobreposição conta uma vez e indevido fica fora.
+- **% do expediente** = tempo ÷ expediente do período inteiro (dia 12h; semana 7 × 12h; mês dias × 12h).
+- Período em andamento leva `*` e não tem variação (ainda vai crescer). Período antes do 1º chamado do arquivo fica listrado ("sem dados").
+- Variação: ▲ rosa = piorou, ▼ verde = melhorou.
+
+## Cores
+- Falha sempre em tons de vermelho a amarelo (rosa e laranja da empresa): Indisp. total `#D61F4F`, Indisp. parcial `#F2603E`, Intermitência `#FF9901`, Lentidão `#FFC629`. Total de todos os sistemas: rosa escuro `#B4245E`.
+- **Verde** só para "sem ocorrência" (card do topo, dia sem chamado, melhora).
+- Chamado encerrado e indevido: neutro (cinza-lilás).
+
 ## Em andamento
 - Chamado em andamento = `STATUS` ABERTO. Status desconhecido conta como em andamento enquanto não tiver `DATA_FIM`. FECHADO e INDEVIDO nunca contam.
-- Ordem: criticidade (P0 primeiro) e, dentro dela, o aberto há mais tempo.
-- O tempo "aberto há" corre ao vivo a partir da `DATA_INICIO`.
-- Selo **NOVO** ou **MUDOU** fica 1 hora no card.
+- Ordem: criticidade (P0 primeiro) e, dentro dela, o aberto há mais tempo. Selo **NOVO** ou **MUDOU** fica 1 hora no card.
 
 ## Últimas mudanças
-- A cada arquivo novo, o app compara cada `ID` com o anterior e registra: chamado novo; mudança de `STATUS`, `EVOLUCAO`, `DATA_FIM`, `CRITICIDADE` ou `TIPO_FALHA`; dados atualizados (só `DATA_ATUALIZACAO` mudou); chamado que saiu do arquivo.
-- Se mais de 3 chamados somem de uma vez, vira um único registro e aparece um alerta para conferir se o arquivo veio completo.
-- O registro fica **no aparelho** (últimas 300 mudanças) e começa a contar a partir do primeiro acesso.
-- 🔔 liga avisos do aparelho: com o app aberto (mesmo em segundo plano), cada mudança gera um aviso. Com o app fechado não há aviso — isso exige um serviço de envio (push), que pode vir junto com o MAPI.
-
-## Indicadores
-- **Em andamento**, **abertos hoje** (sem indevidos) e **com falha hoje**: tempo, desde 00h até agora, com pelo menos um chamado ativo (sobreposição conta uma vez, indevido fica fora).
+- A cada arquivo novo, o app compara cada `ID` com o anterior e registra: chamado novo; mudança de `STATUS`, `EVOLUCAO`, `DATA_FIM`, `CRITICIDADE` ou `TIPO_FALHA`; dados atualizados; chamado que saiu do arquivo. Mais de 3 sumindo de uma vez vira alerta.
+- O registro fica **no aparelho** (últimas 300 mudanças).
+- 🔔 liga avisos do aparelho com o app aberto (mesmo em segundo plano). Com o app fechado não há aviso: isso exige um serviço de envio (push).
 
 ## Conferência dos dados
 - Arquivo sem as colunas obrigatórias, sem tabulação ou sem linhas válidas: o app **não troca** os dados, mantém os últimos válidos e mostra alerta vermelho.
@@ -40,4 +54,4 @@ TXT do SQL Developer, separado por **tabulação**, cabeçalho na 1ª linha.
 ## Publicar
 1. Crie o repositório e suba todos os arquivos na raiz.
 2. Ative o GitHub Pages (branch principal, pasta raiz).
-3. A cada mudança no app, aumente a versão em `app.js` (`VERSION`) e em `sw.js` (`VERSION`), com o mesmo número.
+3. A cada mudança no app, aumente a versão em `app.js` (`VERSION`), `painel.js` (`VERSAO`) e `sw.js` (`VERSION`), com o mesmo número.
