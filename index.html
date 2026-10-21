@@ -193,8 +193,36 @@ h2.sec .rt{white-space:nowrap;font-size:12.5px;text-transform:none;letter-spacin
 
 /* histórico: filtros */
 .tools{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
-.search,.selsis{width:100%;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px}
-.search:focus,.selsis:focus{outline:2px solid var(--p300);outline-offset:0}
+.search{width:100%;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:10px 12px 10px 40px;font:inherit;font-size:16px}
+.search:focus{outline:2px solid var(--p300);outline-offset:0}
+/* busca com lupa */
+.srch{position:relative;display:block}
+.srch svg{position:absolute;left:12px;top:50%;width:19px;height:19px;transform:translateY(-50%);color:var(--ink3);pointer-events:none}
+.srch:focus-within svg{color:var(--p700)}
+@media (prefers-color-scheme: dark){.srch:focus-within svg{color:#d3b5f0}}
+/* lista própria de sistemas (no lugar do select do navegador) */
+.pick{position:relative}
+.pick-f{display:flex;align-items:center;gap:8px;width:100%;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:4px 6px 4px 12px;min-height:44px}
+.pick-f.on{border-color:var(--p300);background:var(--p50)}
+@media (prefers-color-scheme: dark){.pick-f.on{background:#2a1c3d;border-color:#4a3466}}
+.pick-x{flex:none;width:30px;height:30px;margin-left:-6px;border-radius:50%;border:0;background:var(--p100);color:var(--p800);display:grid;place-items:center;cursor:pointer;font-size:14px;font-weight:800;line-height:1}
+@media (prefers-color-scheme: dark){.pick-x{background:#3a2356;color:#e6d8f5}}
+.pick-b{flex:1;min-width:0;display:flex;align-items:center;gap:8px;border:0;background:none;padding:6px 0;cursor:pointer;text-align:left;font-size:15px;color:var(--ink)}
+.pick-b .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick-f:not(.on) .pick-b .nm{color:var(--ink2)}
+.pick-f.on .pick-b .nm{font-weight:700}
+.pick-b .chev{flex:none;width:20px;height:20px;color:var(--ink3);transition:transform .15s}
+.pick-b[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.qtd{flex:none;min-width:28px;text-align:center;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;background:var(--p100);color:var(--p800);font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme: dark){.qtd{background:#3a2356;color:#e6d8f5}}
+.pick-l{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:15;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(31,21,48,.2);max-height:min(56vh,420px);overflow-y:auto;overscroll-behavior:contain;padding:6px}
+.pick-l[hidden]{display:none}
+.pick-o{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:10px 10px;border-radius:10px;cursor:pointer;text-align:left;font-size:14.5px;color:var(--ink)}
+.pick-o .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+.pick-o:hover,.pick-o:focus-visible{background:var(--p50);outline:0}
+.pick-o[aria-selected="true"]{background:var(--p100);font-weight:700}
+@media (prefers-color-scheme: dark){.pick-o:hover,.pick-o:focus-visible{background:#2a1c3d}.pick-o[aria-selected="true"]{background:#3a2356}}
+.pick-o.todos{color:var(--ink2);border-bottom:1px solid var(--line);border-radius:10px 10px 0 0;margin-bottom:4px}
 .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .chips::-webkit-scrollbar{display:none}
 .chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:var(--ink2)}
@@ -316,6 +344,16 @@ table.tsel tbody tr.sel td:last-child{border-right-color:var(--selln)}
 .sheet .sub{color:var(--ink2);font-size:13.5px;margin-bottom:12px}
 .sheet .x{position:absolute;right:12px;top:12px;width:36px;height:36px;border-radius:50%;border:0;background:var(--bg);cursor:pointer;font-size:18px;line-height:1}
 .sheet .volta{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:5px 12px;font-weight:650;font-size:13px;cursor:pointer;margin-bottom:8px;color:var(--ink2)}
+.sheet .cham{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 12px;border:1.5px solid var(--p200);background:var(--p50);color:var(--ink);border-radius:14px;padding:10px 14px;text-align:left;cursor:pointer}
+.sheet .cham:active{transform:scale(.99)}
+.sheet .cham small{display:block;font-size:11.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--p700)}
+.sheet .cham b{display:block;font-size:22px;font-weight:800;letter-spacing:.3px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.sheet .cham .tx{flex:1;min-width:0}
+.sheet .cham .cp{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:700;color:var(--p700)}
+.sheet .cham .cp svg{width:22px;height:22px}
+.sheet .cham.sem{cursor:default;border-style:dashed;background:none}
+.sheet .cham.sem b{font-size:16px;color:var(--ink2)}
+@media (prefers-color-scheme: dark){.sheet .cham{background:#2a1c3d;border-color:#4a3466}.sheet .cham small,.sheet .cham .cp{color:#d3b5f0}}
 .sheet .big{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
 .sheet .big div{background:var(--bg);border-radius:12px;padding:10px 12px}
 .sheet .big small{display:block;color:var(--ink2);font-size:12px}
@@ -373,8 +411,11 @@ table.tsel tbody tr.sel td:last-child{border-right-color:var(--selln)}
   <!-- 2) Histórico -->
   <section class="page" id="pgHist" hidden>
     <div class="tools">
-      <input class="search" id="q" type="search" placeholder="Buscar sistema, chamado, impacto…" autocomplete="off" enterkeyhint="search" aria-label="Buscar no histórico">
-      <select class="selsis" id="fSis" aria-label="Filtrar por sistema"></select>
+      <label class="srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input class="search" id="q" type="search" placeholder="Buscar sistema, chamado, impacto…" autocomplete="off" enterkeyhint="search" aria-label="Buscar no histórico"></label>
+      <div class="pick" id="pick">
+        <div class="pick-f" id="pickF"></div>
+        <div class="pick-l" id="pickL" role="listbox" aria-label="Sistemas" hidden></div>
+      </div>
       <div class="chips" id="chips" role="group" aria-label="Filtro por tipo de falha"></div>
     </div>
     <div class="hres num" id="hres"></div>

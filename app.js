@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.5.0';
+const VERSION = '1.6.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -313,13 +313,13 @@ function announce(changes) {
   }
 }
 let toastT;
-function toast(msg, toFeed) {
+function toast(msg, toFeed, ms) {
   const t = $('toast');
   t.textContent = msg;
   t.onclick = () => { t.classList.remove('show'); if (toFeed) { setTab('oc'); $('feed').scrollIntoView({ behavior: 'smooth', block: 'center' }); } };
   t.classList.add('show');
   clearTimeout(toastT);
-  toastT = setTimeout(() => t.classList.remove('show'), 5000);
+  toastT = setTimeout(() => t.classList.remove('show'), ms || 5000);
 }
 
 
@@ -453,12 +453,46 @@ const CHIPS = [['todos', 'Todos'], ['total', 'Indisp. total', 'var(--fTotal)'], 
 function renderChips() {
   $('chips').innerHTML = CHIPS.map(([k, n, c]) => `<button class="chip" data-f="${k}" aria-pressed="${S.filter === k}"${c ? ` style="--fc:${c}"` : ''}>${c ? '<i></i>' : ''}${n}</button>`).join('');
 }
-function renderSisSelect() {
+// lista própria de sistemas: nome à esquerda, quantidade de ocorrências (sem indevidos) na cápsula à direita
+const CHEV = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+function sisContagem() {
   const cont = new Map();
   S.rows.forEach(r => { if (!isInd(r)) cont.set(r.SISTEMA, (cont.get(r.SISTEMA) || 0) + 1); else if (!cont.has(r.SISTEMA)) cont.set(r.SISTEMA, 0); });
-  const nomes = [...cont.keys()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  return cont;
+}
+const somaOc = cont => [...cont.values()].reduce((a, n) => a + n, 0);   // total de ocorrências (sem indevidos)
+function renderSisSelect() {
+  const cont = sisContagem();
   if (S.fSis && !cont.has(S.fSis)) S.fSis = '';
-  $('fSis').innerHTML = `<option value="">Todos os sistemas (${nomes.length})</option>` + nomes.map(n => `<option value="${esc(n)}"${n === S.fSis ? ' selected' : ''}>${esc(n)} · ${cont.get(n)}</option>`).join('');
+  const aberto = !$('pickL').hidden;
+  const f = $('pickF');
+  f.classList.toggle('on', !!S.fSis);
+  f.innerHTML = (S.fSis ? `<button class="pick-x" id="pickX" aria-label="Remover filtro de sistema" title="Remover filtro">✕</button>` : '') +
+    `<button class="pick-b" id="pickB" aria-haspopup="listbox" aria-expanded="${aberto}" aria-controls="pickL">` +
+    (S.fSis ? `<span class="nm">${esc(S.fSis)}</span><span class="qtd">${cont.get(S.fSis)}</span>` : `<span class="nm">Todos os sistemas</span><span class="qtd">${somaOc(cont)}</span>`) + CHEV + `</button>`;
+  if (aberto) renderSisLista(cont);
+}
+function renderSisLista(cont) {
+  cont = cont || sisContagem();
+  const nomes = [...cont.keys()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  $('pickL').innerHTML = `<button class="pick-o todos" role="option" data-sis="" aria-selected="${!S.fSis}"><span class="nm">Todos os sistemas</span><span class="qtd">${somaOc(cont)}</span></button>` +
+    nomes.map(n => `<button class="pick-o" role="option" data-sis="${esc(n)}" aria-selected="${n === S.fSis}"><span class="nm">${esc(n)}</span><span class="qtd">${cont.get(n)}</span></button>`).join('');
+}
+function abrirSis() {
+  renderSisLista();
+  $('pickL').hidden = false;
+  $('pickB').setAttribute('aria-expanded', 'true');
+  const sel = $('pickL').querySelector('[aria-selected="true"]');
+  if (sel) { sel.scrollIntoView({ block: 'nearest' }); sel.focus({ preventScroll: true }); }
+}
+function fecharSis() {
+  if ($('pickL').hidden) return;
+  $('pickL').hidden = true;
+  const b = $('pickB'); if (b) b.setAttribute('aria-expanded', 'false');
+}
+function setSis(n) {
+  S.fSis = n; S.histDays = HIST_STEP;
+  fecharSis(); renderSisSelect(); renderHist();
 }
 function renderHist() {
   const now = new Date();
@@ -609,7 +643,10 @@ function drawDet(id, list) {
   $('sheet').innerHTML = `<div class="grab"></div><button class="x" id="shX" aria-label="Fechar">✕</button>
     ${list ? '<button class="volta" id="shVolta">‹ Voltar à lista</button>' : ''}
     <h3 id="shTitle">${esc(r.SISTEMA)} ${r.CRITICIDADE ? `<span class="tag t-crit ${critClass(r.CRITICIDADE)}">${esc(r.CRITICIDADE)}</span>` : ''} ${statusTag(r.STATUS)}</h3>
-    <div class="sub">${esc(r.CHAMADO || 'Sem chamado')} · ID ${esc(r.ID)}</div>
+    <div class="sub">ID ${esc(r.ID)}</div>
+    ${temChamado(r.CHAMADO)
+      ? `<button class="cham" id="shCham" data-cham="${esc(r.CHAMADO)}" aria-label="Copiar o chamado ${esc(r.CHAMADO)}"><span class="tx"><small>Chamado</small><b>${esc(r.CHAMADO)}</b></span><span class="cp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>copiar</span></button>`
+      : `<div class="cham sem"><span class="tx"><small>Chamado</small><b>Sem chamado</b></span></div>`}
     <div class="big">
       <div><small>Início</small><b class="num">${fFull(r._ini)}</b></div>
       <div><small>Fim</small><b class="num">${r._fim ? fFull(r._fim) : (open ? 'em andamento' : '—')}</b></div>
@@ -631,6 +668,7 @@ function drawDet(id, list) {
     ${hist.length ? `<div class="feed">${hist.map(c => feedItem(c, now).replace(/data-id="[^"]*"/, 'disabled')).join('')}</div>` : '<div class="empty" style="padding:0">Nenhuma mudança registrada neste aparelho.</div>'}
     ${analiseHtml(r, now)}`;
   $('shX').onclick = () => history.back();
+  if ($('shCham')) $('shCham').onclick = () => copiarChamado($('shCham').dataset.cham);
   if (list) $('shVolta').onclick = () => { S.sheet = { mode: 'list', id: null, list }; refreshSheet(); };
   return true;
 }
@@ -678,6 +716,21 @@ function analiseHtml(r, now) {
       ${a.n ? `<p class="an-fq">${freqTxt(a)}</p>` : ''}
       <p class="an-base">Base: ${a.nFech} chamado${a.nFech === 1 ? '' : 's'} encerrado${a.nFech === 1 ? '' : 's'} desse sistema com esse tipo de falha${a.base0 ? `, de ${fDM(a.base0)}/${String(a.base0.getFullYear()).slice(2)} até hoje` : ''} · tempo total do início ao fim · indevidos fora.</p>
     </div>`;
+}
+/* ---------- copiar o número do chamado ---------- */
+const temChamado = c => !!String(c || '').trim() && !/^sem\s+chamado$/i.test(String(c).trim());
+async function copiarChamado(c) {
+  let ok = false;
+  try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(c); ok = true; } } catch (e) {}
+  if (!ok) {   // navegador sem a API: cópia pelo método antigo
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = c; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+      document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, c.length);
+      ok = document.execCommand('copy'); ta.remove();
+    } catch (e) { ok = false; }
+  }
+  toast(ok ? `Chamado ${c} copiado` : `Não foi possível copiar. Chamado: ${c}`, false, ok ? 2500 : 6000);
 }
 function closeSheet() {
   const l = S.sheet && S.sheet.list;
@@ -735,7 +788,17 @@ function init() {
   $('btRefresh').onclick = () => poll(true);
   $('btBell').onclick = toggleBell;
   let qT; $('q').addEventListener('input', e => { clearTimeout(qT); qT = setTimeout(() => { S.q = e.target.value; S.histDays = HIST_STEP; renderHist(); }, 150); });
-  $('fSis').addEventListener('change', e => { S.fSis = e.target.value; S.histDays = HIST_STEP; renderHist(); });
+  $('pick').addEventListener('click', e => {
+    if (e.target.closest('#pickX')) { e.stopPropagation(); setSis(''); return; }
+    if (e.target.closest('#pickB')) { $('pickL').hidden ? abrirSis() : fecharSis(); return; }
+    const o = e.target.closest('.pick-o'); if (o) setSis(o.dataset.sis);
+  });
+  document.addEventListener('pointerdown', e => { if (!e.target.closest('#pick')) fecharSis(); }, true);
+  $('pickL').addEventListener('keydown', e => {
+    const os = [...$('pickL').querySelectorAll('.pick-o')], i = os.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); const n = os[Math.max(0, Math.min(os.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))]; if (n) n.focus(); }
+    if (e.key === 'Escape') { e.stopPropagation(); fecharSis(); $('pickB').focus(); }
+  });
   $('sheetBg').onclick = () => history.back();
   window.addEventListener('popstate', () => { if (S.sheet) closeSheet(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.sheet) history.back(); });
