@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.1.1';
+const VERSION = '1.2.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -369,16 +369,15 @@ function renderOpen() {
   }
   $('open').innerHTML = open.map(r => {
     const t = tipo(r), rk = recentKind(r.ID, now);
-    return `<button class="oc" data-id="${esc(r.ID)}" style="--fc:${t.c}">
+    const ini = sameDay(r._ini, new Date()) ? 'hoje' : fDM(r._ini);
+    return `<button class="oc k-${t.k}" data-id="${esc(r.ID)}">
       <div class="h"><span class="sis">${esc(r.SISTEMA)}</span>
-        ${r.CRITICIDADE ? `<span class="tag t-crit ${critClass(r.CRITICIDADE)}">${esc(r.CRITICIDADE)}</span>` : ''}
         ${rk === 'novo' ? '<span class="tag t-novo">NOVO</span>' : rk === 'muda' ? '<span class="tag t-mudou">MUDOU</span>' : ''}
-        <span style="flex:1"></span><span class="tf"><i></i>${esc(t.n)}</span></div>
-      ${r.EVOLUCAO ? `<div class="evo">● ${esc(r.EVOLUCAO)}</div>` : ''}
+        <span class="cap-t k-${t.k}" style="--fc:${t.c}">${esc(t.n)}</span></div>
       ${r.IMPACTO_OPERACIONAL ? `<div class="imp">${esc(r.IMPACTO_OPERACIONAL)}</div>` : ''}
-      <div class="meta">${r.CHAMADO ? `<span>${esc(r.CHAMADO)}</span>` : ''}${r.SEGMENTO ? `<span>${esc(r.SEGMENTO)}</span>` : ''}${r.AREA_ACIONADA ? `<span>${esc(r.AREA_ACIONADA)}</span>` : ''}</div>
+      <div class="meta">${r.CHAMADO ? `<span>${esc(r.CHAMADO)}</span>` : ''}${r.SEGMENTO ? `<span>${esc(r.SEGMENTO)}</span>` : ''}</div>
       <div class="ft"><div class="timer num"><small>aberto há</small><span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span></div>
-        <div class="when">início ${sameDay(r._ini, new Date()) ? '' : fDM(r._ini) + ' '}${fHM(r._ini)}</div></div>
+        <div class="when">${r.EVOLUCAO ? `<span class="evo">${esc(r.EVOLUCAO)}</span>` : ''}<span class="ini num">início ${ini} ${fHM(r._ini)}</span></div></div>
     </button>`;
   }).join('');
 }
@@ -491,23 +490,9 @@ function renderBanners() {
   if (S.saveErr) b.push(['bad', '<b>Não foi possível guardar os dados no aparelho.</b> O app funciona, mas sem internet ele não terá a última cópia e o registro de mudanças pode se perder. Libere espaço do navegador ou saia da aba anônima.']);
   if (S.fileErr) b.push(['bad', `<b>O arquivo recebido tem erro:</b> ${esc(S.fileErr)}. O app continua com os últimos dados válidos${S.loadedAt ? ' (de ' + fFull(new Date(S.loadedAt)) + ')' : ''}.`]);
   if (S.goneWarn) b.push(['warn', `<b>${S.goneWarn} chamados sumiram do arquivo de uma vez.</b> Confira se o arquivo veio completo.`]);
-  if (S.warns.length) b.push(['warn', `${S.warns.length} aviso${S.warns.length > 1 ? 's' : ''} na leitura do arquivo. <a href="#dados" style="color:inherit;font-weight:700" id="lnDados">Ver detalhes</a>`]);
+  // avisos de leitura continuam visíveis aqui (a seção "Sobre os dados" saiu)
+  if (S.warns.length) b.push(['warn', `<details><summary>${S.warns.length} aviso${S.warns.length > 1 ? 's' : ''} na leitura do arquivo · ver</summary><ul class="warnlist">${S.warns.slice(0, 50).map(w => `<li>${esc(w)}</li>`).join('')}${S.warns.length > 50 ? `<li>… e mais ${S.warns.length - 50}</li>` : ''}</ul></details>`]);
   $('banners').innerHTML = b.map(([c, h]) => `<div class="banner ${c}">${h}</div>`).join('');
-  const ln = $('lnDados'); if (ln) ln.onclick = e => { e.preventDefault(); $('dados').open = true; $('dados').scrollIntoView({ behavior: 'smooth' }); };
-}
-function renderDados() {
-  const maxId = S.rows.reduce((m, r) => Math.max(m, +r.ID || 0), 0);
-  const lastUpd = S.rows.reduce((m, r) => (r._upd && (!m || r._upd > m) ? r._upd : m), null);
-  const src = S.source === 'api' ? 'Direto do repositório (GitHub, sem cache)' : S.source === 'arquivo' ? 'Arquivo do site (sistemas.txt)' : '—';
-  $('dadosBody').innerHTML = `<dl class="kv">
-    <dt>Fonte</dt><dd>${src}</dd>
-    <dt>Arquivo recebido</dt><dd>${S.loadedAt ? fFull(new Date(S.loadedAt)) : '—'}</dd>
-    <dt>Última atualização no arquivo</dt><dd>${fFull(lastUpd)}</dd>
-    <dt>Chamados</dt><dd class="num">${S.rows.length} (maior ID ${maxId || '—'})</dd>
-    <dt>Colunas</dt><dd>${esc(S.cols.join(', '))}</dd>
-    <dt>Mudanças registradas</dt><dd class="num">${S.log.length}</dd>
-    <dt>Cópia no aparelho</dt><dd>${S.saveErr ? '<b style="color:var(--bad)">falhou</b>' : 'ok'}</dd>
-  </dl>` + (S.warns.length ? `<ul class="warnlist">${S.warns.slice(0, 50).map(w => `<li>${esc(w)}</li>`).join('')}${S.warns.length > 50 ? `<li>… e mais ${S.warns.length - 50}</li>` : ''}</ul>` : '');
 }
 
 /* ---- páginas ---- */
@@ -526,7 +511,7 @@ function setTab(t) {
   window.scrollTo(0, 0);
 }
 function render() {
-  renderSync(); renderBanners(); renderDados();
+  renderSync(); renderBanners();
   renderOpen();               // também mantém o número no menu de baixo
   renderTab();
   if (S.sheet) refreshSheet();

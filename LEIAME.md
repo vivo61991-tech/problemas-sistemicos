@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.1.1)
+# Problemas Sistêmicos (v1.2.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -18,7 +18,7 @@ TXT do SQL Developer, separado por **tabulação**, cabeçalho na 1ª linha.
 - **Datas:** `20/10/26 08:22:00,000000000` (também aceita `20/10/2026 08:22` e `2026-10-20 08:22:00`).
 
 ## Páginas (menu de baixo)
-1. **Ocorrências**: no topo, um card grande para cada chamado em andamento (tempo "aberto há" correndo ao vivo). Sem ocorrência, aparece o card verde "Nenhuma ocorrência ativa". Embaixo, os **chamados de hoje** (abertos primeiro, depois os encerrados) e as **últimas mudanças** de status. O número de ocorrências ativas aparece no ícone do menu.
+1. **Ocorrências**: no topo, um card grande para cada chamado em andamento: fundo branco tingido pela cor do tipo de falha e texto no tom escuro da mesma cor; nome do sistema, cápsula do tipo de falha, impacto, chamado e segmento; embaixo, o tempo "aberto há" correndo ao vivo e, à direita, o status (evolução) acima do início. Sem ocorrência, aparece o card verde "Nenhuma ocorrência ativa". Embaixo, os **chamados de hoje** (abertos primeiro, depois os encerrados) e as **últimas mudanças** de status. O número de ocorrências ativas aparece no ícone do menu.
 2. **Histórico**: todos os chamados por dia, com busca por texto, filtro por **sistema** e por tipo de falha (ou só indevidos).
 3. **Painel**: o mesmo painel do app de NS: Dia / Semana / Mês (botão ou arrastar para o lado), filtro do dia da semana no modo Dia, seleção de coluna (toque no gráfico, na tabela ou no cabeçalho da matriz), cards, gráficos, matriz sistemas × períodos e tabela.
 
@@ -48,7 +48,7 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 
 ## Conferência dos dados
 - Arquivo sem as colunas obrigatórias, sem tabulação ou sem linhas válidas: o app **não troca** os dados, mantém os últimos válidos e mostra alerta vermelho.
-- Linha com `DATA_INICIO` inválida é ignorada; `DATA_FIM` inválida vira "sem fim"; `ID` repetido fica com a linha de atualização mais recente. Tudo aparece em "Sobre os dados".
+- Linha com `DATA_INICIO` inválida é ignorada; `DATA_FIM` inválida vira "sem fim"; `ID` repetido fica com a linha de atualização mais recente. Os avisos aparecem num alerta amarelo no topo (toque para ver a lista).
 - Se o aparelho não conseguir guardar a cópia, aparece alerta vermelho.
 - Sem internet, o app abre com a última cópia guardada.
 

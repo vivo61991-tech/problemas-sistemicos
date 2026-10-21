@@ -93,10 +93,36 @@ h2.sec .rt{white-space:nowrap;font-size:12.5px;text-transform:none;letter-spacin
 
 /* ocorrências ativas (cards grandes) */
 .open{display:grid;gap:10px}
-.oc{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);border:1px solid var(--line);border-left:6px solid var(--fc,var(--fOutro));padding:12px 14px;cursor:pointer;text-align:left;width:100%;display:block}
+/* card de ocorrência ativa: fundo branco tingido pela cor do tipo de falha, texto no tom escuro da mesma cor */
+.oc{--tb:var(--card);--ti:var(--ink);background:var(--tb);color:var(--ti);border-radius:var(--r);box-shadow:var(--sh);border:1px solid color-mix(in srgb,var(--ti) 14%,transparent);padding:14px 16px;cursor:pointer;text-align:left;width:100%;display:block}
 .oc:active{transform:scale(.995)}
-.oc .h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.oc .sis{font-weight:800;font-size:17px;letter-spacing:-.2px}
+.oc.k-total{--tb:#FEEFF2;--ti:#5C0B22}
+.oc.k-parcial{--tb:#FFF2EC;--ti:#5E1E0A}
+.oc.k-interm{--tb:#FFF5E6;--ti:#523000}
+.oc.k-lent{--tb:#FFF9E3;--ti:#463400}
+.oc.k-outro{--tb:#F8F5FB;--ti:#3A1658}
+@media (prefers-color-scheme: dark){
+  .oc.k-total{--tb:#36121E;--ti:#FFC9D6}
+  .oc.k-parcial{--tb:#361911;--ti:#FFCDBD}
+  .oc.k-interm{--tb:#32220A;--ti:#FFDCA6}
+  .oc.k-lent{--tb:#2F270B;--ti:#FFE9A6}
+  .oc.k-outro{--tb:#2a1c3d;--ti:#E6D8F5}
+}
+.oc .h{display:flex;align-items:center;gap:8px}
+.oc .sis{font-weight:800;font-size:18px;letter-spacing:-.2px;flex:1;min-width:0;overflow-wrap:anywhere}
+.oc .imp{margin-top:6px;font-size:14.5px}
+.oc .meta{margin-top:6px;font-size:12.5px;display:flex;flex-wrap:wrap;gap:4px 12px;opacity:.78}
+.oc .ft{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-top:12px;padding-top:10px;border-top:1px dashed color-mix(in srgb,var(--ti) 25%,transparent)}
+.oc .timer{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1}
+.oc .timer small{display:block;font-size:11.5px;font-weight:600;letter-spacing:0;margin-bottom:4px;opacity:.75}
+.oc .when{text-align:right;font-size:12.5px;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.oc .when .ini{opacity:.78}
+.oc .evo{font-weight:700;font-size:12.5px;border-radius:8px;padding:3px 9px;background:color-mix(in srgb,var(--ti) 10%,transparent);white-space:nowrap}
+/* cápsula do tipo de falha: cor cheia; texto branco onde a cor é forte, escuro onde é clara (laranja e amarelo) */
+.cap-t{flex:none;font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 10px;white-space:nowrap;background:var(--fc,var(--fOutro));color:#fff}
+.cap-t.k-interm,.cap-t.k-lent{color:#2b1a00}
+/* a cápsula usa a cor normal do tipo nos dois temas (no escuro as variáveis clareiam e o branco perderia leitura) */
+.cap-t.k-total{background:#D61F4F}.cap-t.k-parcial{background:#F2603E}.cap-t.k-interm{background:#FF9901}.cap-t.k-lent{background:#FFC629}.cap-t.k-outro{background:#7d7190}
 .tag{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}
 .t-crit{background:var(--p100);color:var(--p700)}
 .t-crit.alta{background:var(--badbg);color:var(--bad)}
@@ -104,13 +130,6 @@ h2.sec .rt{white-space:nowrap;font-size:12.5px;text-transform:none;letter-spacin
 @media (prefers-color-scheme: dark){.t-crit{background:#3a2356;color:#d5bfe7}}
 .t-novo{background:var(--fTotal);color:#fff}
 .t-mudou{background:var(--laranja);color:#2b1a00}
-.oc .evo{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-weight:700;font-size:13px;color:var(--warn);background:var(--warnbg);border-radius:8px;padding:4px 8px}
-.oc .imp{margin-top:8px;color:var(--ink);font-size:14.5px}
-.oc .meta{margin-top:6px;color:var(--ink2);font-size:12.5px;display:flex;flex-wrap:wrap;gap:4px 12px}
-.oc .ft{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
-.oc .timer{font-size:24px;font-weight:800;letter-spacing:-.5px;color:var(--bad);line-height:1}
-.oc .timer small{display:block;font-size:11.5px;font-weight:600;color:var(--ink2);letter-spacing:0;margin-bottom:3px}
-.oc .when{text-align:right;font-size:12.5px;color:var(--ink2)}
 .tf{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--ink2)}
 .tf i{width:9px;height:9px;border-radius:3px;background:var(--fc,var(--fOutro));display:inline-block}
 .calm-card{background:var(--okbg);color:var(--ok);border-radius:var(--r);padding:18px 16px;display:flex;gap:14px;align-items:center;border:1px solid color-mix(in srgb,var(--ok) 25%,transparent)}
@@ -257,13 +276,11 @@ table.tsel tbody tr.sel td:last-child{border-right-color:var(--selln)}
 .mxcard .vazio{font-size:13.5px;color:var(--ok);padding:14px 4px;text-align:center}
 @media (max-width:380px){.mx{column-gap:2px}.mx .sys{font-size:10.5px}.mx .cel{height:26px}.mx .cel .bar{top:5px}}
 
-/* dados */
-details.dados{background:var(--card);border-radius:var(--r);border:1px solid var(--line);margin-top:20px;padding:0 14px}
-details.dados summary{cursor:pointer;padding:12px 0;font-weight:700;color:var(--ink2);font-size:14px}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13.5px;padding-bottom:12px;margin:0}
 .kv dt{color:var(--ink2)}
 .kv dd{margin:0;word-break:break-word}
-.warnlist{font-size:13px;color:var(--warn);margin:0 0 12px;padding-left:18px}
+.banner details summary{cursor:pointer}
+.warnlist{font-size:12.5px;margin:6px 0 0;padding-left:18px}
 
 /* folha (lista e detalhe) */
 .sheet-bg{position:fixed;inset:0;background:rgba(20,12,29,.45);z-index:40;display:none}
@@ -330,10 +347,6 @@ details.dados summary{cursor:pointer;padding:12px 0;font-weight:700;color:var(--
   <!-- 3) Painel -->
   <section class="page" id="pgPainel" hidden></section>
 
-  <details class="dados" id="dados">
-    <summary>Sobre os dados</summary>
-    <div id="dadosBody"></div>
-  </details>
   <p class="foot">Problemas Sistêmicos · v<span id="ver"></span></p>
 </main>
 
