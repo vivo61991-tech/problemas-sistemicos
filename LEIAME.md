@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.2.1)
+# Problemas Sistêmicos (v1.3.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -19,7 +19,12 @@ TXT do SQL Developer, separado por **tabulação**, cabeçalho na 1ª linha.
 
 ## Páginas (menu de baixo)
 A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fixa e visível ao rolar.
-1. **Ocorrências**: no topo, um card grande para cada chamado em andamento: fundo branco tingido pela cor do tipo de falha e texto no tom escuro da mesma cor; nome do sistema, cápsula do tipo de falha, impacto, chamado e segmento; embaixo, o tempo "aberto há" correndo ao vivo e, à direita, o status (evolução) acima do início. Sem ocorrência, aparece o card verde "Nenhuma ocorrência ativa". Embaixo, os **chamados de hoje** (abertos primeiro, depois os encerrados) e as **últimas mudanças** de status. O número de ocorrências ativas aparece no ícone do menu.
+1. **Ocorrências**: no topo, um card grande para cada chamado em andamento, com fundo branco tingido pela cor do tipo de falha e texto no tom escuro da mesma cor:
+   - nome do sistema e, à direita, o **ID** da solicitação no sistêmico (cápsula só com borda);
+   - o impacto e, numa linha própria, a cápsula do tipo de falha com o nome completo (Indisponibilidade total / parcial, Intermitência, Lentidão);
+   - **Chamado:** e **Segmento afetado:**;
+   - a **barra do dia**: expediente de hoje das 08h às 20h (traço no meio = 14h), preenchida na cor do tipo de falha com o trecho que o chamado já ocupou hoje, até agora. Chamado que vem de ontem começa a contar às 08h de hoje. Atualiza ao vivo;
+   - embaixo, o tempo "aberto há" correndo ao vivo e, à direita, o status (evolução) acima do início. Sem ocorrência, aparece o card verde "Nenhuma ocorrência ativa". Embaixo, os **chamados de hoje** (abertos primeiro, depois os encerrados) e as **últimas mudanças** de status. O número de ocorrências ativas aparece no ícone do menu.
 2. **Histórico**: todos os chamados por dia, com busca por texto, filtro por **sistema** e por tipo de falha (ou só indevidos).
 3. **Painel**: o mesmo painel do app de NS: Dia / Semana / Mês (botão ou arrastar para o lado), filtro do dia da semana no modo Dia, seleção de coluna (toque no gráfico, na tabela ou no cabeçalho da matriz), cards, gráficos, matriz sistemas × períodos e tabela.
 

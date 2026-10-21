@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.2.1';
+const VERSION = '1.3.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -96,11 +96,12 @@ function isOpen(r) {
 const isInd = r => up(r.STATUS) === 'INDEVIDO';
 function tipo(r) {
   const t = up(r.TIPO_FALHA);
-  if (t.includes('TOTAL')) return { k: 'total', c: 'var(--fTotal)', n: 'Indisp. total' };
-  if (t.includes('PARCIAL')) return { k: 'parcial', c: 'var(--fParcial)', n: 'Indisp. parcial' };
-  if (t.includes('INTERMIT')) return { k: 'interm', c: 'var(--fInterm)', n: 'Intermitência' };
-  if (t.includes('LENTID')) return { k: 'lent', c: 'var(--fLent)', n: 'Lentidão' };
-  return { k: 'outro', c: 'var(--fOutro)', n: r.TIPO_FALHA ? cap(r.TIPO_FALHA) : 'Sem tipo' };
+  if (t.includes('TOTAL')) return { k: 'total', c: 'var(--fTotal)', n: 'Indisp. total', longo: 'Indisponibilidade total' };
+  if (t.includes('PARCIAL')) return { k: 'parcial', c: 'var(--fParcial)', n: 'Indisp. parcial', longo: 'Indisponibilidade parcial' };
+  if (t.includes('INTERMIT')) return { k: 'interm', c: 'var(--fInterm)', n: 'Intermitência', longo: 'Intermitência' };
+  if (t.includes('LENTID')) return { k: 'lent', c: 'var(--fLent)', n: 'Lentidão', longo: 'Lentidão' };
+  const n = r.TIPO_FALHA ? cap(r.TIPO_FALHA) : 'Sem tipo';
+  return { k: 'outro', c: 'var(--fOutro)', n, longo: n };
 }
 function cap(s) { s = String(s || '').toLowerCase(); return s.charAt(0).toUpperCase() + s.slice(1); }
 function critClass(c) {
@@ -373,13 +374,35 @@ function renderOpen() {
     return `<button class="oc k-${t.k}" data-id="${esc(r.ID)}">
       <div class="h"><span class="sis">${esc(r.SISTEMA)}</span>
         ${rk === 'novo' ? '<span class="tag t-novo">NOVO</span>' : rk === 'muda' ? '<span class="tag t-mudou">MUDOU</span>' : ''}
-        <span class="cap-t k-${t.k}" style="--fc:${t.c}">${esc(t.n)}</span></div>
+        <span class="cap-id num" title="ID da solicitação no sistêmico">ID ${esc(r.ID)}</span></div>
       ${r.IMPACTO_OPERACIONAL ? `<div class="imp">${esc(r.IMPACTO_OPERACIONAL)}</div>` : ''}
-      <div class="meta">${r.CHAMADO ? `<span>${esc(r.CHAMADO)}</span>` : ''}${r.SEGMENTO ? `<span>${esc(r.SEGMENTO)}</span>` : ''}</div>
+      <div class="tl"><span class="cap-t k-${t.k}">${esc(t.longo)}</span></div>
+      <div class="meta"><span><b>Chamado:</b> ${esc(r.CHAMADO || '—')}</span><span><b>Segmento afetado:</b> ${esc(r.SEGMENTO || '—')}</span></div>
+      ${barraDia(r, now)}
       <div class="ft"><div class="timer num"><small>aberto há</small><span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span></div>
         <div class="when">${r.EVOLUCAO ? `<span class="evo">${esc(r.EVOLUCAO)}</span>` : ''}<span class="ini num">início ${ini} ${fHM(r._ini)}</span></div></div>
     </button>`;
   }).join('');
+}
+// barra do dia (expediente 08h–20h de HOJE): trecho que o chamado ocupou hoje, até agora.
+// Chamado que vem de ontem começa a contar às 08h de hoje. Atualiza ao vivo (tick).
+const EXP_INI = 8, EXP_FIM = 20;
+function trechoHoje(iniMs, now) {
+  const d = new Date(now), a = new Date(d.getFullYear(), d.getMonth(), d.getDate(), EXP_INI).getTime(), b = new Date(d.getFullYear(), d.getMonth(), d.getDate(), EXP_FIM).getTime();
+  const s = Math.max(iniMs, a), e = Math.min(now, b);
+  const tot = b - a;
+  return { l: e > s ? (s - a) / tot * 100 : 0, w: e > s ? (e - s) / tot * 100 : 0, ms: Math.max(0, e - s), antes: now < a, deOntem: iniMs < new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() };
+}
+function barraDiaTxt(x) {
+  if (x.antes) return 'expediente começa às 08h';
+  if (!x.ms) return 'fora do expediente hoje';
+  return `${fDur(x.ms)} hoje no expediente${x.deOntem ? ' · vem de antes de hoje' : ''}`;
+}
+function barraDia(r, now) {
+  const x = trechoHoje(r._ini.getTime(), now);
+  return `<div class="dbar" data-dia="${r._ini.getTime()}" role="img" aria-label="Ocupação de hoje das 08h às 20h: ${barraDiaTxt(x)}">
+      <div class="trk"><span class="fill" style="left:${x.l.toFixed(2)}%;width:${x.w.toFixed(2)}%"></span></div>
+      <div class="esc num"><span>08h</span><span class="dtx">${barraDiaTxt(x)}</span><span>20h</span></div></div>`;
 }
 // chamados de hoje: abertos hoje, encerrados hoje ou ainda em andamento (os abertos primeiro)
 function renderHoje() {
@@ -521,6 +544,12 @@ function tick() {
   const now = Date.now();
   document.querySelectorAll('[data-since]').forEach(el => { el.textContent = fDur(now - +el.dataset.since); });
   document.querySelectorAll('[data-ago]').forEach(el => { el.textContent = fAgo(now - +el.dataset.ago); });
+  document.querySelectorAll('[data-dia]').forEach(el => {
+    const x = trechoHoje(+el.dataset.dia, now), f = el.querySelector('.fill');
+    f.style.left = x.l.toFixed(2) + '%'; f.style.width = x.w.toFixed(2) + '%';
+    el.querySelector('.dtx').textContent = barraDiaTxt(x);
+    el.setAttribute('aria-label', 'Ocupação de hoje das 08h às 20h: ' + barraDiaTxt(x));
+  });
   renderSync();
   if (S.tab === 'oc' && S.rows.length) renderHoje();
   // painel com chamado em andamento: redesenha a cada minuto (o tempo do aberto cresce)
