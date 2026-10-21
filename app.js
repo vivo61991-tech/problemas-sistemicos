@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.7.0';
+const VERSION = '1.7.1';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -645,7 +645,7 @@ function drawDet(id, list) {
   const msExp = window.PSPainel ? PSPainel.msExpediente({ ini: r._ini, fimCalc: new Date(endOf(r, now)) }) : null;
   $('sheet').innerHTML = `<div class="grab"></div><button class="x" id="shX" aria-label="Fechar">✕</button>
     ${list ? '<button class="volta" id="shVolta">‹ Voltar à lista</button>' : ''}
-    <h3 id="shTitle"><span class="cap-id num" title="ID da solicitação no sistêmico">ID ${esc(r.ID)}</span><span class="nm">${esc(r.SISTEMA)}</span>${statusTag(r.STATUS)}</h3>
+    <h3 id="shTitle" class="dt-h"><span class="cap-id num" title="ID da solicitação no sistêmico">ID ${esc(r.ID)}</span><span class="nm">${esc(r.SISTEMA)}</span><span class="stl">${statusTag(r.STATUS)}</span></h3>
     ${temChamado(r.CHAMADO)
       ? `<button class="cham" id="shCham" data-cham="${esc(r.CHAMADO)}" aria-label="Copiar o chamado ${esc(r.CHAMADO)}"><span class="tx"><small>Chamado</small><b>${esc(r.CHAMADO)}</b></span><span class="cp" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span></button>`
       : `<div class="cham sem"><span class="tx"><small>Chamado</small><b>Sem chamado</b></span></div>`}
