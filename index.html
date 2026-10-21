@@ -40,13 +40,14 @@
     --selbg:rgba(255,153,1,.13); --selln:rgba(255,153,1,.45); --selink:#FFB547; --domc:#ff6fa5; --sh:none; }
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--ink);overflow-x:hidden}
+/* overflow-x:clip (e não hidden): hidden transforma o body em área de rolagem e a barra do topo deixa de ficar presa */
+html,body{margin:0;background:var(--bg);color:var(--ink);overflow-x:clip}
 body{font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
 button{font:inherit;color:inherit}
 .num{font-variant-numeric:tabular-nums}
 
 /* topo */
-header.top{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,var(--p800),var(--p700) 60%,var(--p500));color:#fff;padding:calc(10px + var(--safe-t)) 16px 10px}
+header.top{position:sticky;top:0;z-index:30;box-shadow:0 2px 10px rgba(31,12,48,.18);background:linear-gradient(135deg,var(--p800),var(--p700) 60%,var(--p500));color:#fff;padding:calc(10px + var(--safe-t)) 16px 10px}
 .top .row{display:flex;align-items:center;gap:10px;max-width:760px;margin:0 auto}
 .top h1{font-size:18px;margin:0;font-weight:700;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top .sync{display:flex;align-items:center;gap:6px;font-size:12.5px;opacity:.92;margin-top:2px}
@@ -280,6 +281,8 @@ table.tsel tbody tr.sel td:last-child{border-right-color:var(--selln)}
 .kv dt{color:var(--ink2)}
 .kv dd{margin:0;word-break:break-word}
 .banner details summary{cursor:pointer}
+.avisos{margin-top:20px}
+.avisos:empty{display:none}
 .warnlist{font-size:12.5px;margin:6px 0 0;padding-left:18px}
 
 /* folha (lista e detalhe) */
@@ -347,6 +350,7 @@ table.tsel tbody tr.sel td:last-child{border-right-color:var(--selln)}
   <!-- 3) Painel -->
   <section class="page" id="pgPainel" hidden></section>
 
+  <div id="avisos" class="avisos"></div>
   <p class="foot">Problemas Sistêmicos · v<span id="ver"></span></p>
 </main>
 

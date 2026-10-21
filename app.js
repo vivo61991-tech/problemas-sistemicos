@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.2.0';
+const VERSION = '1.2.1';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -490,9 +490,9 @@ function renderBanners() {
   if (S.saveErr) b.push(['bad', '<b>Não foi possível guardar os dados no aparelho.</b> O app funciona, mas sem internet ele não terá a última cópia e o registro de mudanças pode se perder. Libere espaço do navegador ou saia da aba anônima.']);
   if (S.fileErr) b.push(['bad', `<b>O arquivo recebido tem erro:</b> ${esc(S.fileErr)}. O app continua com os últimos dados válidos${S.loadedAt ? ' (de ' + fFull(new Date(S.loadedAt)) + ')' : ''}.`]);
   if (S.goneWarn) b.push(['warn', `<b>${S.goneWarn} chamados sumiram do arquivo de uma vez.</b> Confira se o arquivo veio completo.`]);
-  // avisos de leitura continuam visíveis aqui (a seção "Sobre os dados" saiu)
-  if (S.warns.length) b.push(['warn', `<details><summary>${S.warns.length} aviso${S.warns.length > 1 ? 's' : ''} na leitura do arquivo · ver</summary><ul class="warnlist">${S.warns.slice(0, 50).map(w => `<li>${esc(w)}</li>`).join('')}${S.warns.length > 50 ? `<li>… e mais ${S.warns.length - 50}</li>` : ''}</ul></details>`]);
+  // erros (vermelho) e alerta de chamados sumidos ficam no topo; avisos de leitura vão para o fim da página
   $('banners').innerHTML = b.map(([c, h]) => `<div class="banner ${c}">${h}</div>`).join('');
+  $('avisos').innerHTML = !S.warns.length ? '' : `<div class="banner warn"><details><summary>${S.warns.length} aviso${S.warns.length > 1 ? 's' : ''} na leitura do arquivo · ver</summary><ul class="warnlist">${S.warns.slice(0, 50).map(w => `<li>${esc(w)}</li>`).join('')}${S.warns.length > 50 ? `<li>… e mais ${S.warns.length - 50}</li>` : ''}</ul></details></div>`;
 }
 
 /* ---- páginas ---- */
