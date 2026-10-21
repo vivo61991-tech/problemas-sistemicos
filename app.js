@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -371,18 +371,23 @@ function renderOpen() {
   $('open').innerHTML = open.map(r => {
     const t = tipo(r), rk = recentKind(r.ID, now);
     const ini = sameDay(r._ini, new Date()) ? 'hoje' : fDM(r._ini);
-    return `<button class="oc k-${t.k}" data-id="${esc(r.ID)}">
-      <div class="h"><span class="sis">${esc(r.SISTEMA)}</span>
-        ${rk === 'novo' ? '<span class="tag t-novo">NOVO</span>' : rk === 'muda' ? '<span class="tag t-mudou">MUDOU</span>' : ''}
+    const seg = segTxt(r.SEGMENTO);
+    return `<button class="oc k-${t.k}${rk ? ' com-selo' : ''}" data-id="${esc(r.ID)}">
+      <div class="h"><span class="sis" title="${esc(r.SISTEMA)}">${esc(r.SISTEMA)}</span>
         <span class="cap-id num" title="ID da solicitação no sistêmico">ID ${esc(r.ID)}</span></div>
       ${r.IMPACTO_OPERACIONAL ? `<div class="imp">${esc(r.IMPACTO_OPERACIONAL)}</div>` : ''}
-      <div class="tl"><span class="cap-t k-${t.k}">${esc(t.longo)}</span></div>
-      <div class="meta"><span><b>Chamado:</b> ${esc(r.CHAMADO || '—')}</span><span><b>Segmento afetado:</b> ${esc(r.SEGMENTO || '—')}</span></div>
+      <div class="tl"><span class="cap-t k-${t.k}">${esc(t.longo)}</span>${seg ? `<span class="para">para <b>${esc(seg)}</b></span>` : ''}</div>
       ${barraDia(r, now)}
       <div class="ft"><div class="timer num"><small>aberto há</small><span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span></div>
         <div class="when">${r.EVOLUCAO ? `<span class="evo">${esc(r.EVOLUCAO)}</span>` : ''}<span class="ini num">início ${ini} ${fHM(r._ini)}</span></div></div>
+      ${rk ? `<span class="selo">${rk === 'novo' ? 'NOVO' : 'MUDOU'}</span>` : ''}
     </button>`;
   }).join('');
+}
+// segmentos afetados: "B2B, B2C, CAMPO" → "B2B, B2C e CAMPO"
+function segTxt(s) {
+  const l = String(s || '').split(',').map(x => x.trim()).filter(Boolean);
+  return l.length < 2 ? (l[0] || '') : l.slice(0, -1).join(', ') + ' e ' + l[l.length - 1];
 }
 // barra do dia (expediente 08h–20h de HOJE): trecho que o chamado ocupou hoje, até agora.
 // Chamado que vem de ontem começa a contar às 08h de hoje. Atualiza ao vivo (tick).

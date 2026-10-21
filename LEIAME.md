@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.3.0)
+# Problemas Sistêmicos (v1.4.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -20,9 +20,10 @@ TXT do SQL Developer, separado por **tabulação**, cabeçalho na 1ª linha.
 ## Páginas (menu de baixo)
 A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fixa e visível ao rolar.
 1. **Ocorrências**: no topo, um card grande para cada chamado em andamento, com fundo branco tingido pela cor do tipo de falha e texto no tom escuro da mesma cor:
-   - nome do sistema e, à direita, o **ID** da solicitação no sistêmico (cápsula só com borda);
-   - o impacto e, numa linha própria, a cápsula do tipo de falha com o nome completo (Indisponibilidade total / parcial, Intermitência, Lentidão);
-   - **Chamado:** e **Segmento afetado:**;
+   - nome do sistema numa linha só (nome grande termina em "…") e, à direita, o **ID** da solicitação no sistêmico (cápsula só com borda);
+   - o impacto (até 2 linhas; o texto completo fica no detalhe) e a cápsula do tipo de falha por extenso seguida dos segmentos: "Indisponibilidade parcial **para B2B e B2C**";
+   - o número do chamado não aparece no card, só no detalhe (toque no card);
+   - selo verde **NOVO** (ou **MUDOU**) metade dentro e metade fora do card, no canto inferior esquerdo, por 1 hora;
    - a **barra do dia**: expediente de hoje das 08h às 20h (traço no meio = 14h), preenchida na cor do tipo de falha com o trecho que o chamado já ocupou hoje, até agora. Chamado que vem de ontem começa a contar às 08h de hoje. Atualiza ao vivo;
    - embaixo, o tempo "aberto há" correndo ao vivo e, à direita, o status (evolução) acima do início. Sem ocorrência, aparece o card verde "Nenhuma ocorrência ativa". Embaixo, os **chamados de hoje** (abertos primeiro, depois os encerrados) e as **últimas mudanças** de status. O número de ocorrências ativas aparece no ícone do menu.
 2. **Histórico**: todos os chamados por dia, com busca por texto, filtro por **sistema** e por tipo de falha (ou só indevidos).
@@ -40,12 +41,12 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 
 ## Cores
 - Falha sempre em tons de vermelho a amarelo (rosa e laranja da empresa): Indisp. total `#D61F4F`, Indisp. parcial `#F2603E`, Intermitência `#FF9901`, Lentidão `#FFC629`. Total de todos os sistemas: rosa escuro `#B4245E`.
-- **Verde** só para "sem ocorrência" (card do topo, dia sem chamado, melhora).
+- **Verde** para "sem ocorrência" (card do topo, dia sem chamado, melhora) e para o selo de card novo.
 - Chamado encerrado e indevido: neutro (cinza-lilás).
 
 ## Em andamento
 - Chamado em andamento = `STATUS` ABERTO. Status desconhecido conta como em andamento enquanto não tiver `DATA_FIM`. FECHADO e INDEVIDO nunca contam.
-- Ordem: criticidade (P0 primeiro) e, dentro dela, o aberto há mais tempo. Selo **NOVO** ou **MUDOU** fica 1 hora no card.
+- Ordem: criticidade (P0 primeiro) e, dentro dela, o aberto há mais tempo. Selo verde **NOVO** ou **MUDOU** fica 1 hora no card.
 
 ## Últimas mudanças
 - A cada arquivo novo, o app compara cada `ID` com o anterior e registra: chamado novo; mudança de `STATUS`, `EVOLUCAO`, `DATA_FIM`, `CRITICIDADE` ou `TIPO_FALHA`; dados atualizados; chamado que saiu do arquivo. Mais de 3 sumindo de uma vez vira alerta.
