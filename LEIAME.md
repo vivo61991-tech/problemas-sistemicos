@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.4.0)
+# Problemas Sistêmicos (v1.5.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -24,8 +24,9 @@ A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fix
    - o impacto (até 2 linhas; o texto completo fica no detalhe) e a cápsula do tipo de falha por extenso seguida dos segmentos: "Indisponibilidade parcial **para B2B e B2C**";
    - o número do chamado não aparece no card, só no detalhe (toque no card);
    - selo verde **NOVO** (ou **MUDOU**) metade dentro e metade fora do card, no canto inferior esquerdo, por 1 hora;
-   - a **barra do dia**: expediente de hoje das 08h às 20h (traço no meio = 14h), preenchida na cor do tipo de falha com o trecho que o chamado já ocupou hoje, até agora. Chamado que vem de ontem começa a contar às 08h de hoje. Atualiza ao vivo;
+   - a **barra do dia**: expediente de hoje das 08h às 21h (traço = 14h), preenchida na cor do tipo de falha com o trecho que o chamado já ocupou hoje, até agora. Chamado que vem de ontem começa a contar às 08h de hoje. Atualiza ao vivo;
    - embaixo, o tempo "aberto há" correndo ao vivo e, à direita, o status (evolução) acima do início. Sem ocorrência, aparece o card verde "Nenhuma ocorrência ativa". Embaixo, os **chamados de hoje** (abertos primeiro, depois os encerrados) e as **últimas mudanças** de status. O número de ocorrências ativas aparece no ícone do menu.
+   - **detalhe do chamado** (toque no card): tudo do chamado e, no fim, a **Análise do histórico** do mesmo sistema com o mesmo tipo de falha, usando a base inteira (6 meses fechados + mês atual): **tempo médio**, **maior** e **menor** tempo (início → fim dos chamados encerrados, indevidos fora), se o chamado aberto está dentro ou acima da média, e a **frequência** ("ocorre em média a cada 9 dias" = dias da base ÷ ocorrências, contando desde o 1º dia do mês mais antigo do arquivo).
 2. **Histórico**: todos os chamados por dia, com busca por texto, filtro por **sistema** e por tipo de falha (ou só indevidos).
 3. **Painel**: o mesmo painel do app de NS: Dia / Semana / Mês (botão ou arrastar para o lado), filtro do dia da semana no modo Dia, seleção de coluna (toque no gráfico, na tabela ou no cabeçalho da matriz), cards, gráficos, matriz sistemas × períodos e tabela.
 
@@ -34,8 +35,8 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 - **Dia**: os 7 últimos dias (com filtro: as 7 últimas ocorrências daquele dia da semana).
 - **Semana**: as 7 últimas semanas, de segunda a domingo.
 - **Mês**: os 7 últimos meses do calendário.
-- Um chamado conta em todos os períodos em que esteve ativo. O tempo é o trecho dentro do **expediente 08h–20h**; no total, sobreposição conta uma vez e indevido fica fora.
-- **% do expediente** = tempo ÷ expediente do período inteiro (dia 12h; semana 7 × 12h; mês dias × 12h).
+- Um chamado conta em todos os períodos em que esteve ativo. O tempo é o trecho dentro do **expediente 08h–21h**; no total, sobreposição conta uma vez e indevido fica fora.
+- **% do expediente** = tempo ÷ expediente do período inteiro (dia 13h; semana 7 × 13h; mês dias × 13h).
 - Período em andamento leva `*` e não tem variação (ainda vai crescer). Período antes do 1º chamado do arquivo fica listrado ("sem dados").
 - Variação: ▲ rosa = piorou, ▼ verde = melhorou.
 

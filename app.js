@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.4.0';
+const VERSION = '1.5.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -389,9 +389,10 @@ function segTxt(s) {
   const l = String(s || '').split(',').map(x => x.trim()).filter(Boolean);
   return l.length < 2 ? (l[0] || '') : l.slice(0, -1).join(', ') + ' e ' + l[l.length - 1];
 }
-// barra do dia (expediente 08h–20h de HOJE): trecho que o chamado ocupou hoje, até agora.
+// barra do dia (expediente 08h–21h de HOJE): trecho que o chamado ocupou hoje, até agora.
 // Chamado que vem de ontem começa a contar às 08h de hoje. Atualiza ao vivo (tick).
-const EXP_INI = 8, EXP_FIM = 20;
+const EXP_INI = 8, EXP_FIM = 21;
+const POS14 = ((14 - EXP_INI) / (EXP_FIM - EXP_INI) * 100).toFixed(2);   // marca das 14h na barra
 function trechoHoje(iniMs, now) {
   const d = new Date(now), a = new Date(d.getFullYear(), d.getMonth(), d.getDate(), EXP_INI).getTime(), b = new Date(d.getFullYear(), d.getMonth(), d.getDate(), EXP_FIM).getTime();
   const s = Math.max(iniMs, a), e = Math.min(now, b);
@@ -405,9 +406,9 @@ function barraDiaTxt(x) {
 }
 function barraDia(r, now) {
   const x = trechoHoje(r._ini.getTime(), now);
-  return `<div class="dbar" data-dia="${r._ini.getTime()}" role="img" aria-label="Ocupação de hoje das 08h às 20h: ${barraDiaTxt(x)}">
-      <div class="trk"><span class="fill" style="left:${x.l.toFixed(2)}%;width:${x.w.toFixed(2)}%"></span></div>
-      <div class="esc num"><span>08h</span><span class="dtx">${barraDiaTxt(x)}</span><span>20h</span></div></div>`;
+  return `<div class="dbar" data-dia="${r._ini.getTime()}" role="img" aria-label="Ocupação de hoje das 08h às 21h: ${barraDiaTxt(x)}">
+      <div class="trk"><span class="m14" style="left:${POS14}%"></span><span class="fill" style="left:${x.l.toFixed(2)}%;width:${x.w.toFixed(2)}%"></span></div>
+      <div class="esc num"><span>08h</span><span class="dtx">${barraDiaTxt(x)}</span><span>21h</span></div></div>`;
 }
 // chamados de hoje: abertos hoje, encerrados hoje ou ainda em andamento (os abertos primeiro)
 function renderHoje() {
@@ -553,7 +554,7 @@ function tick() {
     const x = trechoHoje(+el.dataset.dia, now), f = el.querySelector('.fill');
     f.style.left = x.l.toFixed(2) + '%'; f.style.width = x.w.toFixed(2) + '%';
     el.querySelector('.dtx').textContent = barraDiaTxt(x);
-    el.setAttribute('aria-label', 'Ocupação de hoje das 08h às 20h: ' + barraDiaTxt(x));
+    el.setAttribute('aria-label', 'Ocupação de hoje das 08h às 21h: ' + barraDiaTxt(x));
   });
   renderSync();
   if (S.tab === 'oc' && S.rows.length) renderHoje();
@@ -619,7 +620,7 @@ function drawDet(id, list) {
       ${row('Evolução', esc(r.EVOLUCAO))}
       ${row('Impacto', esc(r.IMPACTO_OPERACIONAL))}
       ${row('Segmento', esc(r.SEGMENTO))}
-      ${msExp != null ? row('No expediente (08h–20h)', msExp ? fDur(msExp) : 'fora do expediente') : ''}
+      ${msExp != null ? row('No expediente (08h–21h)', msExp ? fDur(msExp) : 'fora do expediente') : ''}
       ${row('Área acionada', esc(r.AREA_ACIONADA))}
       ${row('Grupos responsáveis', esc(r.GRUPOS_RESPONSAVEIS))}
       ${row('Grupos impactados', esc(r.GRUPOS_IMPACTADOS))}
@@ -627,10 +628,56 @@ function drawDet(id, list) {
     </dl>
     ${extra.length ? `<h4>Outras colunas</h4><dl class="kv">${extra.map(c => row(esc(c), esc(r[c]) || '—')).join('')}</dl>` : ''}
     <h4>Mudanças registradas</h4>
-    ${hist.length ? `<div class="feed">${hist.map(c => feedItem(c, now).replace(/data-id="[^"]*"/, 'disabled')).join('')}</div>` : '<div class="empty" style="padding:0">Nenhuma mudança registrada neste aparelho.</div>'}`;
+    ${hist.length ? `<div class="feed">${hist.map(c => feedItem(c, now).replace(/data-id="[^"]*"/, 'disabled')).join('')}</div>` : '<div class="empty" style="padding:0">Nenhuma mudança registrada neste aparelho.</div>'}
+    ${analiseHtml(r, now)}`;
   $('shX').onclick = () => history.back();
   if (list) $('shVolta').onclick = () => { S.sheet = { mode: 'list', id: null, list }; refreshSheet(); };
   return true;
+}
+/* ---------- análise do histórico (detalhe) ----------
+   Amostra: todo o arquivo (6 meses fechados + o mês atual), mesmo SISTEMA e mesmo tipo de falha.
+   Tempo = duração total (início → fim) dos chamados encerrados; indevidos ficam fora.
+   Frequência = dias da base ÷ ocorrências (inclui as em andamento). */
+function analise(r, now) {
+  const k = tipo(r).k, sis = up(r.SISTEMA);
+  const mesmos = S.rows.filter(x => up(x.SISTEMA) === sis && tipo(x).k === k && !isInd(x));
+  const fech = mesmos.filter(x => x._fim).map(x => ({ x, ms: x._fim - x._ini })).sort((a, b) => a.ms - b.ms);
+  const ini0 = S.rows.reduce((m, x) => (!m || x._ini < m ? x._ini : m), null);
+  const base0 = ini0 ? new Date(ini0.getFullYear(), ini0.getMonth(), 1) : null;   // 1º dia do mês mais antigo da base
+  const dias = base0 ? Math.max(1, (now - base0) / 864e5) : 0;
+  const media = fech.length ? fech.reduce((a, f) => a + f.ms, 0) / fech.length : null;
+  return { n: mesmos.length, nFech: fech.length, media, menor: fech[0] || null, maior: fech[fech.length - 1] || null, base0, dias };
+}
+function freqTxt(a) {
+  if (!a.n || !a.base0) return '';
+  const intervalo = a.dias / a.n;
+  const periodo = `${a.n} ocorrência${a.n > 1 ? 's' : ''} em ${Math.round(a.dias)} dias de base`;
+  if (a.n === 1) return `Primeira ocorrência desse problema na base (${Math.round(a.dias)} dias).`;
+  if (intervalo < 1) return `Esse problema ocorre em média <b>${(a.n / a.dias).toFixed(1).replace('.', ',')} vezes por dia</b> (${periodo}).`;
+  const d = Math.round(intervalo);
+  return `Esse problema ocorre em média <b>a cada ${d} dia${d > 1 ? 's' : ''}</b> (${periodo}).`;
+}
+function analiseHtml(r, now) {
+  const t = tipo(r), a = analise(r, now);
+  const quando = f => `<small class="qd">${fDM(f.x._ini)}/${String(f.x._ini.getFullYear()).slice(2)}</small>`;
+  let cmp = '';
+  if (isOpen(r) && a.media != null) {
+    const aberto = now - r._ini;
+    cmp = `<p class="an-cmp ${aberto > a.media ? 'acima' : ''}">Este chamado está aberto há <b>${fDur(aberto)}</b>: ${aberto > a.maior.ms ? 'já passou do maior tempo da base' : aberto > a.media ? 'acima da média' : 'dentro da média'}.</p>`;
+  }
+  const corpo = !a.nFech ? `<div class="empty" style="padding:0">Ainda não há chamado encerrado de ${esc(r.SISTEMA)} com ${esc(t.longo.toLowerCase())} na base para calcular os tempos.</div>`
+    : `<div class="an-box">
+        <div><small>Tempo médio</small><b class="num">${fDur(a.media)}</b></div>
+        <div><small>Maior tempo</small><b class="num">${fDur(a.maior.ms)}</b>${quando(a.maior)}</div>
+        <div><small>Menor tempo</small><b class="num">${fDur(a.menor.ms)}</b>${quando(a.menor)}</div>
+      </div>${cmp}`;
+  return `<h4>Análise do histórico</h4>
+    <div class="an">
+      <div class="an-t">${esc(r.SISTEMA)} · <span class="tf" style="--fc:${t.c}"><i></i>${esc(t.longo)}</span></div>
+      ${corpo}
+      ${a.n ? `<p class="an-fq">${freqTxt(a)}</p>` : ''}
+      <p class="an-base">Base: ${a.nFech} chamado${a.nFech === 1 ? '' : 's'} encerrado${a.nFech === 1 ? '' : 's'} desse sistema com esse tipo de falha${a.base0 ? `, de ${fDM(a.base0)}/${String(a.base0.getFullYear()).slice(2)} até hoje` : ''} · tempo total do início ao fim · indevidos fora.</p>
+    </div>`;
 }
 function closeSheet() {
   const l = S.sheet && S.sheet.list;

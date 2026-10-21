@@ -4,8 +4,9 @@
    Os períodos são montados aqui a partir das datas de cada chamado (o sistemas.txt tem uma linha por ID). */
 (function () {
   'use strict';
-  const VERSAO = '1.4.0';
-  const HORA_INI = 8, HORA_FIM = 20, EXP = (HORA_FIM - HORA_INI) * 3600e3;   // expediente 08:00–20:00
+  const VERSAO = '1.5.0';
+  const HORA_INI = 8, HORA_FIM = 21, EXP = (HORA_FIM - HORA_INI) * 3600e3;   // expediente 08:00–21:00 (13h)
+  const POS14 = ((14 - HORA_INI) / (HORA_FIM - HORA_INI) * 100).toFixed(2);   // marca das 14h na coluna do dia
   const LIMITE = 7;                                                         // 7 dias, 7 semanas, 7 meses
   const WD = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
   const WD_PLURAL = ['domingos', 'segundas', 'terças', 'quartas', 'quintas', 'sextas', 'sábados'];
@@ -129,7 +130,7 @@
     c.root.innerHTML = `
       <div class="card topbar">
         <div class="seg" role="tablist" aria-label="Período">${ORDEM_MODOS.map(t => `<button role="tab" data-m="${t}" class="${modo === t ? 'on' : ''}">${NOME[t]}</button>`).join('')}</div>
-        <div class="meta-line"><span>Expediente 08h–20h</span><span>${c.inicio ? 'dados desde ' + ddmm(c.inicio) + '/' + String(c.inicio.getFullYear()).slice(2) : 'sem dados'}</span></div>
+        <div class="meta-line"><span>Expediente 08h–21h</span><span>${c.inicio ? 'dados desde ' + ddmm(c.inicio) + '/' + String(c.inicio.getFullYear()).slice(2) : 'sem dados'}</span></div>
         ${iSel >= 0 ? `<button class="selchip" id="bLimpar" aria-label="Limpar seleção"><span class="t">Selecionado: <b>${esc(rot(p))}</b> · toque para limpar</span><span aria-hidden="true">✕</span></button>` : ''}
       </div>
       <div id="pag">
@@ -140,7 +141,7 @@
           <div class="cap${iSel >= 0 ? ' capsel' : ''}">${iSel >= 0 ? capSel : (fd != null ? `Só ${WD_PLURAL[fd]} · ${LIMITE} mais recentes. ` : '') + dica}</div></div>
         <div class="card chart"><h2>Tempo com falha no expediente${porX}</h2>${chartT(ps, st)}
           <div class="legend"><span><i style="background:var(--tot)"></i>tempo com algum sistema com problema (sobreposição conta uma vez)</span>${ps.some(x => x.andamento) ? '<span><i class="hach"></i>período em andamento</span>' : ''}${ps.some(x => x.semDados) ? '<span><i class="sd"></i>sem dados</span>' : ''}</div>
-          <div class="cap${iSel >= 0 ? ' capsel' : ''}">${iSel >= 0 ? capSel : '% = tempo com falha ÷ expediente do período inteiro (dia 12h; semana 7 × 12h; mês dias × 12h).'}</div></div>
+          <div class="cap${iSel >= 0 ? ' capsel' : ''}">${iSel >= 0 ? capSel : '% = tempo com falha ÷ expediente do período inteiro (dia 13h; semana 7 × 13h; mês dias × 13h).'}</div></div>
         ${matriz(ps, iSel >= 0 ? sel : null)}
         ${tabela(ps, st)}
       </div>`;
@@ -228,7 +229,7 @@
       const s = modo === 'DIA' ? (filtroDia != null ? mesMin : WD[d.getDay()]) : modo === 'SEMANA' ? mesMin : String(d.getFullYear());
       return `<button class="hd${dom ? ' dom' : ''}${selOrdem === p.ordem ? ' sel' : ''}${p.andamento ? ' and' : ''}${p.semDados ? ' sd' : ''}" data-ordem="${p.ordem}" aria-label="Selecionar ${esc(rot(p))}" aria-pressed="${selOrdem === p.ordem}">${t}${p.andamento ? '*' : ''}<small>${s}</small></button>`;
     }).join('');
-    const divisoes = () => modo === 'DIA' ? `<span class="dv" style="left:50%"></span>` : modo === 'SEMANA' ? [1, 2, 3, 4, 5, 6].map(i => `<span class="dv" style="left:${(i / 7 * 100).toFixed(2)}%"></span>`).join('') : '';
+    const divisoes = () => modo === 'DIA' ? `<span class="dv" style="left:${POS14}%"></span>` : modo === 'SEMANA' ? [1, 2, 3, 4, 5, 6].map(i => `<span class="dv" style="left:${(i / 7 * 100).toFixed(2)}%"></span>`).join('') : '';
     const clsCel = (p, tem, marcada) => `cel${p.semDados ? ' sd' : tem ? ' tem' : ''}${marcada ? ' sel' : selOrdem === p.ordem ? ' colsel' : ''}`;
     const linhas = sis.map(s => `<div class="sys${celSel && celSel.sis === s.nome ? ' sel' : ''}" title="${esc(s.nome)}">${esc(s.nome)}</div>` + s.cols.map((cs, ci) => {
       const p = ps[ci], marcada = celSel && celSel.ordem === p.ordem && celSel.sis === s.nome;
@@ -242,7 +243,7 @@
       return `<button class="${clsCel(p, temNaCol(ci), marcada)} tcel" data-ordem="${p.ordem}" data-tot="1" aria-label="Todos os sistemas · ${esc(rot(p))}${p.semDados ? ' · sem dados' : ''}">${p.semDados ? '' : divisoes()}${u.map(t => `<span class="bar tot" style="left:${(t.x0 * 100).toFixed(2)}%;width:${((t.x1 - t.x0) * 100).toFixed(2)}%"></span>`).join('')}</button>`;
     }).join('') + `<div class="tot tt">${fmtHc(totMs) || ''}</div>`;
     const temSd = ps.some(p => p.semDados);
-    const sub = modo === 'DIA' ? 'Cada coluna = expediente das 08h às 20h (linha no meio = 14h).' : modo === 'SEMANA' ? 'Cada coluna = 7 dias (seg a dom), cada dia das 08h às 20h.' : 'Cada coluna = os dias do mês, cada dia das 08h às 20h.';
+    const sub = modo === 'DIA' ? 'Cada coluna = expediente das 08h às 21h (linha = 14h).' : modo === 'SEMANA' ? 'Cada coluna = 7 dias (seg a dom), cada dia das 08h às 21h.' : 'Cada coluna = os dias do mês, cada dia das 08h às 21h.';
     const lab = mxAberto ? (window.innerWidth < 380 ? 92 : 112) + 'px' : 'max-content';
     return `<div class="card mxcard ${mxAberto ? 'mx-on' : 'mx-off'}" id="cardSis">
       <button class="mxhead" id="bMx" aria-expanded="${mxAberto}" aria-label="${mxAberto ? 'Fechar' : 'Abrir'} a matriz de sistemas"><h2>${titulo}</h2><span class="seta" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="${mxAberto ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'}"/></svg></span></button>

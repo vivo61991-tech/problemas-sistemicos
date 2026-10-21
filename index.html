@@ -123,13 +123,13 @@ h2.sec .rt{white-space:nowrap;font-size:12.5px;text-transform:none;letter-spacin
 .oc .meta b{font-weight:700;opacity:.7}
 /* ID da solicitação: cápsula só com borda */
 .cap-id{flex:none;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;white-space:nowrap;border:1.5px solid currentColor;background:transparent}
-/* barra do dia: expediente 08h–20h de hoje, preenchida na cor do tipo de falha */
+/* barra do dia: expediente 08h–21h de hoje, preenchida na cor do tipo de falha */
 .oc .dbar{margin-top:9px}
 /* selo de card novo/alterado: verde, metade dentro e metade fora, no canto inferior esquerdo; some depois de 1 hora */
 .oc .selo{position:absolute;left:14px;bottom:0;transform:translateY(50%);background:#5F8A12;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.5px;border-radius:999px;padding:2px 9px;border:2px solid var(--bg);line-height:1.3;pointer-events:none}
 @media (prefers-color-scheme: dark){.oc .selo{background:#6E9E17}}
 .oc .dbar .trk{position:relative;height:10px;border-radius:999px;background:color-mix(in srgb,var(--ti) 9%,transparent);overflow:hidden}
-.oc .dbar .trk::after{content:"";position:absolute;left:50%;top:2px;bottom:2px;width:1px;background:color-mix(in srgb,var(--ti) 22%,transparent)}
+.oc .dbar .m14{position:absolute;top:2px;bottom:2px;width:1px;background:color-mix(in srgb,var(--ti) 22%,transparent);z-index:1}
 .oc .dbar .fill{position:absolute;top:0;bottom:0;border-radius:999px;min-width:0}
 .oc.k-total .fill{background:#D61F4F}.oc.k-parcial .fill{background:#F2603E}.oc.k-interm .fill{background:#FF9901}.oc.k-lent .fill{background:#FFC629}.oc.k-outro .fill{background:#7d7190}
 .oc .dbar .esc{display:flex;justify-content:space-between;gap:8px;font-size:11px;margin-top:3px;opacity:.72}
@@ -321,6 +321,19 @@ table.tsel tbody tr.sel td:last-child{border-right-color:var(--selln)}
 .sheet .big small{display:block;color:var(--ink2);font-size:12px}
 .sheet .big b{font-size:17px}
 .sheet h4{font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink2);margin:16px 0 6px}
+/* análise do histórico */
+.an{background:var(--bg);border-radius:14px;padding:12px}
+.an-t{font-weight:700;font-size:14px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-bottom:10px}
+.an-t .tf{color:var(--ink)}
+.an-box{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.an-box div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
+.an-box small{display:block;color:var(--ink2);font-size:11.5px}
+.an-box b{font-size:16px;white-space:nowrap}
+.an-box .qd{color:var(--ink3);font-size:11px;margin-top:1px}
+.an p{margin:10px 0 0;font-size:13.5px}
+.an .an-cmp b,.an .an-fq b{font-weight:700}
+.an .an-cmp.acima{color:var(--bad)}
+.an .an-base{font-size:11.5px;color:var(--ink3)}
 .sheet .lst{box-shadow:none}
 
 .toast{position:fixed;left:50%;bottom:calc(76px + var(--safe-b));transform:translate(-50%,0);opacity:0;pointer-events:none;background:var(--p900);color:#fff;border-radius:14px;padding:12px 16px;font-size:14px;z-index:50;max-width:min(92vw,520px);box-shadow:0 8px 28px rgba(0,0,0,.25);transition:opacity .2s ease;cursor:pointer}
