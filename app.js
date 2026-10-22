@@ -3,12 +3,13 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.19.0';
+const VERSION = '1.20.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
 const LOG_MAX = 300;                 // mudanças guardadas no aparelho
-const HIST_STEP = 7;                 // dias do histórico por vez
+// histórico: ao entrar mostra o mês atual e o anterior; depois, um mês por vez ("Mostrar mês de Agosto")
+const MESES_LONGO = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 const REQUIRED = ['ID', 'SISTEMA', 'STATUS', 'DATA_INICIO'];
 const KNOWN = ['ID', 'SISTEMA', 'CHAMADO', 'STATUS', 'CRITICIDADE', 'EVOLUCAO', 'SEGMENTO', 'IMPACTO_OPERACIONAL',
@@ -241,7 +242,7 @@ const S = {
   snap: load(K.snap, null),
   apiPauseUntil: 0,
   busy: false,
-  filter: 'todos', q: '', fSis: '', histDays: HIST_STEP, feedAll: false,
+  filter: 'todos', q: '', fSis: '', histCorte: null, feedAll: false,
   tab: 'oc', sheet: null,       // sheet: {mode:'det'|'list', id, list:{titulo, sub, ids, onClose}}
 };
 if (!Array.isArray(S.log)) S.log = [];
@@ -508,7 +509,7 @@ function fecharSis() {
   const b = $('pickB'); if (b) b.setAttribute('aria-expanded', 'false');
 }
 function setSis(n) {
-  S.fSis = n; S.histDays = HIST_STEP;
+  S.fSis = n; S.histCorte = null;
   fecharSis(); renderSisSelect(); renderHist();
 }
 function renderHist() {
@@ -530,14 +531,21 @@ function renderHist() {
     groups[groups.length - 1].rows.push(r);
   }
   if (!groups.length) { $('hist').innerHTML = `<div class="day"><div class="empty">${q || S.filter !== 'todos' || S.fSis ? 'Nada encontrado com esse filtro.' : 'Sem chamados no arquivo.'}</div></div>`; return; }
-  const shown = groups.slice(0, S.histDays);
+  // corte = 1º dia do mês mais antigo exibido (padrão: mês anterior ao atual).
+  // Se o filtro não tiver nada nesses meses, começa pelo mês mais recente que tiver chamado.
+  const mesDe = d => new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+  let corte = S.histCorte != null ? S.histCorte : new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+  corte = Math.min(corte, mesDe(groups[0].d));
+  const shown = groups.filter(g => g.d.getTime() >= corte);
+  const prox = groups[shown.length];   // 1º dia ainda escondido: o mês dele é o próximo a mostrar
+  const rotMes = d => MESES_LONGO[d.getMonth()] + (d.getFullYear() !== now.getFullYear() ? ' de ' + d.getFullYear() : '');
   $('hist').innerHTML = shown.map(g => {
     const v = g.rows.filter(r => !isInd(r));
     const d0 = new Date(g.d); d0.setHours(0, 0, 0, 0);
     const dms = unionMs(v.map(r => [r._ini.getTime(), endOf(r, Date.now())]), d0.getTime(), d0.getTime() + 864e5);
     return `<div class="day"><div class="dh"><b>${esc(dayLabel(g.d, now))}</b><span class="num">${g.rows.length} chamado${g.rows.length > 1 ? 's' : ''}${dms ? ' · ' + fDur(dms) : ''}</span></div>` +
       g.rows.map(r => hiRow(r, Date.now(), false)).join('') + `</div>`;
-  }).join('') + (groups.length > S.histDays ? `<button class="more" id="btMore">Mostrar mais ${Math.min(HIST_STEP, groups.length - S.histDays)} dias</button>` : '');
+  }).join('') + (prox ? `<button class="more" id="btMore" data-corte="${mesDe(prox.d)}">Mostrar mês de ${rotMes(prox.d)}</button>` : '');
 }
 
 /* ---- 3) Painel ---- */
@@ -800,14 +808,14 @@ function init() {
       if (it.closest('#pgOc') || it.closest('#pgHist')) { openSheet(it.dataset.id); return; }
     }
     const ch = e.target.closest('#chips .chip');
-    if (ch) { S.filter = ch.dataset.f; S.histDays = HIST_STEP; renderChips(); renderHist(); return; }
-    if (e.target.id === 'btMore') { S.histDays += HIST_STEP; renderHist(); }
+    if (ch) { S.filter = ch.dataset.f; S.histCorte = null; renderChips(); renderHist(); return; }
+    if (e.target.id === 'btMore') { S.histCorte = +e.target.dataset.corte; renderHist(); }
   });
   document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => setTab(b.dataset.v));
   $('btFeed').onclick = () => { S.feedAll = !S.feedAll; renderFeed(); };
   $('btRefresh').onclick = () => poll(true);
   $('btBell').onclick = toggleBell;
-  let qT; $('q').addEventListener('input', e => { clearTimeout(qT); qT = setTimeout(() => { S.q = e.target.value; S.histDays = HIST_STEP; renderHist(); }, 150); });
+  let qT; $('q').addEventListener('input', e => { clearTimeout(qT); qT = setTimeout(() => { S.q = e.target.value; S.histCorte = null; renderHist(); }, 150); });
   $('pick').addEventListener('click', e => {
     if (e.target.closest('#pickX')) { e.stopPropagation(); setSis(''); return; }
     if (e.target.closest('#pickB')) { $('pickL').hidden ? abrirSis() : fecharSis(); return; }
