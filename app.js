@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.20.0';
+const VERSION = '1.21.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -364,7 +364,7 @@ const idCap = id => id ? `<span class="idc num" title="ID ${esc(id)}">${esc(id)}
 function hiRow(r, now, comDia) {
   const t = tipo(r), ind = isInd(r), ab = isOpen(r);
   const d0 = comDia ? fDM(r._ini) + ' ' : '';
-  const range = r._fim ? (sameDay(r._ini, r._fim) ? `${d0}${fHM(r._ini)}–${fHM(r._fim)}` : `${fDM(r._ini)} ${fHM(r._ini)}–${fDM(r._fim)} ${fHM(r._fim)}`) : `${d0}${fHM(r._ini)}–${ab ? 'agora' : 'sem fim'}`;
+  const range = `${d0}${fHM(r._ini)}`;   // só o início (o fim fica no detalhe)
   const du = ab ? `<span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span>` : r._fim ? fDur(r._fim - r._ini) : '–';
   const st = ab ? 'em andamento' : ind ? 'Indevido' : cap(r.EVOLUCAO || r.STATUS);
   return `<button class="hi${ind ? ' ind' : ''}${ab ? ' aberto' : ''}" data-id="${esc(r.ID)}" style="--fc:${t.c}"><span class="bar"></span>
