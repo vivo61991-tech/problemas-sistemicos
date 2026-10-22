@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.18.0)
+# Problemas Sistêmicos (v1.19.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -20,7 +20,7 @@ TXT do SQL Developer, separado por **tabulação**, cabeçalho na 1ª linha.
 ## Páginas (menu de baixo)
 A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fixa e visível ao rolar.
 
-1. **Ocorrências**: no topo, um card grande para cada chamado em andamento, claro e "flutuando" sobre o fundo (sombra suave, cantos de 20px); a cor do tipo de falha fica na cápsula do tipo e na barra do dia:
+1. **Ocorrências**: sem nenhum chamado em andamento, o card verde mostra "Nenhuma ocorrência ativa" e "Todos os sistemas operando."; mais abaixo, em letra menor, "Último normalizado:" e, na linha de baixo, o sistema e a hora ("PORTAL INTEGRA - LEGADO · hoje às 09:05"). Com chamado em andamento, no topo, um card grande para cada chamado em andamento, claro e "flutuando" sobre o fundo (sombra suave, cantos de 20px); a cor do tipo de falha fica na cápsula do tipo e na barra do dia:
    - nome do sistema numa linha só (nome grande termina em "…") e, à direita, o **ID** da solicitação no sistêmico (cápsula só com borda);
    - o impacto (até 2 linhas; o texto completo fica no detalhe) e a cápsula do tipo de falha por extenso seguida dos segmentos: "Indisponibilidade parcial **para B2B e B2C**";
    - o número do chamado não aparece no card, só no detalhe (toque no card);
@@ -30,6 +30,7 @@ A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fix
    - **detalhe do chamado** (toque no card): no alto, centralizada, uma **seta para baixo** que fecha o detalhe (não há mais ✕); o **nome do sistema** alinhado à esquerda (quebra linha se for grande) e o **ID** em cápsula só com borda na ponta direita; na linha de baixo, a cápsula do **tipo de falha** na cor dele à esquerda e o **status** na ponta direita (sem a criticidade); depois as caixas **Chamado | Duração** e **Início | Fim** (tocar no chamado copia o número para a área de transferência e aparece "Chamado … copiado"), tudo do chamado (na lista de campos: Segmento, No expediente, Área acionada, Grupos responsáveis, Grupos impactados, **Evolução**, **Impacto** e Alerta enviado) e, no fim, a **Análise do histórico** do mesmo sistema com o mesmo tipo de falha, usando a base inteira (6 meses fechados + mês atual): **tempo médio**, **maior** e **menor** tempo (início → fim dos chamados encerrados, indevidos fora), se o chamado aberto está dentro ou acima da média, e a **frequência** ("ocorre em média a cada 9 dias" = dias da base ÷ ocorrências, contando desde o 1º dia do mês mais antigo do arquivo).
 2. **Histórico**: todos os chamados por dia, com:
    - em **todas as listas** (Chamados de hoje, Últimas mudanças, Histórico e listas do Painel) o **ID** aparece numa cápsula só com borda, à esquerda do nome do sistema;
+   - nas listas de chamados (Chamados de hoje, Histórico e listas do Painel) o fundo é sempre claro; a **barra da esquerda** é **laranja** quando o chamado está aberto e **roxo bem claro** quando está fechado (indevido: listrado no mesmo roxo); o tipo de falha aparece **por extenso, na cápsula da cor dele**, e o número do chamado não aparece na lista (fica no detalhe);
    - **busca** por texto (campo com lupa);
    - **filtro de sistema** numa lista própria do app (não a do navegador): nome à esquerda e quantidade de ocorrências (sem indevidos) numa cápsula lilás à direita. Com um sistema escolhido, a caixa mostra o nome, a quantidade e um **✕ à esquerda** para remover o filtro na hora;
    - filtro por tipo de falha (ou só indevidos).

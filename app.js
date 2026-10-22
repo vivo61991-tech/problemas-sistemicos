@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.18.0';
+const VERSION = '1.19.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -367,7 +367,7 @@ function hiRow(r, now, comDia) {
   const du = ab ? `<span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span>` : r._fim ? fDur(r._fim - r._ini) : '–';
   const st = ab ? 'em andamento' : ind ? 'Indevido' : cap(r.EVOLUCAO || r.STATUS);
   return `<button class="hi${ind ? ' ind' : ''}${ab ? ' aberto' : ''}" data-id="${esc(r.ID)}" style="--fc:${t.c}"><span class="bar"></span>
-    <div style="min-width:0"><div class="s">${idCap(r.ID)}<span class="nm">${esc(r.SISTEMA)}</span></div><div class="d num">${range} · ${esc(t.n)}${r.CHAMADO ? ' · ' + esc(r.CHAMADO) : ''}</div></div>
+    <div style="min-width:0"><div class="s">${idCap(r.ID)}<span class="nm">${esc(r.SISTEMA)}</span></div><div class="d num"><span class="dr">${range}</span><span class="cap-t k-${t.k}">${esc(t.longo)}</span></div></div>
     <div class="du num">${du}<small>${esc(st)}</small></div></button>`;
 }
 
@@ -380,8 +380,8 @@ function renderOpen() {
   const bd = $('navBd'); bd.hidden = !open.length; bd.textContent = open.length;
   if (!open.length) {
     const last = S.rows.filter(r => !isInd(r) && r._fim).sort((a, b) => b._fim - a._fim)[0];
-    $('open').innerHTML = `<div class="calm-card" role="status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg><div><b>Nenhuma ocorrência ativa</b>` +
-      (last ? `<span>Todos os sistemas operando. Último normalizado: ${esc(last.SISTEMA)} · ${sameDay(last._fim, new Date()) ? 'hoje' : fDM(last._fim)} às ${fHM(last._fim)}</span>` : '<span>Todos os sistemas operando.</span>') + `</div></div>`;
+    $('open').innerHTML = `<div class="calm-card" role="status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg><div><b>Nenhuma ocorrência ativa</b><span>Todos os sistemas operando.</span>` +
+      (last ? `<div class="ult"><small>Último normalizado:</small><span class="us">${esc(last.SISTEMA)} · ${sameDay(last._fim, new Date()) ? 'hoje' : fDM(last._fim)} às ${fHM(last._fim)}</span></div>` : '') + `</div></div>`;
     return;
   }
   $('open').innerHTML = open.map(r => {
