@@ -1,24 +1,6 @@
-Tipo	Titulo	Texto	Data_Inicial	Data_Final	Obrigatorio	Status
-Informação	Nova funcionalidade no histórico	Adicionámos um novo filtro na aba de histórico para facilitar as buscas dos técnicos.	21/10/2026 10:10		Não	Ativo
-Aviso	Manutenção da base de dados	O sistema passará por manutenção preventiva no domingo. Poderá haver lentidão nas consultas.	21/10/2026 10:30	25/10/2026 00:00	Não	Ativo
-Crítico	Indisponibilidade - Portal Integra	Falha geral ao aceder ao Portal Integra. Equipa técnica a atuar na resolução do incidente de forma prioritária.	21/10/2026 10:50		Sim	Ativo
-Interrogação	Pesquisa: Novo Layout	Gostaria de dar o seu feedback sobre o novo layout do sistema? Clique aqui para responder.	21/10/2026 11:10		Não	Ativo
-Informação	Teste de formatação	"*Teste de Formatação*
-
-_Vamos observar o comportamento da formatação_
-
-Negrito: *Negrito*
-Itálico: _Itálico_
-Tachado: ~Tachado~
-Monoespaçado: ```Monoespaçado```
-
-Negrito e Itálico: *_Negrito e Itálico_*
-Itálico e Tachado: _~Itálico e Tachado~_
-
-Roxo: %Roxo%
-Verde: #Verde#
-Laranja: $Laranja$
-Pink: !Pink!
- 
-Link: @google.com@"	21/10/2026 11:30			Ativo
-Informação	Nova funcionalidade no histórico	Adicionámos um novo filtro na aba de histórico para facilitar as buscas dos técnicos.	21/10/2026 11:50		Não	Inativo
+ID	TIPO	TITULO	TEXTO	DATA_INICIO	DATA_FIM	OBRIGATORIO	STATUS	DATA_ATUALIZACAO
+1	INFORMACAO	Nova funcionalidade no histórico	Adicionamos um novo filtro na aba de histórico para facilitar as buscas dos técnicos.	2026-10-21 10:10:00		N	INATIVO	2026-10-21 11:50:00
+2	AVISO	Manutenção da base de dados	O sistema passará por manutenção preventiva no {b}domingo{/b}. Poderá haver lentidão nas consultas.	2026-10-21 10:30:00	2026-10-26 00:00:00	N	ATIVO	2026-10-21 10:30:00
+3	CRITICO	Indisponibilidade - Portal Integra	Falha geral ao acessar o {b}Portal Integra{/b}. Equipe técnica atuando na resolução do incidente de forma {pink}prioritária{/pink}.	2026-10-21 10:50:00		S	ATIVO	2026-10-21 10:50:00
+4	INTERROGACAO	Pesquisa: Novo Layout	Gostaria de dar o seu feedback sobre o novo layout do sistema? {link=https://forms.exemplo.com/novo-layout}Clique aqui para responder{/link}.	2026-10-21 11:10:00		N	ATIVO	2026-10-21 11:10:00
+5	INFORMACAO	Teste de formatação	{b}Teste de Formatação{/b}\n\n{i}Vamos observar o comportamento da formatação{/i}\n\nNegrito: {b}Negrito{/b}\nItálico: {i}Itálico{/i}\nTachado: {s}Tachado{/s}\nMonoespaçado: {m}Monoespaçado{/m}\n\nNegrito e Itálico: {b}{i}Negrito e Itálico{/i}{/b}\nItálico e Tachado: {i}{s}Itálico e Tachado{/s}{/i}\n\nRoxo: {roxo}Roxo{/roxo}\nVerde: {verde}Verde{/verde}\nLaranja: {laranja}Laranja{/laranja}\nPink: {pink}Pink{/pink}\n\nLink: {link=https://www.google.com}google.com{/link}	2026-10-21 11:30:00		N	ATIVO	2026-10-21 11:30:00
