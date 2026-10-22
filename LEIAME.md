@@ -1,21 +1,33 @@
-# Problemas Sistêmicos (v1.17.0)
+# Problemas Sistêmicos (v1.18.0)
 
-PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
+PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir da mesma fonte do Painel - Nível de Serviço (a consulta de problemas sistêmicos no IPTBM). Mesmas cores da empresa do painel de NS.
+
+## Acesso e segurança
+O site é **público** (GitHub Pages), então tudo o que ele publica vem **criptografado**. O app não consulta nada interno: quem lê o IPTBM, cifra e publica é o **MAPI**.
+
+- **Entrar:** matrícula + chave de acesso. Quem libera, remove, troca a chave e envia o convite é o administrador, na aba **Magic → Problemas Sistêmicos · App** do MAPI.
+- **Chave:** o padrão é um **código sorteado** (`XXXX-XXXX-XXXX-XXXX`, 80 bits). Como o arquivo é público, uma chave curta poderia ser descoberta por tentativa; por isso o MAPI exige **mínimo de 8 letras ou números** para chave escolhida à mão, e recomenda o código sorteado. Maiúsculas, acentos, espaços e hífens não contam.
+- **Como cifra:** a chave da pessoa sai da chave digitada por PBKDF2-SHA256 (600 mil iterações, salt próprio) e abre a "chave dos dados", que vem embrulhada para cada pessoa dentro do `dados.json`. Os dados e as notificações usam AES-GCM, cada um com IV próprio. A chave dos dados muda a **cada publicação**.
+- **No aparelho:** depois do primeiro acesso, a chave da pessoa fica guardada como `CryptoKey` **não extraível** (a chave digitada não é guardada). O pacote guardado continua cifrado, e o registro de mudanças vai para um **cofre cifrado** com uma chave do próprio aparelho. Nada de chamado, sistema ou notificação fica em texto aberto no armazenamento do navegador.
+- **Acesso removido** (ou chave trocada) no MAPI: na próxima conferência o app **apaga tudo** o que guardou e volta para a tela de entrada. O botão **Sair** (no rodapé) faz o mesmo à mão.
+- **Limite honesto:** remover um acesso vale a partir da publicação seguinte. Quem já abriu versões antigas (o histórico do Git guarda todas) mantém o que viu. Se uma chave vazar, remova o acesso e gere outra.
 
 ## Como os dados chegam
-- O arquivo `sistemas.txt` fica na raiz do repositório, junto do `index.html`.
-- O MAPI atualiza esse arquivo no GitHub sempre que algo muda na origem.
+- O MAPI publica `dados.json` na raiz do repositório, junto do `index.html`. Sem mudança, não cria commit.
+- Dentro dele, cifrados: o `sistemas.txt` (chamados) e, opcionalmente, o `notificacao.txt` (notificações cadastradas no MAPI).
 - O app confere o arquivo **a cada 1 minuto** (e na hora em que a tela volta a ficar visível, ou ao tocar em ↻).
-- No GitHub Pages, o app lê o arquivo **direto do repositório** (API do GitHub), sem o cache de até ~10 min do Pages. A conferência usa ETag: quando nada mudou, não gasta a cota da API. Se a API não responder, o app usa o `sistemas.txt` do próprio site.
+- No GitHub Pages, o app lê o arquivo **direto do repositório** (API do GitHub), sem o cache de até ~10 min do Pages. A conferência usa ETag: quando nada mudou, não gasta a cota da API. Se a API não responder, o app usa o `dados.json` do próprio site.
 - Para forçar a leitura pelo arquivo do site: abra com `?fonte=arquivo` no fim do endereço.
+- Sem internet o app abre com a última cópia guardada (cifrada).
 
-## Formato do arquivo
-TXT do SQL Developer, separado por **tabulação**, cabeçalho na 1ª linha.
-- **Obrigatórias:** `ID, SISTEMA, STATUS, DATA_INICIO`.
-- **Usadas na tela:** `CHAMADO, CRITICIDADE, EVOLUCAO, SEGMENTO, IMPACTO_OPERACIONAL, DATA_FIM, TIPO_FALHA, GRUPOS_RESPONSAVEIS, GRUPOS_IMPACTADOS, AREA_ACIONADA, ALERTA_ENVIADO`.
-- **Coluna nova:** pode entrar em qualquer posição; aparece no detalhe, em "Outras colunas".
-- **Não aparecem na tela:** `FLAG, TEMPO_DECORRIDO, DADO_ATUALIZADO, DATA_ATUALIZACAO`. Continuam sendo lidas: a `DATA_ATUALIZACAO` serve para registrar "dados atualizados" nas mudanças e para escolher a linha mais recente quando um ID vem repetido.
-- **Datas:** `20/10/26 08:22:00,000000000` (também aceita `20/10/2026 08:22` e `2026-10-20 08:22:00`).
+## Formato dos dados (dentro do `dados.json`)
+- **`dados.json`:** `app` (`problemas-sistemicos`), `v` (1), `kdf` (PBKDF2-SHA256 e nº de iterações), `acessos` (por pessoa: `salt`, `iv`, `ct`; o id é o SHA-256 de `"ps:" + matrícula`), `dados` e `notificacoes` (`iv`, `ct`).
+- **`sistemas.txt`** (o que está dentro de `dados`): TXT do SQL Developer, separado por **tabulação**, cabeçalho na 1ª linha.
+  - **Obrigatórias:** `ID, SISTEMA, STATUS, DATA_INICIO`.
+  - **Usadas na tela:** `CHAMADO, CRITICIDADE, EVOLUCAO, SEGMENTO, IMPACTO_OPERACIONAL, DATA_FIM, TIPO_FALHA, GRUPOS_RESPONSAVEIS, GRUPOS_IMPACTADOS, AREA_ACIONADA, ALERTA_ENVIADO`.
+  - **Coluna nova:** pode entrar em qualquer posição; aparece no detalhe, em "Outras colunas".
+  - **Não aparecem na tela:** `FLAG, TEMPO_DECORRIDO, DADO_ATUALIZADO, DATA_ATUALIZACAO`. Continuam sendo lidas: a `DATA_ATUALIZACAO` serve para registrar "dados atualizados" nas mudanças e para escolher a linha mais recente quando um ID vem repetido.
+  - **Datas:** `20/10/26 08:22:00,000000000` (também aceita `20/10/2026 08:22` e `2026-10-20 08:22:00`).
 
 ## Páginas (menu de baixo)
 A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fixa e visível ao rolar.
@@ -40,8 +52,8 @@ A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fix
    - tabela com **CHAM.** (em cápsula), **TEMPO TOTAL** (tempo com falha no período em qualquer horário), **NO EXPED.** (a parte dentro de 08h–21h) e **% EXPED.** (com barrinha na mesma escala do gráfico), tudo centralizado; a 1ª coluna mostra a data em destaque e o dia da semana embaixo; o domingo aparece em vermelho, como no gráfico.
 
 ## Notificações (`notificacao.txt`)
-- Arquivo **opcional** na raiz do repositório, ao lado do `sistemas.txt`, conferido junto com ele (a cada 1 minuto). Sem o arquivo, nada aparece e os chamados seguem normais.
-- Formato (gerado pelo editor de notificações): UTF-8, tabulação, cabeçalho na 1ª linha, **1 notificação por linha**. Colunas `ID, TIPO, TITULO, TEXTO, DATA_INICIO, DATA_FIM, OBRIGATORIO, STATUS, DATA_ATUALIZACAO`. No TEXTO, quebra de linha = `\n`; marcações `{b} {i} {s} {m} {roxo} {verde} {laranja} {pink} {link=…}…{/link}`.
+- **Origem:** cadastradas no MAPI (aba Problemas Sistêmicos · App → Notificações, com prévia) e publicadas dentro do `dados.json` cifrado, conferidas junto com os chamados (a cada 1 minuto). Sem notificações, nada aparece e os chamados seguem normais.
+- Formato do `notificacao.txt` que o MAPI gera: UTF-8, tabulação, cabeçalho na 1ª linha, **1 notificação por linha**. Colunas `ID, TIPO, TITULO, TEXTO, DATA_INICIO, DATA_FIM, OBRIGATORIO, STATUS, DATA_ATUALIZACAO`. No TEXTO, quebra de linha = `\n`; marcações `{b} {i} {s} {m} {roxo} {verde} {laranja} {pink} {link=…}…{/link}`.
 - **Vale só STATUS = ATIVO e dentro das datas** (relógio do aparelho, reavaliado a cada poucos segundos, sem precisar de arquivo novo): início e fim → só entre os dois; só início → a partir dele, sem prazo; só fim → já vale, até o fim; sem datas → vale enquanto estiver ativa.
 - **Ícone (balão de mensagem)** à esquerda do 🔔, só quando há notificação valendo, com o **número de não lidas** (na cor do tipo mais grave entre elas).
 - Tocar no ícone: com **uma** notificação abre direto; com **mais de uma** abre a **lista** (ícone + título; não lida com bolinha cheia, lida com bolinha vazada; texto e ícone ficam iguais nas duas). As **não lidas ficam sempre no topo** e as lidas descem na hora (ao voltar para a lista pelo botão ‹ redondo, ao lado do ✕); dentro de cada grupo vale a ordem abaixo. Cada notificação mostra só o **ícone do tipo**, o **título** e o **texto formatado**, com ✕ para fechar.
@@ -49,8 +61,6 @@ A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fix
 - Ícones (estilo MsgBox do VBA): Crítico ✕ no círculo vermelho; Aviso ! no triângulo amarelo; Interrogação ? no círculo roxo; Informação ! no círculo verde.
 - **Obrigatória** (OBRIGATORIO = S): abre sozinha ao entrar no app (e quando chega uma nova), **uma de cada vez, na ordem do ID**: fechou uma (Ciente ou ✕), abre a próxima. Só deixa de contar com o botão **Ciente**, e depois disso não abre mais sozinha (a pessoa pode reabrir pela lista). Fechada só no ✕, volta a abrir na próxima vez que o app for aberto.
 - Lida = aberta (não obrigatória) ou com Ciente (obrigatória). Fica guardado **no aparelho**. Se a notificação for editada (DATA_ATUALIZACAO nova), volta a ser não lida.
-- **Homologação:** a raiz já traz um `notificacao.txt` de teste com 12 notificações (3 de cada tipo: Crítico, Aviso, Informação e Interrogação; IDs 1, 2 e 4 obrigatórios), com datas a partir de 20/10/2026 e todas as formatações. Trocar pelo arquivo real antes de ir para produção.
-- Pasta `ferramentas/` (o app não lê): `editor-notificacoes.html` para abrir, criar, formatar e exportar o arquivo, e `notificacao-exemplo.txt`. Para publicar, o arquivo vai para a **raiz** com o nome `notificacao.txt`.
 - Linha com data inválida, fim antes do início ou ID repetido: avisada no alerta amarelo do fim da página. Arquivo com erro: o app mantém as últimas notificações válidas.
 
 ## Como o Painel monta os períodos
@@ -83,6 +93,10 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 - Sem internet, o app abre com a última cópia guardada.
 
 ## Publicar
-1. Crie o repositório e suba todos os arquivos na raiz.
+1. No repositório fica só o app (sem dados). O `dados.json` é criado e atualizado **pelo MAPI**; não edite nem suba esse arquivo à mão.
 2. Ative o GitHub Pages (branch principal, pasta raiz).
-3. A cada mudança no app, aumente a versão em `app.js` (`VERSION`), `painel.js` (`VERSAO`), `notif.js` (`VERSAO`) e `sw.js` (`VERSION`), com o mesmo número.
+3. No MAPI (`.env`): `SIS_APP_GITHUB_TOKEN` (token fine-grained com Contents read/write só neste repositório), `SIS_APP_GITHUB_REPO`, `SIS_APP_URL` e `SIS_APP_SECRET_KEY`. Na aba Magic → Problemas Sistêmicos · App: cadastre os acessos, entregue os códigos e ligue a publicação automática.
+4. A cada mudança no app, aumente a versão em `app.js` (`VERSION`), `painel.js` (`VERSAO`), `notif.js` (`VERSAO`), `cripto.js` (`VERSAO`) e `sw.js` (`VERSION`), com o mesmo número, e nas `?v=` do `index.html`. O app confere `cripto.js` e `painel.js` com a própria versão.
+
+## Testes
+`node --test tests/cripto.test.js tests/formato.test.js` (Node 18 ou mais novo, sem dependências). Usam `tests/fixtures/pacote.json`, gerado pelo MAPI (`tests/gerar_fixture_sis_app.py` do repositório do MAPI), e conferem que o app abre o que o MAPI cifra e lê os TXT que o MAPI gera. Se o formato do pacote ou dos TXT mudar, gere o arquivo de novo.

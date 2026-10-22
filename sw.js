@@ -1,7 +1,7 @@
 /* Problemas Sistêmicos — service worker */
-const VERSION = '1.17.0';
+const VERSION = '1.18.0';
 const CACHE = 'sistemicos-v' + VERSION;
-const CORE = ['./', 'index.html', 'painel.js', 'notif.js', 'app.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
+const CORE = ['./', 'index.html', 'cripto.js', 'painel.js', 'notif.js', 'app.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
@@ -13,8 +13,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
-  // sistemas.txt e notificacao.txt nunca passam pelo cache do SW: a última cópia válida fica guardada pelo próprio app
-  if (/\/(sistemas|notificacao)\.txt$/.test(url.pathname)) return;
+  // dados.json nunca passa pelo cache do SW: a última cópia válida (cifrada) fica guardada pelo próprio app
+  if (/\/(dados\.json|sistemas\.txt|notificacao\.txt)$/.test(url.pathname)) return;
   // app: rede primeiro, sempre conferindo com o servidor (sem usar cópia velha do navegador); sem rede, usa a cópia guardada
   e.respondWith(fetch(e.request.url, { cache: 'no-cache', credentials: 'same-origin' }).then(res => {
     if (res.ok) { const cp = res.clone(); caches.open(CACHE).then(c => c.put(e.request, cp)); }

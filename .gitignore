@@ -1,0 +1,4 @@
+node_modules/
+# os dados vão cifrados em dados.json, publicados pelo MAPI; nunca versionar o TXT aberto
+sistemas.txt
+notificacao.txt

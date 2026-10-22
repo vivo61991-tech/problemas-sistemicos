@@ -488,9 +488,48 @@ html.trava{overflow:hidden}
 .toast{position:fixed;left:50%;bottom:calc(76px + var(--safe-b));transform:translate(-50%,0);opacity:0;pointer-events:none;background:var(--p900);color:#fff;border-radius:14px;padding:12px 16px;font-size:14px;z-index:50;max-width:min(92vw,520px);box-shadow:0 8px 28px rgba(0,0,0,.25);transition:opacity .2s ease;cursor:pointer}
 .toast.show{opacity:1;pointer-events:auto}
 .foot{color:var(--ink3);font-size:12px;text-align:center;margin:18px 0 0}
+.foot .lnk{font-size:12px;padding:0 2px}
+/* tela de entrada (matrícula + chave): enquanto aparece, o resto do app fica escondido */
+body.ps-login header.top,body.ps-login main,body.ps-login nav.tabs{display:none}
+.login{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+.login[hidden]{display:none}
+.login-card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 22px;box-shadow:0 10px 34px rgba(31,12,48,.12)}
+.login-logo{width:56px;height:56px;border-radius:16px;margin:0 auto 12px;background:linear-gradient(135deg,var(--p800),var(--p500));display:flex;align-items:center;justify-content:center}
+.login-logo svg{width:30px;height:30px;color:#fff}
+.login h1{font-size:20px;margin:0;text-align:center;color:var(--accent)}
+.login-sub{margin:6px 0 18px;text-align:center;color:var(--ink2);font-size:14px}
+.login label{display:block;font-size:12px;font-weight:700;color:var(--ink2);margin:12px 0 5px}
+.login input{width:100%;font:inherit;font-size:16px;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.login input:focus{outline:2px solid var(--p500);outline-offset:1px}
+.login-chave{position:relative}
+.login-chave input{padding-right:84px}
+.login-chave .lnk{position:absolute;right:6px;top:50%;transform:translateY(-50%)}
+.login-erro{min-height:20px;margin:10px 0 0;color:var(--bad);font-size:13.5px}
+.login-btn{width:100%;margin-top:6px;border:0;border-radius:12px;padding:13px 16px;font-weight:700;font-size:16px;color:#fff;background:linear-gradient(135deg,var(--p800),var(--p700));cursor:pointer}
+.login-btn:disabled{opacity:.65;cursor:default}
+.login-ajuda{margin:16px 0 0;text-align:center;color:var(--ink3);font-size:12.5px}
 </style>
 </head>
 <body>
+<section id="login" class="login" hidden aria-label="Entrar">
+  <div class="login-card">
+    <div class="login-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    <h1>Problemas Sistêmicos</h1>
+    <p class="login-sub">Entre com a matrícula e a chave de acesso que você recebeu.</p>
+    <form id="loginForm" autocomplete="off" novalidate>
+      <label for="loginMat">Matrícula</label>
+      <input id="loginMat" name="matricula" maxlength="20" autocapitalize="characters" autocomplete="username" spellcheck="false" inputmode="text">
+      <label for="loginChave">Chave de acesso</label>
+      <div class="login-chave">
+        <input id="loginChave" name="chave" type="password" autocapitalize="characters" autocomplete="current-password" spellcheck="false">
+        <button type="button" class="lnk" id="loginVer">mostrar</button>
+      </div>
+      <div class="login-erro" id="loginErro" role="alert"></div>
+      <button type="submit" class="login-btn" id="loginBtn">Entrar</button>
+    </form>
+    <p class="login-ajuda">Não tem acesso? Peça ao administrador do MAPI.</p>
+  </div>
+</section>
 <header class="top">
   <div class="row">
     <div style="flex:1;min-width:0">
@@ -541,7 +580,7 @@ html.trava{overflow:hidden}
   <section class="page" id="pgPainel" hidden></section>
 
   <div id="avisos" class="avisos"></div>
-  <p class="foot">Problemas Sistêmicos · v<span id="ver"></span></p>
+  <p class="foot">Problemas Sistêmicos · v<span id="ver"></span> · <span id="quem"></span> <button class="lnk" id="btSair" type="button">Sair</button></p>
 </main>
 
 <nav class="tabs" id="tabs">
@@ -554,8 +593,9 @@ html.trava{overflow:hidden}
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="painel.js?v=1.17.0"></script>
-<script src="notif.js?v=1.17.0"></script>
-<script src="app.js?v=1.17.0"></script>
+<script src="cripto.js?v=1.18.0"></script>
+<script src="painel.js?v=1.18.0"></script>
+<script src="notif.js?v=1.18.0"></script>
+<script src="app.js?v=1.18.0"></script>
 </body>
 </html>

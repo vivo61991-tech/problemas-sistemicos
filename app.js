@@ -1,9 +1,11 @@
 /* Problemas Sistêmicos — andamento dos chamados em tempo real
-   Fonte: sistemas.txt (TXT do SQL Developer, separado por tabulação, cabeçalho na 1ª linha).
-   O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
+   Fonte: dados.json, publicado pelo MAPI e CRIPTOGRAFADO (o site é público). Só abre quem tem acesso aprovado no MAPI:
+   matrícula + chave. Dentro dele vão o sistemas.txt (TXT do SQL Developer, separado por tabulação, cabeçalho na
+   1ª linha) e, opcionalmente, o notificacao.txt. O app confere o arquivo a cada minuto e registra toda mudança de
+   status por ID. O que fica no aparelho é o pacote cifrado e um cofre cifrado com chave do aparelho. */
 'use strict';
 
-const VERSION = '1.17.0';
+const VERSION = '1.18.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -20,7 +22,9 @@ const TRACK = [['STATUS', 'Status'], ['EVOLUCAO', 'Evolução'], ['DATA_FIM', 'F
 // colunas que continuam sendo lidas (mudanças, conferência), mas não aparecem nos cards nem no detalhe
 const OCULTAS = ['FLAG', 'TEMPO_DECORRIDO', 'DADO_ATUALIZADO', 'DATA_ATUALIZACAO'];
 
-const K = { data: 'ps.data', snap: 'ps.snap', log: 'ps.log', bell: 'ps.bell' };
+const K = { pkg: 'ps.pkg', cofre: 'ps.cofre', bell: 'ps.bell' };
+// o que versões anteriores (sem login) guardavam em texto aberto no aparelho: é migrado para o cofre e apagado
+const LEGADO = ['ps.data', 'ps.snap', 'ps.log', 'ps.notif'];
 
 /* ---------- armazenamento no aparelho ---------- */
 function load(key, fallback) {
@@ -218,17 +222,6 @@ async function getText(arquivo, etag) {
   }
   return fetchFile(arquivo);
 }
-// notificações: arquivo opcional; qualquer falha aqui não atrapalha os chamados
-async function pollNotif() {
-  if (!window.PSNotif) return;
-  try {
-    const r = await getText('notificacao.txt', PSNotif.etag());
-    if (r.same) return;
-    PSNotif.aplicar(r.ausente ? null : r.text, { etag: r.etag });
-  } catch (e) { /* sem conexão: fica a última cópia guardada */ }
-  renderBanners();
-}
-
 /* ---------- estado ---------- */
 const S = {
   rows: [], cols: [], warns: [],
@@ -237,8 +230,10 @@ const S = {
   fileErr: '',            // erro do último arquivo recebido (mantém o anterior)
   saveErr: false,         // falha ao guardar no aparelho
   goneWarn: 0,
-  log: load(K.log, []),
-  snap: load(K.snap, null),
+  log: [],
+  snap: null,
+  cred: null,             // credencial do aparelho (chave da pessoa, não extraível)
+  pkgText: '',            // dados.json (cifrado) da última leitura
   apiPauseUntil: 0,
   busy: false,
   filter: 'todos', q: '', fSis: '', histDays: HIST_STEP, feedAll: false,
@@ -258,42 +253,125 @@ function applyText(text, meta, fromStore) {
     S.goneWarn = many ? many.n : 0;
     if (changes.length) { S.log = changes.concat(S.log).slice(0, LOG_MAX); announce(changes); }
     S.snap = snapOf(p.rows);
-    const ok1 = save(K.data, { text, etag: S.etag, source: S.source, loadedAt: S.loadedAt });
-    const ok2 = save(K.snap, S.snap);
-    const ok3 = save(K.log, S.log);
-    S.saveErr = !(ok1 && ok2 && ok3);
   } else if (!S.snap) {
     S.snap = snapOf(p.rows);
-    S.saveErr = !save(K.snap, S.snap);
   }
   return p;
 }
 
+/* ---------- acesso: login, pacote cifrado e cofre do aparelho ---------- */
+const dec = bytes => new TextDecoder().decode(bytes);
+
+// Abre o dados.json com a credencial e aplica: chamados (applyText) e notificações.
+// Devolve {ok} | {ok:false, err} | {ok:false, semAcesso:true, err}
+async function aplicarPacote(pkgText, meta, fromStore) {
+  let pacote;
+  try { pacote = JSON.parse(pkgText); } catch (e) { return { ok: false, err: 'dados.json inválido (não é um JSON)' }; }
+  let campos;
+  try { campos = await PSCripto.abrir(pacote, S.cred); }
+  catch (e) {
+    if (e.code === 'sem_acesso') return { ok: false, semAcesso: true, err: e.message };
+    return { ok: false, err: e.message || 'não consegui abrir o dados.json' };
+  }
+  const p = applyText(dec(campos.dados), meta, fromStore);
+  if (!p.ok) return p;
+  S.pkgText = pkgText;
+  if (window.PSNotif && PSNotif.versao === VERSION) PSNotif.aplicar(campos.notificacoes == null ? null : dec(campos.notificacoes), meta);
+  return p;
+}
+
+// guarda no aparelho: o pacote (já cifrado) e o cofre (mudanças vistas), cifrado com a chave do aparelho
+let cofreT = 0;
+function guardar() {
+  S.saveErr = !save(K.pkg, { text: S.pkgText, etag: S.etag, source: S.source, loadedAt: S.loadedAt });
+  clearTimeout(cofreT);
+  cofreT = setTimeout(async () => {
+    const selo = await PSCripto.selar({ snap: S.snap, log: S.log });
+    try { if (selo) localStorage.setItem(K.cofre, selo); } catch (e) { /* sem espaço: o pacote guardado basta */ }
+  }, 300);
+}
+
+// apaga TUDO o que este app guardou no aparelho (sair, ou acesso removido) e volta para a tela de entrada
+async function limparAparelho() {
+  try { await PSCripto.apagarTudo(); } catch (e) { /* segue */ }
+  try { Object.keys(localStorage).filter(k => k.startsWith('ps.')).forEach(k => localStorage.removeItem(k)); } catch (e) { /* segue */ }
+}
+async function sair() {
+  if (!confirm('Sair deste aparelho? Os dados guardados nele serão apagados e você precisará da matrícula e da chave para entrar de novo.')) return;
+  await limparAparelho();
+  location.reload();
+}
+async function perderAcesso(msg) {
+  await limparAparelho();
+  try { sessionStorage.setItem('ps.msgLogin', msg || 'Seu acesso foi removido.'); } catch (e) { /* segue */ }
+  location.reload();
+}
+
+function mostrarLogin(msg) {
+  document.body.classList.add('ps-login');
+  $('login').hidden = false;
+  let aviso = msg || '';
+  try { const m = sessionStorage.getItem('ps.msgLogin'); if (m) { aviso = aviso || m; sessionStorage.removeItem('ps.msgLogin'); } } catch (e) { /* segue */ }
+  $('loginErro').textContent = aviso;
+  $('loginMat').focus();
+}
+function esconderLogin() { document.body.classList.remove('ps-login'); $('login').hidden = true; }
+
+async function fazerLogin(ev) {
+  ev.preventDefault();
+  const mat = $('loginMat').value, chave = $('loginChave').value, erro = $('loginErro'), btn = $('loginBtn');
+  erro.textContent = '';
+  if (!String(mat).trim() || !String(chave).trim()) { erro.textContent = 'Informe a matrícula e a chave.'; return; }
+  if (!PSCripto.codigoValido(chave)) { erro.textContent = 'A chave está incompleta. Confira o que você recebeu.'; return; }
+  btn.disabled = true; btn.textContent = 'Entrando…';
+  try {
+    let r;
+    try { r = await getText('dados.json', ''); }
+    catch (e) { throw new Error('Sem conexão. Para entrar pela primeira vez o aparelho precisa estar na internet.'); }
+    if (r.ausente || !r.text) throw new Error('O app ainda não tem dados publicados. Fale com o administrador.');
+    let pacote;
+    try { pacote = JSON.parse(r.text); } catch (e) { throw new Error('Os dados publicados estão ilegíveis. Tente de novo em instantes.'); }
+    const ent = await PSCripto.entrar(pacote, mat, chave);
+    S.cred = ent.cred;
+    let guardou = true;
+    try { await PSCripto.salvarCred(ent.cred); } catch (e) { guardou = false; }
+    save(K.pkg, { text: r.text, etag: r.etag || '', source: r.source, loadedAt: Date.now() });
+    $('loginChave').value = '';
+    await entrarNoApp();
+    if (!guardou) toast('Este navegador não deixou guardar o acesso: ao fechar o app você vai precisar entrar de novo.', false, 7000);
+  } catch (e) {
+    erro.textContent = e.message || 'Não foi possível entrar.';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Entrar';
+  }
+}
+
+/* ---------- conferência periódica ---------- */
 async function poll(manual) {
-  if (S.busy) return;
+  if (S.busy || !S.cred) return;
   S.busy = true;
   $('btRefresh').classList.add('spin');
   try {
-    const r = await getText('sistemas.txt', S.etag);
-    if (r.ausente) throw new Error('sistemas.txt não encontrado');
+    const r = await getText('dados.json', S.etag);
+    if (r.ausente) throw new Error('dados.json não encontrado');
     S.net = 'ok';
     S.checkedAt = Date.now();
-    if (r.same || r.text === S.text) {
+    if (r.same || r.text === S.pkgText) {
       if (r.etag) S.etag = r.etag;
       if (manual) toast('Nenhuma mudança desde a última conferência.');
     } else {
-      const p = applyText(r.text, { etag: r.etag, source: r.source, loadedAt: Date.now() }, false);
+      const p = await aplicarPacote(r.text, { etag: r.etag, source: r.source, loadedAt: Date.now() }, false);
+      if (p.semAcesso) { await perderAcesso(p.err); return; }       // acesso removido ou chave trocada no MAPI
       if (!p.ok) {
         S.fileErr = p.err;
         if (r.etag) S.etag = r.etag;   // não insiste no mesmo arquivo com erro
-      } else S.fileErr = '';
+      } else { S.fileErr = ''; guardar(); }
       render();
     }
   } catch (e) {
     S.net = 'off';
     if (manual) toast('Sem conexão. Mostrando a última cópia guardada.');
   } finally {
-    await pollNotif();
     S.busy = false;
     $('btRefresh').classList.remove('spin');
     renderSync(); renderBanners();
@@ -780,15 +858,45 @@ async function toggleBell() {
 }
 
 /* ---------- início ---------- */
-function init() {
-  $('ver').textContent = VERSION;
-  const stored = load(K.data, null);
-  if (stored && stored.text) {
-    const p = applyText(stored.text, { etag: stored.etag, source: stored.source, loadedAt: stored.loadedAt }, true);
-    if (!p.ok) { S.text = ''; S.etag = ''; }
+// versões anteriores guardavam dados em texto aberto: traz o registro de mudanças para o cofre e apaga o resto
+function migrarLegado() {
+  let snap = null, log = null;
+  try { snap = JSON.parse(localStorage.getItem('ps.snap') || 'null'); log = JSON.parse(localStorage.getItem('ps.log') || 'null'); } catch (e) { /* ignora */ }
+  if (snap && typeof snap === 'object' && !S.snap) S.snap = snap;
+  if (Array.isArray(log) && !S.log.length) S.log = log.slice(0, LOG_MAX);
+  try { LEGADO.forEach(k => localStorage.removeItem(k)); } catch (e) { /* ignora */ }
+}
+
+// pacote guardado + cofre -> memória (sem internet o app abre com a última cópia)
+async function restaurar() {
+  let cofre = null;
+  try { cofre = await PSCripto.abrirSelo(localStorage.getItem(K.cofre)); } catch (e) { /* sem cofre */ }
+  if (cofre) { S.snap = cofre.snap || null; S.log = Array.isArray(cofre.log) ? cofre.log : []; }
+  migrarLegado();
+  const pk = load(K.pkg, null);
+  if (pk && pk.text) {
+    const p = await aplicarPacote(pk.text, { etag: pk.etag, source: pk.source, loadedAt: pk.loadedAt }, true);
+    if (p.semAcesso) { await perderAcesso(p.err); return false; }
+    if (!p.ok) { S.pkgText = ''; S.etag = ''; }
   }
+  return true;
+}
+
+async function entrarNoApp() {
+  if (!(await restaurar())) return;
+  if (S.pkgText) guardar();         // garante o cofre (e leva para ele o que veio da versão anterior)
+  esconderLogin();
+  montar();
+}
+
+let montado = false;
+function montar() {
+  if (montado) { render(); poll(); return; }
+  montado = true;
   render(); renderBell();
   if (window.PSNotif && PSNotif.versao === VERSION) { PSNotif.iniciar(); $('btNotif').onclick = () => PSNotif.tocarBotao(); renderBanners(); }
+  $('btSair').onclick = sair;
+  $('quem').textContent = S.cred ? S.cred.matricula : '';
 
   document.addEventListener('click', e => {
     const it = e.target.closest('[data-id]');
@@ -834,6 +942,18 @@ function init() {
   setInterval(tick, TICK_MS);
   poll();
 
-  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
 }
-init();
+
+async function iniciar() {
+  $('ver').textContent = VERSION;
+  $('loginForm').addEventListener('submit', fazerLogin);
+  $('loginVer').onclick = () => { const i = $('loginChave'); i.type = i.type === 'password' ? 'text' : 'password'; $('loginVer').textContent = i.type === 'password' ? 'mostrar' : 'ocultar'; };
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
+  if (!PSCripto.temCripto) { mostrarLogin('Este navegador não tem criptografia. Abra o app pelo endereço https.'); return; }
+  S.cred = await PSCripto.lerCred();
+  if (!S.cred) { mostrarLogin(); return; }
+  await entrarNoApp();
+}
+if (!window.PSCripto || PSCripto.versao !== VERSION) {
+  document.body.innerHTML = '<p style="padding:24px;font:16px system-ui">O app está numa versão diferente da dos arquivos de segurança. Feche e abra o app de novo para atualizar.</p>';
+} else iniciar();

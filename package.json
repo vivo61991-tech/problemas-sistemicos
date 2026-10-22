@@ -1,0 +1,5 @@
+{
+  "name": "problemas-sistemicos",
+  "private": true,
+  "scripts": { "test": "node --test tests/cripto.test.js tests/formato.test.js" }
+}

@@ -1,12 +1,12 @@
-/* Problemas Sistêmicos — Notificações (notificacao.txt)
+/* Problemas Sistêmicos — Notificações (notificacao.txt, que vem dentro do dados.json cifrado)
    Formato: UTF-8, tabulação, cabeçalho na 1ª linha, 1 notificação por linha.
    Colunas: ID, TIPO, TITULO, TEXTO, DATA_INICIO, DATA_FIM, OBRIGATORIO, STATUS, DATA_ATUALIZACAO.
    TEXTO: quebra de linha como \n, barra invertida como \\; marcações {b} {i} {s} {m} {roxo} {verde} {laranja} {pink} {link=…}…{/link}.
    Vale só STATUS = ATIVO e dentro das datas (sem início = já vale; sem fim = vale até alguém desativar). */
 (function () {
   'use strict';
-  const VERSAO = '1.17.0';
-  const K = { dados: 'ps.notif', lidas: 'ps.notif.lidas' };
+  const VERSAO = '1.18.0';
+  const K = { lidas: 'ps.notif.lidas' };
   const OBRIG = ['ID', 'TIPO', 'TITULO', 'TEXTO'];
   const TAGS = ['b', 'i', 's', 'm', 'roxo', 'verde', 'laranja', 'pink', 'link'];
   const ORDEM = { CRITICO: 0, AVISO: 1, INFORMACAO: 2, INTERROGACAO: 3 };
@@ -112,17 +112,17 @@
 
   // texto recebido do repositório (null = arquivo não existe)
   function aplicar(texto, meta) {
-    if (texto == null) { N.itens = []; N.texto = ''; N.avisos = []; N.erro = ''; save(K.dados, null); atualizar(); return { ok: true }; }
+    if (texto == null) { N.itens = []; N.texto = ''; N.avisos = []; N.erro = ''; atualizar(); return { ok: true }; }
     if (texto === N.texto) return { ok: true, igual: true };
     const r = ler(texto);
     if (!r.ok) { N.erro = r.err; atualizar(); return r; }                   // mantém as últimas válidas
     N.itens = r.itens; N.avisos = r.avisos; N.erro = ''; N.texto = texto;
     if (meta && meta.etag) N.etag = meta.etag;
-    save(K.dados, { text: texto, etag: N.etag });
     atualizar();
     return r;
   }
-  function carregarGuardado() { const g = load(K.dados, null); if (g && g.text) { const r = ler(g.text); if (r.ok) { N.itens = r.itens; N.avisos = r.avisos; N.texto = g.text; N.etag = g.etag || ''; } } }
+  // As notificações NÃO ficam guardadas em texto aberto: vêm dentro do dados.json cifrado (o app abre o pacote guardado ao iniciar).
+  // No aparelho fica só o que já foi lido (id + versão), que não tem conteúdo.
 
   // ---------- topo: ícone + contador ----------
   function renderBotao(at) {
@@ -212,7 +212,7 @@
 
   window.PSNotif = {
     versao: VERSAO, ler, html, ativas, aplicar, atualizar, tocarBotao, fechar,
-    iniciar() { carregarGuardado(); N.pronto = true; atualizar(); },
+    iniciar() { N.pronto = true; atualizar(); },
     aberto: () => !!N.modal,
     consumirPop: () => { if (N.ignorarPop) { N.ignorarPop = false; return true; } return false; },
     etag: () => N.etag,

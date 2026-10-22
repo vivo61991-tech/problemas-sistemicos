@@ -1,0 +1,45 @@
+{
+ "pacote": {
+  "app": "problemas-sistemicos",
+  "v": 1,
+  "gerado_em": "2026-10-22T17:36:30+00:00",
+  "kdf": {
+   "alg": "PBKDF2-SHA256",
+   "iter": 600000
+  },
+  "acessos": {
+   "d124856db08c716e6c843f924e24c1f22d865346d173545664831cfc197c2ed2": {
+    "salt": "aSiC1PDiKIXbGXvxJ0S95A==",
+    "iv": "ZvN2RTa8iQwGttfo",
+    "ct": "T4hXYnW5OAQvwi/4xrC1QtDkU1sOQRLlSAeapDaXKOw6f1yUIbWj9nnXlW9hZ8ei"
+   },
+   "0fffb3d2173922f057a16aa4ddb64e5d4154e7b946a84c7e3fbce2626d70a678": {
+    "salt": "f7jdoDsQGsu2Cc0/wv1Kvw==",
+    "iv": "fdWYSEINE+cnyfTy",
+    "ct": "0Tt1bD9m4RQjrNKM9V98Qj3g9euZJWNKlRf08BkAS4flT9nati5qC8Wm4/I2yJo6"
+   }
+  },
+  "dados": {
+   "iv": "IkHK1WYjS2BTDhbu",
+   "ct": "Hvjij0CFoVxL/CmcyU6i/pN7OauKU0nvhRiexyxWyJerJ10jtI8Axda5y1oQFlyvrwF/4ia+coGQRo2JQzysbpfsV+1VDelvCKzN07+NnAPJtARVoqQR8A5XE5Mzs4KuT2TjGY6aN7zq788aNU9aDzT9bMlMuD4mCtevKqRwOhQSUcYJXyg3CLyfJRBgBqweH8G7Bgnf0hfXvpopIkMDLynSbIPmJx1rw5yIcs2vRx+Mz/AEN5EZhVilVj9YLzU5Jzdnuzpik2Sbrp1hjlLdAiG7L+ddDcq3eB7d4qBpbTVCU0DxOGBZbC5yf55EU3wasWSbdAN5ISJKyspnUKTP7AbGhJDchiAGWKb4VImPDmqvoq+hTACl5x4meyAc6DBioj09827v637AVqErO37cImVeQPQZWmNNUiD6LfOJDFoYeR0IVFhitOSVCyKi+WC9qZ4ZeAs9+qiC9Ov0VeV6sbmLKFmwpifKDXXtr83xLAVB0wNmk5h3KYZULGe0BUzSAVH3WufMrkK5s5hNMVxm5m5ODoPjUaleB8HdLfe/uu0GQSKIGzzzxwmswyOU2xlrWuRfP+knM4defvP74DBHfIwQB7zeR591xI0nIxGITPcav/gyCVGYZubrDEoXf7fAH3j2rWgGpHM3kUBhda2LXWxY7KBrkfXbLOlCN9tiWHS8/SBqxyUuvKG1nJM12qtkpPjcfd0BYHlWgo8WtLLMPxmOY9CQVXfm8h2IfCe3q5FeoFeMMx2dqF9e312B281Jp94k9tc7P6nbbpWtZa8tgg0GA8AqpH0qrZMJXNCkUxXNdCmlIEZt5hMxYSp+LE1tFqoctAjhxCspc59h6WcM"
+  },
+  "notificacoes": {
+   "iv": "6Hc2HPCtHseEtM41",
+   "ct": "w/4RCe1fSwg0xRZismcH96nENRAyMuXooxMdbY0gdFkLyAmCRlkFg3KVy4jwtjXa1X1+ijPo0gyNxlRflntWtlp8ymt7c8/xbFsVRSrcqJNmhczOM4yYU0Urg+6lHEhRCXHisCYaf+Wqa8HRpNB53yyMmf8IUlnRdbX9GJShswgwqq6E+h16jk84+9zV5wYOTrPuvLP+1D6Ramtql4ruxXgmLBYctVKXgSEvJq1Fk+BJEau9E9uZXpJi8Y0garEOlBVG9wJ4ouYYRiNAQsrLebSbociAEcJKUUbifRp4uXIy6ImEPq1krBE2WJLboYsUZN445uqJN05DJ3AIa88kD50Geaafd5AcxFELz3m5TrYVUjiAh9ZywMFYax6xrDCE+PQgs7MpNMLNm5GOQhTVCMA+QstEVkJGLgM1pLzI0aRglzshdhCFw9WIF8TNq4pgyvAy+6oK/u9VPqq2UsrSnapKbwO1mErmPvYTK8TGWOvQLpR/Y2ny3KZZBbkbvdZvO0RsnvVv2A=="
+  }
+ },
+ "acessos_teste": [
+  {
+   "matricula": "A0001",
+   "chave": "ABCD-2345-EFGH-6789"
+  },
+  {
+   "matricula": "B0002",
+   "chave": "Girassól 2026!"
+  }
+ ],
+ "esperado": {
+  "dados": "ID\tSISTEMA\tCHAMADO\tSTATUS\tCRITICIDADE\tEVOLUCAO\tSEGMENTO\tIMPACTO_OPERACIONAL\tDATA_INICIO\tDATA_FIM\tTIPO_FALHA\tGRUPOS_RESPONSAVEIS\tGRUPOS_IMPACTADOS\tAREA_ACIONADA\tALERTA_ENVIADO\tDATA_ATUALIZACAO\tDADO_ATUALIZADO\tTEMPO_DECORRIDO\tFLAG\n311\tWDE\tINC5270423\tABERTO\tP3\tEM ANÁLISE\tB2B, B2C\tFalha para realizar transferência\t20/10/26 08:22:00,000000000\t\tINDISPONIBILIDADE PARCIAL\tCCGI - CIM\tCENTRALIZADA, CENTRO DE OPERAÇÕES\tCCGI / Contact Center\t0\t20/10/26 08:39:31,000000000\t\t\t\n310\tSIGMA FIBRA\t\tFECHADO\tP3\tNORMALIZADO\tB2C\t\t19/10/26 12:00:00,000000000\t19/10/26 14:00:00,000000000\tINTERMITÊNCIA\t\t\t\t0\t19/10/26 18:19:16,000000000\t\t\t\n",
+  "notificacoes": "ID\tTIPO\tTITULO\tTEXTO\tDATA_INICIO\tDATA_FIM\tOBRIGATORIO\tSTATUS\tDATA_ATUALIZACAO\n1\tCRITICO\tPortal fora do ar\tO {b}Portal{/b} caiu {pink}agora{/pink}.\\n\\nContorno: {link=https://exemplo.com}site{/link}\\\\fim tab\t2026-10-22 08:00:00\t\tS\tATIVO\t2026-10-22 09:00:00\n2\tINFORMACAO\tAviso com acentuação: ação, coração\tTexto simples.\t\t2026-11-01 18:00:00\tN\tATIVO\t2026-10-22 09:30:00\n"
+ }
+}
