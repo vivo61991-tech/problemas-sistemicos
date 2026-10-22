@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.17.0)
+# Problemas Sistêmicos (v1.18.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -20,7 +20,7 @@ TXT do SQL Developer, separado por **tabulação**, cabeçalho na 1ª linha.
 ## Páginas (menu de baixo)
 A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fixa e visível ao rolar.
 
-1. **Ocorrências**: no topo, um card grande para cada chamado em andamento, com fundo branco tingido pela cor do tipo de falha e texto no tom escuro da mesma cor:
+1. **Ocorrências**: no topo, um card grande para cada chamado em andamento, claro e "flutuando" sobre o fundo (sombra suave, cantos de 20px); a cor do tipo de falha fica na cápsula do tipo e na barra do dia:
    - nome do sistema numa linha só (nome grande termina em "…") e, à direita, o **ID** da solicitação no sistêmico (cápsula só com borda);
    - o impacto (até 2 linhas; o texto completo fica no detalhe) e a cápsula do tipo de falha por extenso seguida dos segmentos: "Indisponibilidade parcial **para B2B e B2C**";
    - o número do chamado não aparece no card, só no detalhe (toque no card);
@@ -66,6 +66,7 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 - Falha sempre em tons de vermelho a amarelo (rosa e laranja da empresa): Indisp. total `#D61F4F`, Indisp. parcial `#F2603E`, Intermitência `#FF9901`, Lentidão `#FFC629`. Total de todos os sistemas: rosa escuro `#B4245E`.
 - **Verde** para "sem ocorrência" (card do topo, dia sem chamado) e para o selo de card novo.
 - Chamado encerrado e indevido: neutro (cinza-lilás).
+- **Visual (v1.18):** fundo da página em degradê lilás bem suave, fixo; cards, listas e caixas brancos com sombra suave, sem borda (no escuro, roxo-escuro com sombra mais forte). Menu de baixo sem linha de divisão, no tom do fundo; o ícone da página atual fica **preenchido** em roxo. Botões do topo em vidro translúcido. A bolinha do "Ao vivo" continua como antes.
 
 ## Em andamento
 - Chamado em andamento = `STATUS` ABERTO. Status desconhecido conta como em andamento enquanto não tiver `DATA_FIM`. FECHADO e INDEVIDO nunca contam.
