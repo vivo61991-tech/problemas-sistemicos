@@ -5,12 +5,24 @@ PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, 
 ## Acesso e segurança
 O site é **público** (GitHub Pages), então tudo o que ele publica vem **criptografado**. O app não consulta nada interno: quem lê o IPTBM, cifra e publica é o **MAPI**.
 
-- **Entrar:** matrícula + chave de acesso. Quem libera, remove, troca a chave e envia o convite é o administrador, na aba **Magic → Problemas Sistêmicos · App** do MAPI.
+- **Entrar:** matrícula + chave de acesso. Quem libera, remove, troca a chave e envia o convite é o administrador, na aba **Magic → Problemas Sistêmicos · App** do MAPI. A pessoa também pode **pedir acesso pelo app** (veja abaixo).
 - **Chave:** o padrão é um **código sorteado** (`XXXX-XXXX-XXXX-XXXX`, 80 bits). Como o arquivo é público, uma chave curta poderia ser descoberta por tentativa; por isso o MAPI exige **mínimo de 8 letras ou números** para chave escolhida à mão, e recomenda o código sorteado. Maiúsculas, acentos, espaços e hífens não contam.
 - **Como cifra:** a chave da pessoa sai da chave digitada por PBKDF2-SHA256 (600 mil iterações, salt próprio) e abre a "chave dos dados", que vem embrulhada para cada pessoa dentro do `dados.json`. Os dados e as notificações usam AES-GCM, cada um com IV próprio. A chave dos dados muda a **cada publicação**.
 - **No aparelho:** depois do primeiro acesso, a chave da pessoa fica guardada como `CryptoKey` **não extraível** (a chave digitada não é guardada). O pacote guardado continua cifrado, e o registro de mudanças vai para um **cofre cifrado** com uma chave do próprio aparelho. Nada de chamado, sistema ou notificação fica em texto aberto no armazenamento do navegador.
 - **Acesso removido** (ou chave trocada) no MAPI: na próxima conferência o app **apaga tudo** o que guardou e volta para a tela de entrada. O botão **Sair** (no rodapé) faz o mesmo à mão.
 - **Limite honesto:** remover um acesso vale a partir da publicação seguinte. Quem já abriu versões antigas (o histórico do Git guarda todas) mantém o que viu. Se uma chave vazar, remova o acesso e gere outra.
+
+## Pedir acesso pelo app
+Com o endereço da caixa de entrada em `config.js` (`caixa`), a tela de entrada ganha **Solicitar acesso**: matrícula, nome, **e-mail** e (opcional) o motivo. O pedido vai para a caixa (Cloudflare), o **MAPI busca**, um administrador aprova e a chave de acesso segue **por e-mail**; o app mostra o andamento (*Em análise → Aprovado / Recusado*) e, aprovado, leva para a entrada com a matrícula já preenchida. Sem `caixa` no `config.js` nada disso aparece.
+- A caixa guarda os dados do pedido só até o MAPI confirmar o recebimento. O e-mail digitado não é verificado: o administrador confere antes de aprovar.
+- O código do pedido (`PS-XXXXXXXX`) e um token ficam só neste aparelho e servem apenas para acompanhar o próprio pedido.
+
+## Avisos no celular (push)
+O sino liga os avisos **neste aparelho**: novos chamados, mudanças de status e as notificações marcadas "avisar por push" chegam **mesmo com o app fechado**. O texto vem cifrado de ponta a ponta do MAPI para o aparelho (o serviço de push do navegador só repassa bytes).
+- Precisa de `caixa` no `config.js` e de o MAPI ter publicado (a chave pública do push vem dentro do `dados.json`). Sem isso o sino continua avisando só com o app aberto em segundo plano.
+- **iPhone:** o app precisa estar instalado na tela de início (iOS 16.4 ou mais novo). Android e desktop funcionam direto no navegador.
+- Ligar pede a permissão de notificação. Sair do app, remover o acesso ou desligar o sino cancela a inscrição.
+- Se o aparelho ficar sem receber, abra o app: ele confere e refaz a inscrição sozinho.
 
 ## Como os dados chegam
 - O MAPI publica `dados.json` na raiz do repositório, junto do `index.html`. Sem mudança, não cria commit.
@@ -96,7 +108,8 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 1. No repositório fica só o app (sem dados). O `dados.json` é criado e atualizado **pelo MAPI**; não edite nem suba esse arquivo à mão.
 2. Ative o GitHub Pages (branch principal, pasta raiz).
 3. No MAPI (`.env`): `SIS_APP_GITHUB_TOKEN` (token fine-grained com Contents read/write só neste repositório), `SIS_APP_GITHUB_REPO`, `SIS_APP_URL` e `SIS_APP_SECRET_KEY`. Na aba Magic → Problemas Sistêmicos · App: cadastre os acessos, entregue os códigos e ligue a publicação automática.
-4. A cada mudança no app, aumente a versão em `app.js` (`VERSION`), `painel.js` (`VERSAO`), `notif.js` (`VERSAO`), `cripto.js` (`VERSAO`) e `sw.js` (`VERSION`), com o mesmo número, e nas `?v=` do `index.html`. O app confere `cripto.js` e `painel.js` com a própria versão.
+4. **Pedidos e avisos (opcional):** publique a caixa de entrada (`worker/README.md`), ponha o endereço em `config.js` e configure `SIS_APP_CAIXA_*` no MAPI.
+5. A cada mudança no app, aumente a versão em `app.js` (`VERSION`), `painel.js`, `notif.js`, `cripto.js`, `caixa.js`, `push.js` (`VERSAO`) e `sw.js` (`VERSION`), com o mesmo número, e nas `?v=` do `index.html`. O app confere os arquivos de segurança com a própria versão.
 
 ## Testes
-`node --test tests/cripto.test.js tests/formato.test.js` (Node 18 ou mais novo, sem dependências). Usam `tests/fixtures/pacote.json`, gerado pelo MAPI (`tests/gerar_fixture_sis_app.py` do repositório do MAPI), e conferem que o app abre o que o MAPI cifra e lê os TXT que o MAPI gera. Se o formato do pacote ou dos TXT mudar, gere o arquivo de novo.
+`npm test` (ou `node --test tests/cripto.test.js tests/formato.test.js tests/caixa.test.js tests/push.test.js`) (Node 18 ou mais novo, sem dependências). Usam `tests/fixtures/pacote.json`, gerado pelo MAPI (inclui o segredo de push e uma prova de inscrição calculada pelo MAPI, que o app precisa reproduzir) (`tests/gerar_fixture_sis_app.py` do repositório do MAPI), e conferem que o app abre o que o MAPI cifra e lê os TXT que o MAPI gera. Se o formato do pacote ou dos TXT mudar, gere o arquivo de novo.

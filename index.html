@@ -508,11 +508,17 @@ body.ps-login header.top,body.ps-login main,body.ps-login nav.tabs{display:none}
 .login-btn{width:100%;margin-top:6px;border:0;border-radius:12px;padding:13px 16px;font-weight:700;font-size:16px;color:#fff;background:linear-gradient(135deg,var(--p800),var(--p700));cursor:pointer}
 .login-btn:disabled{opacity:.65;cursor:default}
 .login-ajuda{margin:16px 0 0;text-align:center;color:var(--ink3);font-size:12.5px}
+.login-card[hidden]{display:none}
+.login-btn.sec{background:none;color:var(--accent);border:1px solid var(--line);margin-top:10px}
+.ped-proto{font-family:ui-monospace,Consolas,monospace;font-size:21px;letter-spacing:.05em;text-align:center;margin:4px 0 12px;color:var(--ink)}
+.selo{display:inline-block;border-radius:999px;padding:5px 14px;font-weight:700;font-size:14px}
+.selo.pendente{background:var(--warnbg);color:var(--warn)}.selo.aprovado{background:var(--okbg);color:var(--ok)}
+.selo.recusado,.selo.revogado{background:var(--badbg);color:var(--bad)}
 </style>
 </head>
 <body>
 <section id="login" class="login" hidden aria-label="Entrar">
-  <div class="login-card">
+  <div class="login-card" id="loginCard">
     <div class="login-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
     <h1>Problemas Sistêmicos</h1>
     <p class="login-sub">Entre com a matrícula e a chave de acesso que você recebeu.</p>
@@ -527,7 +533,36 @@ body.ps-login header.top,body.ps-login main,body.ps-login nav.tabs{display:none}
       <div class="login-erro" id="loginErro" role="alert"></div>
       <button type="submit" class="login-btn" id="loginBtn">Entrar</button>
     </form>
-    <p class="login-ajuda">Não tem acesso? Peça ao administrador do MAPI.</p>
+    <p class="login-ajuda">Não tem acesso? <button type="button" class="lnk" id="loginPedir" hidden>Solicitar acesso</button><span id="loginSemCaixa"> Peça ao administrador do MAPI.</span></p>
+  </div>
+  <div class="login-card" id="pedidoCard" hidden>
+    <div class="login-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></div>
+    <h1>Solicitar acesso</h1>
+    <form id="pedidoForm" autocomplete="off" novalidate>
+      <p class="login-sub">Preencha seus dados. Um administrador analisa e, se aprovar, envia a chave de acesso para o seu e-mail.</p>
+      <label for="pedMat">Matrícula</label>
+      <input id="pedMat" maxlength="20" autocapitalize="characters" autocomplete="off" spellcheck="false">
+      <label for="pedNome">Nome</label>
+      <input id="pedNome" maxlength="120" autocomplete="name">
+      <label for="pedEmail">E-mail corporativo</label>
+      <input id="pedEmail" type="email" maxlength="200" autocomplete="email" inputmode="email" spellcheck="false">
+      <label for="pedJust">Para que vai usar? (opcional)</label>
+      <input id="pedJust" maxlength="300" autocomplete="off">
+      <div class="login-erro" id="pedidoErro" role="alert"></div>
+      <button type="submit" class="login-btn" id="pedidoBtn">Enviar pedido</button>
+      <p class="login-ajuda"><button type="button" class="lnk" id="pedVoltar">Já tenho a chave: entrar</button></p>
+    </form>
+    <div id="pedidoStatus" hidden>
+      <p class="login-sub">Acompanhe seu pedido por aqui.</p>
+      <div class="ped-proto" id="pedProto">—</div>
+      <p style="text-align:center;margin:0 0 10px"><span class="selo pendente" id="pedSelo">Em análise</span></p>
+      <p class="login-sub" id="pedMsg"></p>
+      <div class="login-erro" id="pedErro" role="alert"></div>
+      <button type="button" class="login-btn" id="pedEntrar" hidden>Entrar com a chave</button>
+      <button type="button" class="login-btn sec" id="pedNovo" hidden>Fazer um novo pedido</button>
+      <button type="button" class="login-btn sec" id="pedAtualizar">Atualizar agora</button>
+      <p class="login-ajuda"><button type="button" class="lnk" id="pedVoltar2">Voltar para a entrada</button></p>
+    </div>
   </div>
 </section>
 <header class="top">
@@ -593,7 +628,10 @@ body.ps-login header.top,body.ps-login main,body.ps-login nav.tabs{display:none}
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="config.js?v=1.18.0"></script>
 <script src="cripto.js?v=1.18.0"></script>
+<script src="caixa.js?v=1.18.0"></script>
+<script src="push.js?v=1.18.0"></script>
 <script src="painel.js?v=1.18.0"></script>
 <script src="notif.js?v=1.18.0"></script>
 <script src="app.js?v=1.18.0"></script>

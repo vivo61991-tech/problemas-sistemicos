@@ -75,3 +75,25 @@ test('sem IndexedDB nada é guardado em aberto (o cofre devolve null)', async ()
   assert.equal(await PSCripto.abrirSelo('c1.x.y'), null);
   assert.equal(await PSCripto.lerCred(), null);
 });
+
+test('segredo de push e chave pública VAPID saem do pacote; a prova (MAC) é igual à do MAPI', async () => {
+  const r = await PSCripto.entrar(clone(fx.pacote), 'A0001', 'ABCD-2345-EFGH-6789');
+  assert.equal(r.pushChave, fx.esperado.push_chave);
+  assert.equal(Buffer.from(r.pushSecret).toString('hex'), fx.esperado.push_secret_a0001);
+  const m = fx.esperado.mac;
+  assert.equal(await PSCripto.macInscricao(r.pushSecret, m.endpoint, m.p256dh, m.auth), m.mac);
+  assert.notEqual(await PSCripto.macInscricao(r.pushSecret, m.endpoint + 'x', m.p256dh, m.auth), m.mac);
+  const outra = await PSCripto.entrar(clone(fx.pacote), 'B0002', 'Girassól 2026!');
+  assert.notEqual(Buffer.from(outra.pushSecret).toString('hex'), fx.esperado.push_secret_a0001);   // cada pessoa tem o seu
+});
+
+test('pacote sem push (ou com tk estragado) continua abrindo os dados', async () => {
+  const sem = clone(fx.pacote); delete sem.push; for (const a of Object.values(sem.acessos)) delete a.tk;
+  const r = await PSCripto.entrar(sem, 'A0001', 'ABCD-2345-EFGH-6789');
+  assert.deepEqual([r.pushSecret, r.pushChave], [null, null]);
+  assert.equal(txt(r.dados), fx.esperado.dados);
+  const ruim = clone(fx.pacote); const id = await PSCripto.idDe('A0001'); ruim.acessos[id].tk.ct = Buffer.from('lixo-lixo-lixo-lixo-lixo-lixo-12').toString('base64');
+  const r2 = await PSCripto.entrar(ruim, 'A0001', 'ABCD-2345-EFGH-6789');
+  assert.equal(r2.pushSecret, null);
+  assert.equal(txt(r2.dados), fx.esperado.dados);
+});

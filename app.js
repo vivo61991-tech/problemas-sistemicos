@@ -22,7 +22,7 @@ const TRACK = [['STATUS', 'Status'], ['EVOLUCAO', 'Evolução'], ['DATA_FIM', 'F
 // colunas que continuam sendo lidas (mudanças, conferência), mas não aparecem nos cards nem no detalhe
 const OCULTAS = ['FLAG', 'TEMPO_DECORRIDO', 'DADO_ATUALIZADO', 'DATA_ATUALIZACAO'];
 
-const K = { pkg: 'ps.pkg', cofre: 'ps.cofre', bell: 'ps.bell' };
+const K = { pkg: 'ps.pkg', cofre: 'ps.cofre', bell: 'ps.bell', pushReg: 'ps.pushReg', pedido: 'ps.pedido' };
 // o que versões anteriores (sem login) guardavam em texto aberto no aparelho: é migrado para o cofre e apagado
 const LEGADO = ['ps.data', 'ps.snap', 'ps.log', 'ps.notif'];
 
@@ -233,6 +233,7 @@ const S = {
   log: [],
   snap: null,
   cred: null,             // credencial do aparelho (chave da pessoa, não extraível)
+  pushSecret: null, pushChave: null, pushAtivo: false,   // aviso no celular (vem do pacote; só em memória)
   pkgText: '',            // dados.json (cifrado) da última leitura
   apiPauseUntil: 0,
   busy: false,
@@ -276,6 +277,8 @@ async function aplicarPacote(pkgText, meta, fromStore) {
   const p = applyText(dec(campos.dados), meta, fromStore);
   if (!p.ok) return p;
   S.pkgText = pkgText;
+  S.pushSecret = campos.pushSecret; S.pushChave = campos.pushChave;
+  sincronizarPush();
   if (window.PSNotif && PSNotif.versao === VERSION) PSNotif.aplicar(campos.notificacoes == null ? null : dec(campos.notificacoes), meta);
   return p;
 }
@@ -293,6 +296,7 @@ function guardar() {
 
 // apaga TUDO o que este app guardou no aparelho (sair, ou acesso removido) e volta para a tela de entrada
 async function limparAparelho() {
+  try { if (window.PSPush && 'serviceWorker' in navigator) await PSPush.desinscrever(await navigator.serviceWorker.getRegistration()); } catch (e) { /* segue */ }
   try { await PSCripto.apagarTudo(); } catch (e) { /* segue */ }
   try { Object.keys(localStorage).filter(k => k.startsWith('ps.')).forEach(k => localStorage.removeItem(k)); } catch (e) { /* segue */ }
 }
@@ -395,7 +399,7 @@ function announce(changes) {
   const imp = changes.filter(c => c.kind !== 'dados');
   if (!imp.length) return;
   toast(imp.length === 1 ? changeText(imp[0]) : imp.length + ' mudanças nos chamados · toque para ver', true);
-  if (document.hidden && load(K.bell, false) && 'Notification' in window && Notification.permission === 'granted') {
+  if (document.hidden && !S.pushAtivo && load(K.bell, false) && 'Notification' in window && Notification.permission === 'granted') {
     const title = imp.length === 1 ? changeText(imp[0]) : imp.length + ' mudanças nos chamados';
     const body = imp.length === 1 ? (imp[0].inc || '') : imp.slice(0, 4).map(changeText).join('\n');
     const opt = { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'ps-mudancas', renotify: true };
@@ -844,8 +848,42 @@ function renderBell() {
   $('btBell').classList.toggle('on', !!on);
   $('btBell').setAttribute('aria-pressed', on ? 'true' : 'false');
 }
+// push disponível: caixa configurada + chave e segredo vindos do pacote + navegador com Push API
+const pushOk = () => !!(window.PSPush && PSPush.disponivel({ caixa: window.PSCaixa, segredo: S.pushSecret, chave: S.pushChave }));
+async function registrarPush(forcar) {
+  const reg = await navigator.serviceWorker.ready;
+  const r = await PSPush.registrar({ reg, chave: S.pushChave, segredo: S.pushSecret, cred: S.cred, caixa: PSCaixa, cripto: PSCripto,
+    forcar, guardado: load(K.pushReg, '') });
+  if (r.registrou) save(K.pushReg, r.marca);
+  S.pushAtivo = true;
+  return r;
+}
+// com o sino ligado, confere a cada abertura/atualização se o aparelho continua inscrito (a inscrição pode mudar)
+async function sincronizarPush() {
+  try {
+    if (!load(K.bell, false) || !pushOk() || Notification.permission !== 'granted') { if (!load(K.bell, false)) S.pushAtivo = false; return; }
+    await registrarPush(false);
+  } catch (e) { S.pushAtivo = false; }
+  renderBell();
+}
+async function togglePush() {
+  if (load(K.bell, false) && Notification.permission === 'granted') {
+    try { await PSPush.desinscrever(await navigator.serviceWorker.ready); } catch (e) { /* segue */ }
+    try { localStorage.removeItem(K.pushReg); } catch (e) { /* segue */ }
+    save(K.bell, false); S.pushAtivo = false; renderBell(); toast('Avisos neste aparelho desligados.'); return;
+  }
+  let p = Notification.permission;
+  if (p === 'default') { try { p = await Notification.requestPermission(); } catch (e) { p = 'denied'; } }
+  if (p !== 'granted') { toast('Os avisos estão bloqueados nas configurações do navegador para este site.'); renderBell(); return; }
+  try { await registrarPush(true); }
+  catch (e) { toast('Não consegui ligar os avisos: ' + (e.message || 'tente de novo') + '. Se estiver no iPhone, abra o app pela tela de início.', false, 7000); renderBell(); return; }
+  if (!save(K.bell, true)) { toast('Não foi possível guardar essa escolha no aparelho.'); return; }
+  renderBell();
+  toast('Avisos ligados: você será avisado de novos chamados e mudanças, mesmo com o app fechado. Pode levar alguns minutos para valer.', false, 7000);
+}
 async function toggleBell() {
   if (!('Notification' in window)) { toast('Este aparelho não permite avisos pelo navegador. As mudanças continuam aparecendo no app.'); return; }
+  if (pushOk()) return togglePush();
   if (load(K.bell, false) && Notification.permission === 'granted') {
     save(K.bell, false); renderBell(); toast('Avisos no aparelho desligados.'); return;
   }
@@ -855,6 +893,81 @@ async function toggleBell() {
   if (!save(K.bell, true)) { toast('Não foi possível guardar essa escolha no aparelho.'); return; }
   renderBell();
   toast('Avisos ligados: com o app aberto em segundo plano, cada mudança de status gera um aviso.');
+}
+
+/* ---------- pedido de acesso (pela caixa de entrada; o MAPI busca e o administrador decide) ---------- */
+let pedidoT = 0;
+const PEDIDO_TEXTO = {
+  pendente: 'Seu pedido foi recebido e está em análise. Quando for aprovado, a chave de acesso chega por e-mail. Esta tela atualiza sozinha.',
+  aprovado: 'Pedido aprovado! A chave de acesso foi enviada para o e-mail informado. Use-a na tela de entrada.',
+  recusado: 'Seu pedido foi recusado.',
+  revogado: 'Este acesso foi removido.'
+};
+function mostrarCard(qual) {
+  $('loginCard').hidden = qual !== 'login';
+  $('pedidoCard').hidden = qual !== 'pedido';
+  clearTimeout(pedidoT);
+}
+function abrirPedido() {
+  mostrarCard('pedido');
+  const p = load(K.pedido, null);
+  if (p && p.protocolo) { desenharPedido(p, null); atualizarPedido(); } else { $('pedidoForm').hidden = false; $('pedidoStatus').hidden = true; $('pedidoErro').textContent = ''; $('pedMat').focus(); }
+}
+function voltarLogin(mat) { mostrarCard('login'); if (mat) $('loginMat').value = mat; $('loginErro').textContent = ''; }
+function desenharPedido(p, s) {
+  $('pedidoForm').hidden = true; $('pedidoStatus').hidden = false;
+  $('pedProto').textContent = p.protocolo;
+  const st = s ? s.status : 'pendente';
+  const selo = $('pedSelo');
+  selo.textContent = { pendente: 'Em análise', aprovado: 'Aprovado', recusado: 'Recusado', revogado: 'Removido' }[st] || st;
+  selo.className = 'selo ' + (PEDIDO_TEXTO[st] ? st : 'pendente');
+  $('pedMsg').textContent = (PEDIDO_TEXTO[st] || '') + (s && s.motivo ? ' Motivo: ' + s.motivo : '');
+  $('pedEntrar').hidden = st !== 'aprovado';
+  $('pedNovo').hidden = !(st === 'recusado' || st === 'revogado');
+  $('pedErro').textContent = '';
+}
+async function atualizarPedido() {
+  const p = load(K.pedido, null);
+  if (!p) return;
+  clearTimeout(pedidoT);
+  try {
+    const s = await PSCaixa.consultar(p);
+    desenharPedido(p, s);
+    if (s.status === 'pendente') pedidoT = setTimeout(() => { if (!$('pedidoCard').hidden && !document.hidden) atualizarPedido(); else if (!$('pedidoCard').hidden) pedidoT = setTimeout(atualizarPedido, 20000); }, 20000);
+  } catch (e) {
+    if (e.status === 404) { try { localStorage.removeItem(K.pedido); } catch (x) { /* segue */ } abrirPedido(); return; }   // pedido antigo, já apagado da caixa
+    $('pedErro').textContent = e.message;
+    pedidoT = setTimeout(atualizarPedido, 30000);
+  }
+}
+async function enviarPedido(ev) {
+  ev.preventDefault();
+  const d = { matricula: $('pedMat').value, nome: $('pedNome').value, email: $('pedEmail').value, justificativa: $('pedJust').value };
+  const erro = $('pedidoErro'), btn = $('pedidoBtn');
+  erro.textContent = '';
+  if (!d.matricula.trim() || !d.nome.trim() || !d.email.trim()) { erro.textContent = 'Informe matrícula, nome e e-mail.'; return; }
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  try {
+    const r = await PSCaixa.solicitar(d);
+    save(K.pedido, { protocolo: r.protocolo, token: r.token, matricula: PSCripto.normMatricula(d.matricula) });
+    $('pedidoForm').reset();
+    abrirPedido();
+  } catch (e) {
+    erro.textContent = e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Enviar pedido';
+  }
+}
+function iniciarPedido() {
+  if (!window.PSCaixa || !PSCaixa.configurada()) return;
+  $('loginPedir').hidden = false; $('loginSemCaixa').hidden = true;
+  $('loginPedir').onclick = abrirPedido;
+  $('pedidoForm').addEventListener('submit', enviarPedido);
+  $('pedVoltar').onclick = () => voltarLogin();
+  $('pedVoltar2').onclick = () => voltarLogin();
+  $('pedAtualizar').onclick = atualizarPedido;
+  $('pedEntrar').onclick = () => voltarLogin((load(K.pedido, null) || {}).matricula);
+  $('pedNovo').onclick = () => { try { localStorage.removeItem(K.pedido); } catch (e) { /* segue */ } abrirPedido(); };
 }
 
 /* ---------- início ---------- */
@@ -947,6 +1060,7 @@ function montar() {
 async function iniciar() {
   $('ver').textContent = VERSION;
   $('loginForm').addEventListener('submit', fazerLogin);
+  iniciarPedido();
   $('loginVer').onclick = () => { const i = $('loginChave'); i.type = i.type === 'password' ? 'text' : 'password'; $('loginVer').textContent = i.type === 'password' ? 'mostrar' : 'ocultar'; };
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
   if (!PSCripto.temCripto) { mostrarLogin('Este navegador não tem criptografia. Abra o app pelo endereço https.'); return; }
@@ -954,6 +1068,6 @@ async function iniciar() {
   if (!S.cred) { mostrarLogin(); return; }
   await entrarNoApp();
 }
-if (!window.PSCripto || PSCripto.versao !== VERSION) {
+if (!window.PSCripto || PSCripto.versao !== VERSION || !window.PSCaixa || PSCaixa.versao !== VERSION || !window.PSPush || PSPush.versao !== VERSION) {
   document.body.innerHTML = '<p style="padding:24px;font:16px system-ui">O app está numa versão diferente da dos arquivos de segurança. Feche e abra o app de novo para atualizar.</p>';
 } else iniciar();

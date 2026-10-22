@@ -10,6 +10,9 @@
               ct = a chave dos dados, cifrada (AES-GCM) com a chave da pessoa
      dados    {iv, ct}                    o sistemas.txt, cifrado (AES-GCM) com a chave dos dados
      notificacoes {iv, ct} (OPCIONAL)     o notificacao.txt, cifrado com a MESMA chave dos dados e um iv próprio
+     push     {chave} (OPCIONAL)          chave pública VAPID (não é segredo): o app precisa dela para se inscrever em push
+     acessos[id].tk {iv, ct} (OPCIONAL)   o "segredo de push" da pessoa, cifrado com a chave dela: só quem abre o pacote o
+                                          conhece, e é com ele que o app prova ao MAPI que a inscrição de push é legítima
 
    A chave da pessoa sai da chave de acesso dela (PBKDF2 com o salt dela). Depois do primeiro login fica guardada no
    aparelho como CryptoKey NÃO extraível: a chave digitada não é guardada, e o script não consegue ler a chave da
@@ -81,7 +84,21 @@
     const dados = await decifrar(k, pacote.dados, 'Os dados publicados estão corrompidos.');
     let notificacoes = null;
     if (pacote.notificacoes != null) notificacoes = await decifrar(k, pacote.notificacoes, 'As notificações publicadas estão corrompidas.');
-    return { dados, notificacoes };
+    // push é opcional: qualquer problema aqui só desliga o aviso no celular, nunca impede de ver os chamados
+    let pushSecret = null;
+    const tk = pacote.acessos[id] && pacote.acessos[id].tk;
+    if (tk && typeof tk.iv === 'string' && typeof tk.ct === 'string') {
+      try { pushSecret = new Uint8Array(await C.subtle.decrypt({ name: 'AES-GCM', iv: b64(tk.iv) }, chaveUsuario, b64(tk.ct))); } catch (e) { pushSecret = null; }
+    }
+    const pushChave = pacote.push && typeof pacote.push.chave === 'string' ? pacote.push.chave : null;
+    return { dados, notificacoes, pushSecret, pushChave };
+  }
+
+  // prova da inscrição de push: HMAC-SHA256(segredo, endpoint \n p256dh \n auth), em hexadecimal.
+  // Precisa ser IGUAL a sis_app.mac_inscricao do MAPI.
+  async function macInscricao(segredo, endpoint, p256dh, auth) {
+    const k = await C.subtle.importKey('raw', segredo, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    return hex(await C.subtle.sign('HMAC', k, enc.encode(endpoint + '\n' + p256dh + '\n' + auth)));
   }
 
   // primeiro acesso: matrícula + chave -> credencial para guardar no aparelho
@@ -160,7 +177,7 @@
     } catch (e) { return null; }
   }
 
-  const api = { versao: VERSAO, entrar, abrir, lerCred, salvarCred, apagarTudo, selar, abrirSelo, idDe,
+  const api = { versao: VERSAO, entrar, abrir, macInscricao, lerCred, salvarCred, apagarTudo, selar, abrirSelo, idDe,
     normMatricula, normCodigo, codigoValido, temCripto: !!C };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.PSCripto = api;
 })(typeof self !== 'undefined' ? self : this);
