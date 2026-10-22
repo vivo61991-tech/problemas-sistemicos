@@ -122,12 +122,12 @@ const evento = dados => { const e = { esperas: [], waitUntil(p) { e.esperas.push
 
 test('sw: o evento push mostra o aviso do MAPI', async () => {
   const { ouvintes, avisos } = carregarSw();
-  const e = evento(JSON.stringify({ t: 'Problemas Sistêmicos', b: 'WDE: ABERTO → FECHADO', tag: 'ps-mudancas', u: './' }));
+  const e = evento(JSON.stringify({ t: 'Problemas Sistêmicos', b: 'SISTEMA EXEMPLO A: ABERTO → FECHADO', tag: 'ps-mudancas', u: './' }));
   ouvintes.push(e);
   await Promise.all(e.esperas);
   assert.equal(avisos.length, 1);
   assert.equal(avisos[0].t, 'Problemas Sistêmicos');
-  assert.equal(avisos[0].o.body, 'WDE: ABERTO → FECHADO');
+  assert.equal(avisos[0].o.body, 'SISTEMA EXEMPLO A: ABERTO → FECHADO');
   assert.equal(avisos[0].o.tag, 'ps-mudancas');
   assert.equal(avisos[0].o.renotify, true);
   assert.equal(avisos[0].o.icon, 'icons/icon-192.png');

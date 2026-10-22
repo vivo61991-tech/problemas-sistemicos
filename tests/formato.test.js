@@ -43,9 +43,9 @@ test('o app lê o TXT dos chamados que o MAPI gera', () => {
   assert.equal(p.warns.length, 0);
   assert.equal(p.rows.length, 2);
   const r = p.rows.find(x => x.ID === '311');
-  assert.equal(r.SISTEMA, 'WDE');
+  assert.equal(r.SISTEMA, 'SISTEMA EXEMPLO A');
   assert.equal(r.STATUS, 'ABERTO');
-  assert.equal(r.CHAMADO, 'INC5270423');
+  assert.equal(r.CHAMADO, 'INC0000001');
   assert.equal(r.TIPO_FALHA, 'INDISPONIBILIDADE PARCIAL');
   assert.equal(r.GRUPOS_IMPACTADOS, 'CENTRALIZADA, CENTRO DE OPERAÇÕES');
   assert.equal(JSON.stringify([r._ini.getFullYear(), r._ini.getMonth(), r._ini.getDate(), r._ini.getHours(), r._ini.getMinutes()]), '[2026,9,20,8,22]');
