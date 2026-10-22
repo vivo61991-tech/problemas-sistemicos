@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.11.0';
+const VERSION = '1.12.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -189,12 +189,13 @@ function ghRepo() {
   const repo = first && !/\.html?$/i.test(first) ? first : owner + '.github.io';
   return { owner, repo };
 }
-async function fetchApi(gh) {
-  const url = `https://api.github.com/repos/${gh.owner}/${gh.repo}/contents/sistemas.txt`;
+async function fetchApi(gh, arquivo, etag) {
+  const url = `https://api.github.com/repos/${gh.owner}/${gh.repo}/contents/${arquivo}`;
   const headers = { Accept: 'application/vnd.github.raw' };
-  if (S.etag) headers['If-None-Match'] = S.etag;
+  if (etag) headers['If-None-Match'] = etag;
   const res = await fetch(url, { headers, cache: 'no-store' });
   if (res.status === 304) return { same: true, source: 'api' };
+  if (res.status === 404) return { ausente: true, source: 'api' };   // arquivo não existe no repositório
   if (!res.ok) {
     const reset = +res.headers.get('X-RateLimit-Reset');
     const e = new Error('API ' + res.status);
@@ -203,18 +204,29 @@ async function fetchApi(gh) {
   }
   return { text: await res.text(), etag: res.headers.get('ETag') || '', source: 'api' };
 }
-async function fetchFile() {
-  const res = await fetch('sistemas.txt?t=' + Date.now(), { cache: 'no-store' });
+async function fetchFile(arquivo) {
+  const res = await fetch(arquivo + '?t=' + Date.now(), { cache: 'no-store' });
+  if (res.status === 404) return { ausente: true, source: 'arquivo' };
   if (!res.ok) throw new Error('arquivo ' + res.status);
   return { text: await res.text(), source: 'arquivo' };
 }
-async function getText() {
+async function getText(arquivo, etag) {
   const gh = ghRepo();
   if (gh && Date.now() >= S.apiPauseUntil) {
-    try { return await fetchApi(gh); }
+    try { return await fetchApi(gh, arquivo, etag); }
     catch (e) { S.apiPauseUntil = e.retryAt || Date.now() + 10 * 60 * 1000; }
   }
-  return fetchFile();
+  return fetchFile(arquivo);
+}
+// notificações: arquivo opcional; qualquer falha aqui não atrapalha os chamados
+async function pollNotif() {
+  if (!window.PSNotif) return;
+  try {
+    const r = await getText('notificacao.txt', PSNotif.etag());
+    if (r.same) return;
+    PSNotif.aplicar(r.ausente ? null : r.text, { etag: r.etag });
+  } catch (e) { /* sem conexão: fica a última cópia guardada */ }
+  renderBanners();
 }
 
 /* ---------- estado ---------- */
@@ -262,7 +274,8 @@ async function poll(manual) {
   S.busy = true;
   $('btRefresh').classList.add('spin');
   try {
-    const r = await getText();
+    const r = await getText('sistemas.txt', S.etag);
+    if (r.ausente) throw new Error('sistemas.txt não encontrado');
     S.net = 'ok';
     S.checkedAt = Date.now();
     if (r.same || r.text === S.text) {
@@ -280,6 +293,7 @@ async function poll(manual) {
     S.net = 'off';
     if (manual) toast('Sem conexão. Mostrando a última cópia guardada.');
   } finally {
+    await pollNotif();
     S.busy = false;
     $('btRefresh').classList.remove('spin');
     renderSync(); renderBanners();
@@ -558,7 +572,8 @@ function renderBanners() {
   if (S.goneWarn) b.push(['warn', `<b>${S.goneWarn} chamados sumiram do arquivo de uma vez.</b> Confira se o arquivo veio completo.`]);
   // erros (vermelho) e alerta de chamados sumidos ficam no topo; avisos de leitura vão para o fim da página
   $('banners').innerHTML = b.map(([c, h]) => `<div class="banner ${c}">${h}</div>`).join('');
-  $('avisos').innerHTML = !S.warns.length ? '' : `<div class="banner warn"><details><summary>${S.warns.length} aviso${S.warns.length > 1 ? 's' : ''} na leitura do arquivo · ver</summary><ul class="warnlist">${S.warns.slice(0, 50).map(w => `<li>${esc(w)}</li>`).join('')}${S.warns.length > 50 ? `<li>… e mais ${S.warns.length - 50}</li>` : ''}</ul></details></div>`;
+  const ws = S.warns.concat(window.PSNotif ? PSNotif.avisos() : []);
+  $('avisos').innerHTML = !ws.length ? '' : `<div class="banner warn"><details><summary>${ws.length} aviso${ws.length > 1 ? 's' : ''} na leitura dos arquivos · ver</summary><ul class="warnlist">${ws.slice(0, 50).map(w => `<li>${esc(w)}</li>`).join('')}${ws.length > 50 ? `<li>… e mais ${ws.length - 50}</li>` : ''}</ul></details></div>`;
 }
 
 /* ---- páginas ---- */
@@ -595,6 +610,7 @@ function tick() {
     el.setAttribute('aria-label', 'Ocupação de hoje das 08h às 21h: ' + barraDiaTxt(x));
   });
   renderSync();
+  if (window.PSNotif) PSNotif.atualizar();   // notificação entra/sai na hora certa pelas datas
   if (S.tab === 'oc' && S.rows.length) renderHoje();
   // painel com chamado em andamento: redesenha a cada minuto (o tempo do aberto cresce)
   if (S.tab === 'painel' && !S.sheet && S.rows.some(isOpen) && now - (S.painelAt || 0) >= 60000) {
@@ -771,6 +787,7 @@ function init() {
     if (!p.ok) { S.text = ''; S.etag = ''; }
   }
   render(); renderBell();
+  if (window.PSNotif && PSNotif.versao === VERSION) { PSNotif.iniciar(); $('btNotif').onclick = () => PSNotif.tocarBotao(); renderBanners(); }
 
   document.addEventListener('click', e => {
     const it = e.target.closest('[data-id]');
@@ -802,8 +819,12 @@ function init() {
     if (e.key === 'Escape') { e.stopPropagation(); fecharSis(); $('pickB').focus(); }
   });
   $('sheetBg').onclick = () => history.back();
-  window.addEventListener('popstate', () => { if (S.sheet) closeSheet(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.sheet) history.back(); });
+  window.addEventListener('popstate', () => {
+    if (window.PSNotif && PSNotif.consumirPop()) return;          // a própria janela de notificação voltou o histórico
+    if (window.PSNotif && PSNotif.aberto()) { PSNotif.fechar(true); return; }
+    if (S.sheet) closeSheet();
+  });
+  document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (window.PSNotif && PSNotif.aberto()) PSNotif.fechar(); else if (S.sheet) history.back(); });
   if (window.PSPainel) PSPainel.gesto($('pgPainel'), () => S.tab === 'painel');
 
   document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - S.checkedAt > 15000) poll(); });

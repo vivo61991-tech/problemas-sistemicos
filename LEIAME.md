@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.11.0)
+# Problemas Sistêmicos (v1.12.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -19,6 +19,19 @@ TXT do SQL Developer, separado por **tabulação**, cabeçalho na 1ª linha.
 
 ## Páginas (menu de baixo)
 A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fixa e visível ao rolar.
+
+## Notificações (`notificacao.txt`)
+- Arquivo **opcional** na raiz do repositório, ao lado do `sistemas.txt`, conferido junto com ele (a cada 1 minuto). Sem o arquivo, nada aparece e os chamados seguem normais.
+- Formato (gerado pelo editor de notificações): UTF-8, tabulação, cabeçalho na 1ª linha, **1 notificação por linha**. Colunas `ID, TIPO, TITULO, TEXTO, DATA_INICIO, DATA_FIM, OBRIGATORIO, STATUS, DATA_ATUALIZACAO`. No TEXTO, quebra de linha = `\n`; marcações `{b} {i} {s} {m} {roxo} {verde} {laranja} {pink} {link=…}…{/link}`.
+- **Vale só STATUS = ATIVO e dentro das datas** (relógio do aparelho, reavaliado a cada poucos segundos, sem precisar de arquivo novo): início e fim → só entre os dois; só início → a partir dele, sem prazo; só fim → já vale, até o fim; sem datas → vale enquanto estiver ativa.
+- **Ícone (megafone)** à esquerda do 🔔, só quando há notificação valendo, com o **número de não lidas** (na cor do tipo mais grave entre elas).
+- Tocar no ícone: com **uma** notificação abre direto; com **mais de uma** abre a **lista** (ícone + título; não lida em destaque com bolinha cheia, lida apagada com bolinha vazia). Cada notificação mostra só o **ícone do tipo**, o **título** e o **texto formatado**, com ✕ para fechar.
+- Ordem: Crítico, Aviso, Informação, Interrogação; dentro do tipo, a mais recente primeiro.
+- Ícones (estilo MsgBox do VBA): Crítico ✕ no círculo vermelho; Aviso ! no triângulo amarelo; Interrogação ? no círculo roxo; Informação ! no círculo verde.
+- **Obrigatória** (OBRIGATORIO = S): abre sozinha ao entrar no app (e quando chega uma nova). Só deixa de contar com o botão **Ciente**; fechar no ✕ não conta, e ela volta a abrir na próxima vez que o app for aberto.
+- Lida = aberta (não obrigatória) ou com Ciente (obrigatória). Fica guardado **no aparelho**. Se a notificação for editada (DATA_ATUALIZACAO nova), volta a ser não lida.
+- Pasta `ferramentas/` (o app não lê): `editor-notificacoes.html` para abrir, criar, formatar e exportar o arquivo, e `notificacao-exemplo.txt`. Para publicar, o arquivo vai para a **raiz** com o nome `notificacao.txt`.
+- Linha com data inválida, fim antes do início ou ID repetido: avisada no alerta amarelo do fim da página. Arquivo com erro: o app mantém as últimas notificações válidas.
 1. **Ocorrências**: no topo, um card grande para cada chamado em andamento, com fundo branco tingido pela cor do tipo de falha e texto no tom escuro da mesma cor:
    - nome do sistema numa linha só (nome grande termina em "…") e, à direita, o **ID** da solicitação no sistêmico (cápsula só com borda);
    - o impacto (até 2 linhas; o texto completo fica no detalhe) e a cápsula do tipo de falha por extenso seguida dos segmentos: "Indisponibilidade parcial **para B2B e B2C**";
@@ -70,4 +83,4 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 ## Publicar
 1. Crie o repositório e suba todos os arquivos na raiz.
 2. Ative o GitHub Pages (branch principal, pasta raiz).
-3. A cada mudança no app, aumente a versão em `app.js` (`VERSION`), `painel.js` (`VERSAO`) e `sw.js` (`VERSION`), com o mesmo número.
+3. A cada mudança no app, aumente a versão em `app.js` (`VERSION`), `painel.js` (`VERSAO`), `notif.js` (`VERSAO`) e `sw.js` (`VERSION`), com o mesmo número.
