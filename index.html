@@ -452,7 +452,7 @@ table.tdias tbody tr.sel td.c1 .pa{color:var(--selink)}
 /* janela de notificação: por cima de tudo, fundo do cartão (branco no tema claro) */
 .nt-bg{position:fixed;inset:0;z-index:60;background:rgba(20,12,29,.5);display:flex;align-items:center;justify-content:center;padding:16px}
 .nt-bg[hidden]{display:none}
-.nt{width:100%;max-width:480px;max-height:min(80vh,640px);overflow:auto;background:var(--card);color:var(--ink);border-radius:18px;box-shadow:0 20px 60px rgba(20,8,40,.4);padding:14px 18px 18px;border-top:5px solid var(--ntc,var(--p700))}
+.nt{width:100%;max-width:480px;max-height:min(80vh,640px);overflow:auto;background:var(--card);color:var(--ink);border-radius:18px;box-shadow:0 20px 60px rgba(20,8,40,.4);padding:18px 22px 24px;border-top:5px solid var(--ntc,var(--p700))}
 .nt.t-CRITICO{--ntc:#D61F4F} .nt.t-AVISO{--ntc:#FFC629} .nt.t-INFORMACAO{--ntc:#5F8A12} .nt.t-INTERROGACAO{--ntc:#642A90}
 .nt-top{display:flex;align-items:center;gap:8px;min-height:32px}
 .nt-top .sp{flex:1}
@@ -461,28 +461,26 @@ table.tdias tbody tr.sel td.c1 .pa{color:var(--selink)}
 .nt-x{flex:none;width:34px;height:34px;border-radius:50%;border:0;background:var(--bg);color:var(--ink2);font-size:16px;cursor:pointer}
 .nt-volta{border:0;background:none;color:var(--p700);font-weight:700;font-size:14px;cursor:pointer;padding:4px 0}
 @media (prefers-color-scheme: dark){.nt-volta{color:#d3b5f0}}
-.nt-h{display:flex;align-items:center;gap:12px;margin-top:4px}
+.nt-h{display:flex;align-items:center;gap:14px;margin-top:14px}
 .nt-h h3{margin:0;font-size:19px;line-height:1.25;letter-spacing:-.2px;overflow-wrap:anywhere}
 .nt-ic{flex:none;width:38px;height:38px;display:block}
 .nt-ico{display:block;width:100%;height:100%}
-.nt-corpo{margin-top:12px;font-size:15px;line-height:1.55;overflow-wrap:anywhere}
+.nt-corpo{margin-top:18px;font-size:15px;line-height:1.55;overflow-wrap:anywhere}
 .nt-corpo code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.92em;background:color-mix(in srgb,var(--ink) 8%,transparent);border-radius:5px;padding:1px 5px}
 .nt-corpo a{color:var(--p700);font-weight:650}
 @media (prefers-color-scheme: dark){.nt-corpo a{color:#d3b5f0}}
 .cap{display:inline-block;border-radius:999px;padding:0 9px;font-weight:650;line-height:1.55}
 .cap-roxo{color:#3A1658;background:#EBE0F4} .cap-verde{color:#3F5E0A;background:#E8F4D2} .cap-laranja{color:#7A4100;background:#FFEBCC} .cap-pink{color:#9C1450;background:#FDE0EC}
 @media (prefers-color-scheme: dark){.cap-roxo{color:#E6D8F5;background:#3A2356}.cap-verde{color:#D2EDA0;background:#2A3A12}.cap-laranja{color:#FFD9A0;background:#3D2A08}.cap-pink{color:#FFC2DA;background:#45142B}}
-.nt-ciente{display:block;width:100%;margin-top:18px;border:0;border-radius:12px;padding:13px;background:var(--p700);color:#fff;font-weight:800;font-size:15px;cursor:pointer}
+.nt-ciente{display:block;width:auto;min-width:120px;margin:26px auto 4px;border:0;border-radius:12px;padding:12px 30px;background:var(--p700);color:#fff;font-weight:800;font-size:15px;cursor:pointer}
 @media (prefers-color-scheme: dark){.nt-ciente{background:#8549b5}}
-/* lista: não lida em destaque com bolinha; lida apagada */
-.nt-itens{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+/* lista: não lida com bolinha cheia; lida com bolinha vazada (texto e ícone iguais) */
+.nt-itens{display:flex;flex-direction:column;gap:8px;margin-top:14px}
 .nt-it{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px;cursor:pointer;color:var(--ink)}
 .nt-it .nt-ic{width:28px;height:28px}
 .nt-it .nt-tt{flex:1;min-width:0;font-weight:800;font-size:15px;overflow-wrap:anywhere}
 .nt-it .nt-pt{flex:none;width:10px;height:10px;border-radius:50%;background:#EC357D;box-shadow:0 0 0 3px color-mix(in srgb,#EC357D 22%,transparent)}
 .nt-it:not(.lida){background:color-mix(in srgb,var(--p50) 70%,var(--card));border-color:var(--p200)}
-.nt-it.lida{opacity:.55}
-.nt-it.lida .nt-tt{font-weight:500}
 .nt-it.lida .nt-pt{background:transparent;box-shadow:none;border:1.5px solid var(--ink3)}
 body.nt-on{overflow:hidden}
 .toast{position:fixed;left:50%;bottom:calc(76px + var(--safe-b));transform:translate(-50%,0);opacity:0;pointer-events:none;background:var(--p900);color:#fff;border-radius:14px;padding:12px 16px;font-size:14px;z-index:50;max-width:min(92vw,520px);box-shadow:0 8px 28px rgba(0,0,0,.25);transition:opacity .2s ease;cursor:pointer}

@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.12.0)
+# Problemas Sistêmicos (v1.13.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -20,18 +20,6 @@ TXT do SQL Developer, separado por **tabulação**, cabeçalho na 1ª linha.
 ## Páginas (menu de baixo)
 A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fixa e visível ao rolar.
 
-## Notificações (`notificacao.txt`)
-- Arquivo **opcional** na raiz do repositório, ao lado do `sistemas.txt`, conferido junto com ele (a cada 1 minuto). Sem o arquivo, nada aparece e os chamados seguem normais.
-- Formato (gerado pelo editor de notificações): UTF-8, tabulação, cabeçalho na 1ª linha, **1 notificação por linha**. Colunas `ID, TIPO, TITULO, TEXTO, DATA_INICIO, DATA_FIM, OBRIGATORIO, STATUS, DATA_ATUALIZACAO`. No TEXTO, quebra de linha = `\n`; marcações `{b} {i} {s} {m} {roxo} {verde} {laranja} {pink} {link=…}…{/link}`.
-- **Vale só STATUS = ATIVO e dentro das datas** (relógio do aparelho, reavaliado a cada poucos segundos, sem precisar de arquivo novo): início e fim → só entre os dois; só início → a partir dele, sem prazo; só fim → já vale, até o fim; sem datas → vale enquanto estiver ativa.
-- **Ícone (megafone)** à esquerda do 🔔, só quando há notificação valendo, com o **número de não lidas** (na cor do tipo mais grave entre elas).
-- Tocar no ícone: com **uma** notificação abre direto; com **mais de uma** abre a **lista** (ícone + título; não lida em destaque com bolinha cheia, lida apagada com bolinha vazia). Cada notificação mostra só o **ícone do tipo**, o **título** e o **texto formatado**, com ✕ para fechar.
-- Ordem: Crítico, Aviso, Informação, Interrogação; dentro do tipo, a mais recente primeiro.
-- Ícones (estilo MsgBox do VBA): Crítico ✕ no círculo vermelho; Aviso ! no triângulo amarelo; Interrogação ? no círculo roxo; Informação ! no círculo verde.
-- **Obrigatória** (OBRIGATORIO = S): abre sozinha ao entrar no app (e quando chega uma nova). Só deixa de contar com o botão **Ciente**; fechar no ✕ não conta, e ela volta a abrir na próxima vez que o app for aberto.
-- Lida = aberta (não obrigatória) ou com Ciente (obrigatória). Fica guardado **no aparelho**. Se a notificação for editada (DATA_ATUALIZACAO nova), volta a ser não lida.
-- Pasta `ferramentas/` (o app não lê): `editor-notificacoes.html` para abrir, criar, formatar e exportar o arquivo, e `notificacao-exemplo.txt`. Para publicar, o arquivo vai para a **raiz** com o nome `notificacao.txt`.
-- Linha com data inválida, fim antes do início ou ID repetido: avisada no alerta amarelo do fim da página. Arquivo com erro: o app mantém as últimas notificações válidas.
 1. **Ocorrências**: no topo, um card grande para cada chamado em andamento, com fundo branco tingido pela cor do tipo de falha e texto no tom escuro da mesma cor:
    - nome do sistema numa linha só (nome grande termina em "…") e, à direita, o **ID** da solicitação no sistêmico (cápsula só com borda);
    - o impacto (até 2 linhas; o texto completo fica no detalhe) e a cápsula do tipo de falha por extenso seguida dos segmentos: "Indisponibilidade parcial **para B2B e B2C**";
@@ -50,6 +38,20 @@ A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fix
    - gráfico **Tempo com falha no expediente** (o gráfico "Chamados por dia" saiu): o **fundo lilás claro** é o expediente de cada coluna (100% = expediente inteiro, todas as colunas fechadas alinhadas na mesma altura; no período em andamento o fundo sobe conforme as horas passam) e o **preenchimento** é o tempo afetado, na mesma escala;
    - matriz **Sistemas × períodos** (sempre começa **fechada**, mostrando só Total e Chamados; abre na seta; volta a fechar ao sair e voltar para o Painel), com a linha **Chamados** embaixo do Total: quantidade de chamados de todos os sistemas (sem indevidos) em cada coluna e, à direita, os chamados distintos da tela inteira. Tocar no número abre a lista;
    - tabela com **CHAM.** (em cápsula), **TEMPO TOTAL** (tempo com falha no período em qualquer horário), **NO EXPED.** (a parte dentro de 08h–21h) e **% EXPED.** (com barrinha na mesma escala do gráfico), tudo centralizado; a 1ª coluna mostra a data em destaque e o dia da semana embaixo; o domingo aparece em vermelho, como no gráfico.
+
+## Notificações (`notificacao.txt`)
+- Arquivo **opcional** na raiz do repositório, ao lado do `sistemas.txt`, conferido junto com ele (a cada 1 minuto). Sem o arquivo, nada aparece e os chamados seguem normais.
+- Formato (gerado pelo editor de notificações): UTF-8, tabulação, cabeçalho na 1ª linha, **1 notificação por linha**. Colunas `ID, TIPO, TITULO, TEXTO, DATA_INICIO, DATA_FIM, OBRIGATORIO, STATUS, DATA_ATUALIZACAO`. No TEXTO, quebra de linha = `\n`; marcações `{b} {i} {s} {m} {roxo} {verde} {laranja} {pink} {link=…}…{/link}`.
+- **Vale só STATUS = ATIVO e dentro das datas** (relógio do aparelho, reavaliado a cada poucos segundos, sem precisar de arquivo novo): início e fim → só entre os dois; só início → a partir dele, sem prazo; só fim → já vale, até o fim; sem datas → vale enquanto estiver ativa.
+- **Ícone (megafone)** à esquerda do 🔔, só quando há notificação valendo, com o **número de não lidas** (na cor do tipo mais grave entre elas).
+- Tocar no ícone: com **uma** notificação abre direto; com **mais de uma** abre a **lista** (ícone + título; não lida com bolinha cheia, lida com bolinha vazada; texto e ícone ficam iguais nas duas). Cada notificação mostra só o **ícone do tipo**, o **título** e o **texto formatado**, com ✕ para fechar.
+- Ordem: Crítico, Aviso, Informação, Interrogação; dentro do tipo, a mais recente primeiro.
+- Ícones (estilo MsgBox do VBA): Crítico ✕ no círculo vermelho; Aviso ! no triângulo amarelo; Interrogação ? no círculo roxo; Informação ! no círculo verde.
+- **Obrigatória** (OBRIGATORIO = S): abre sozinha ao entrar no app (e quando chega uma nova), **uma de cada vez, na ordem do ID**: fechou uma (Ciente ou ✕), abre a próxima. Só deixa de contar com o botão **Ciente**, e depois disso não abre mais sozinha (a pessoa pode reabrir pela lista). Fechada só no ✕, volta a abrir na próxima vez que o app for aberto.
+- Lida = aberta (não obrigatória) ou com Ciente (obrigatória). Fica guardado **no aparelho**. Se a notificação for editada (DATA_ATUALIZACAO nova), volta a ser não lida.
+- **Homologação:** a raiz já traz um `notificacao.txt` de teste com 12 notificações (3 de cada tipo: Crítico, Aviso, Informação e Interrogação; IDs 1, 2 e 4 obrigatórios), com datas a partir de 20/10/2026 e todas as formatações. Trocar pelo arquivo real antes de ir para produção.
+- Pasta `ferramentas/` (o app não lê): `editor-notificacoes.html` para abrir, criar, formatar e exportar o arquivo, e `notificacao-exemplo.txt`. Para publicar, o arquivo vai para a **raiz** com o nome `notificacao.txt`.
+- Linha com data inválida, fim antes do início ou ID repetido: avisada no alerta amarelo do fim da página. Arquivo com erro: o app mantém as últimas notificações válidas.
 
 ## Como o Painel monta os períodos
 O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pelo app:

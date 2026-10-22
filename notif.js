@@ -5,7 +5,7 @@
    Vale só STATUS = ATIVO e dentro das datas (sem início = já vale; sem fim = vale até alguém desativar). */
 (function () {
   'use strict';
-  const VERSAO = '1.12.0';
+  const VERSAO = '1.13.0';
   const K = { dados: 'ps.notif', lidas: 'ps.notif.lidas' };
   const OBRIG = ['ID', 'TIPO', 'TITULO', 'TEXTO'];
   const TAGS = ['b', 'i', 's', 'm', 'roxo', 'verde', 'laranja', 'pink', 'link'];
@@ -189,10 +189,13 @@
     const at = ativas(); if (!at.length) return;
     abrir(at.length === 1 ? { modo: 'uma', id: at[0].id, daLista: false } : { modo: 'lista' });
   }
-  // obrigatórias sem "Ciente": abrem sozinhas (uma vez por sessão cada, até a pessoa dar ciente)
+  // obrigatórias sem "Ciente": abrem sozinhas, uma de cada vez, na ordem do ID.
+  // Fechou uma (✕ ou Ciente) → abre a próxima. Com "Ciente" não abre sozinha de novo;
+  // fechada só no ✕, volta a abrir na próxima vez que o app for aberto.
   function proximaObrigatoria() {
     if (N.modal || !N.pronto || document.querySelector('.sheet.show')) return;
-    const it = ativas().find(x => x.obrig && !lida(x) && !N.autoVistos.has(x.id + '|' + x.versao));
+    const it = ativas().filter(x => x.obrig && !lida(x) && !N.autoVistos.has(x.id + '|' + x.versao))
+      .sort((a, b) => a.id.localeCompare(b.id, 'pt-BR', { numeric: true }))[0];
     if (!it) return;
     N.autoVistos.add(it.id + '|' + it.versao);
     abrir({ modo: 'uma', id: it.id, daLista: false });
