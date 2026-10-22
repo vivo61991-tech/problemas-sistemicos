@@ -5,7 +5,7 @@
    Vale só STATUS = ATIVO e dentro das datas (sem início = já vale; sem fim = vale até alguém desativar). */
 (function () {
   'use strict';
-  const VERSAO = '1.15.0';
+  const VERSAO = '1.17.0';
   const K = { dados: 'ps.notif', lidas: 'ps.notif.lidas' };
   const OBRIG = ['ID', 'TIPO', 'TITULO', 'TEXTO'];
   const TAGS = ['b', 'i', 's', 'm', 'roxo', 'verde', 'laranja', 'pink', 'link'];
@@ -173,7 +173,7 @@
   }
   function abrir(m) {
     const novo = !N.modal;
-    N.modal = m; const bg = montar(); bg.hidden = false; document.body.classList.add('nt-on');
+    N.modal = m; const bg = montar(); bg.hidden = false; document.body.classList.add('nt-on'); document.documentElement.classList.add('trava');
     desenhar();
     if (novo) { try { history.pushState({ notif: 1 }, ''); N.hist = true; } catch (e) { N.hist = false; } }
     const d = document.getElementById('nt'); if (d) d.focus({ preventScroll: true });   // foco na janela (leitor de tela), sem destacar o ✕
@@ -181,7 +181,7 @@
   // porHistorico = já veio do botão voltar do aparelho
   function fechar(porHistorico) {
     if (!N.modal) return;
-    N.modal = null; const bg = document.getElementById('ntBg'); if (bg) bg.hidden = true; document.body.classList.remove('nt-on');
+    N.modal = null; const bg = document.getElementById('ntBg'); if (bg) bg.hidden = true; document.body.classList.remove('nt-on'); if (!document.body.classList.contains('sheet-on')) document.documentElement.classList.remove('trava');
     if (!porHistorico && N.hist) { N.hist = false; N.ignorarPop = true; history.back(); } else N.hist = false;
     setTimeout(proximaObrigatoria, 50);
   }

@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.15.0';
+const VERSION = '1.17.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -621,7 +621,7 @@ function tick() {
 /* ---------- folha: lista (do Painel) e detalhe ---------- */
 function showSheet() {
   $('sheetBg').style.display = 'block';
-  document.body.classList.add('sheet-on');
+  document.body.classList.add('sheet-on'); document.documentElement.classList.add('trava');
   requestAnimationFrame(() => $('sheet').classList.add('show'));
   history.pushState({ sheet: 1 }, '');
 }
@@ -629,6 +629,7 @@ function openSheet(id) {
   const novo = !S.sheet;
   S.sheet = { mode: 'det', id, list: null };
   if (!refreshSheet()) { S.sheet = null; return; }
+  $('sheet').scrollTop = 0;   // detalhe sempre começa do topo
   if (novo) showSheet();
 }
 function openList(titulo, sub, ids, onClose) {
@@ -753,9 +754,9 @@ async function copiarChamado(c) {
 function closeSheet() {
   const l = S.sheet && S.sheet.list;
   S.sheet = null;
-  $('sheet').classList.remove('show');
+  $('sheet').classList.remove('show'); $('sheet').scrollTop = 0;
   $('sheetBg').style.display = 'none';
-  document.body.classList.remove('sheet-on');
+  document.body.classList.remove('sheet-on'); if (!document.body.classList.contains('nt-on')) document.documentElement.classList.remove('trava');
   if (l && l.onClose) l.onClose();
 }
 

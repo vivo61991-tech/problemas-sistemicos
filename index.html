@@ -327,7 +327,8 @@ table.tsel tbody tr.sel td:last-child{border-right-color:var(--selln)}
 .mx .ncel.sd{color:var(--ink3);background:repeating-linear-gradient(135deg,var(--sdA) 0 4px,var(--sdB) 4px 8px)}
 .mx .ncel.colsel{outline:1px solid var(--selln);outline-offset:-1px}
 .mx .ncel.sel{outline:2px solid #FF9901;outline-offset:-1px}
-.mx .tot.nt{color:var(--ink2)}
+/* total de chamados (classe ntot: "nt" é da janela de notificação) — só o número, um pouco mais forte */
+.mx .tot.ntot{font-size:12.5px;font-weight:800;color:var(--ink);background:none;border:0;padding:0}
 .mxcard .legend b.lgn{font-size:10px;font-weight:800;color:var(--tot);background:color-mix(in srgb,var(--tot) 12%,var(--card));border-radius:3px;padding:0 3px}
 /* tabela de dias: domingo em vermelho, como no gráfico */
 table.conf tr.dom td:first-child{color:var(--domc)}
@@ -450,7 +451,7 @@ table.tdias tbody tr.sel td.c1 .pa{color:var(--selink)}
 .nbd{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;border-radius:999px;padding:0 5px;font-size:11px;font-weight:800;line-height:15px;text-align:center;border:2px solid var(--p700);background:#D61F4F;color:#fff}
 .nbd[hidden]{display:none}
 /* janela de notificação: por cima de tudo, fundo do cartão (branco no tema claro) */
-.nt-bg{position:fixed;inset:0;z-index:60;background:rgba(20,12,29,.5);display:flex;align-items:center;justify-content:center;padding:16px}
+.nt-bg{position:fixed;inset:0;z-index:60;overflow:hidden;background:rgba(20,12,29,.5);display:flex;align-items:center;justify-content:center;padding:16px}
 .nt-bg[hidden]{display:none}
 .nt{width:100%;max-width:480px;max-height:min(80vh,640px);overflow:auto;background:var(--card);color:var(--ink);border-radius:18px;box-shadow:0 20px 60px rgba(20,8,40,.4);padding:18px 22px 28px;border-top:5px solid var(--ntc,var(--p700))}
 .nt.t-CRITICO{--ntc:#D61F4F} .nt.t-AVISO{--ntc:#FFC629} .nt.t-INFORMACAO{--ntc:#5F8A12} .nt.t-INTERROGACAO{--ntc:#642A90}
@@ -481,7 +482,9 @@ table.tdias tbody tr.sel td.c1 .pa{color:var(--selink)}
 .nt-it .nt-pt{flex:none;width:10px;height:10px;border-radius:50%;background:#EC357D;box-shadow:0 0 0 3px color-mix(in srgb,#EC357D 22%,transparent)}
 .nt-it:not(.lida){background:color-mix(in srgb,var(--p50) 70%,var(--card));border-color:var(--p200)}
 .nt-it.lida .nt-pt{background:transparent;box-shadow:none;border:1.5px solid var(--ink3)}
-body.nt-on{overflow:hidden}
+/* janela aberta: trava a rolagem da página de trás (quem rola é o html, por causa do overflow-x:clip) */
+html.trava{overflow:hidden}
+.nt,.nt-bg{overscroll-behavior:contain}
 .toast{position:fixed;left:50%;bottom:calc(76px + var(--safe-b));transform:translate(-50%,0);opacity:0;pointer-events:none;background:var(--p900);color:#fff;border-radius:14px;padding:12px 16px;font-size:14px;z-index:50;max-width:min(92vw,520px);box-shadow:0 8px 28px rgba(0,0,0,.25);transition:opacity .2s ease;cursor:pointer}
 .toast.show{opacity:1;pointer-events:auto}
 .foot{color:var(--ink3);font-size:12px;text-align:center;margin:18px 0 0}
@@ -551,8 +554,8 @@ body.nt-on{overflow:hidden}
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="painel.js?v=1.15.0"></script>
-<script src="notif.js?v=1.15.0"></script>
-<script src="app.js?v=1.15.0"></script>
+<script src="painel.js?v=1.17.0"></script>
+<script src="notif.js?v=1.17.0"></script>
+<script src="app.js?v=1.17.0"></script>
 </body>
 </html>
