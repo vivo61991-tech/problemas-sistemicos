@@ -4,15 +4,12 @@
    Os períodos são montados aqui a partir das datas de cada chamado (o sistemas.txt tem uma linha por ID). */
 (function () {
   'use strict';
-  const VERSAO = '1.9.0';
+  const VERSAO = '1.10.0';
   const HORA_INI = 8, HORA_FIM = 21, EXP = (HORA_FIM - HORA_INI) * 3600e3;   // expediente 08:00–21:00 (13h)
   const POS14 = ((14 - HORA_INI) / (HORA_FIM - HORA_INI) * 100).toFixed(2);   // marca das 14h na coluna do dia
   const LIMITE = 7;                                                         // 7 dias, 7 semanas, 7 meses
   const WD = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
   const WD_PLURAL = ['domingos', 'segundas', 'terças', 'quartas', 'quintas', 'sextas', 'sábados'];
-  const WD_ULTIMO = ['Último domingo', 'Última segunda', 'Última terça', 'Última quarta', 'Última quinta', 'Última sexta', 'Último sábado'];
-  const WD_ANT = ['o domingo anterior', 'a segunda anterior', 'a terça anterior', 'a quarta anterior', 'a quinta anterior', 'a sexta anterior', 'o sábado anterior'];
-  const DIAS_SEMANA = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
   const MES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
   const MES_EXT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const NOME = { DIA: 'Dia', SEMANA: 'Semana', MES: 'Mês' };
@@ -27,7 +24,6 @@
   const ymd = d => d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate());
   const fmtH = ms => { const m = Math.round(ms / 60000); return m < 60 ? `${m} min` : `${Math.floor(m / 60)}h${pad(m % 60)}`; };
   const fmtHc = ms => { const m = Math.round(ms / 60000); return m === 0 ? '' : m < 60 ? `${m}m` : `${Math.floor(m / 60)}h${m % 60 ? pad(m % 60) : ''}`; };
-  const pctNum = (ms, p) => ms / (p.dias * EXP) * 100;
   const pctTxt = v => v > 0 && v < 0.05 ? '<0,1%' : v.toFixed(1).replace('.', ',') + '%';
   const tipoK = t => /TOTAL/.test(t) ? 'total' : /PARCIAL/.test(t) ? 'parcial' : /INTERMIT/.test(t) ? 'interm' : /LENTID/.test(t) ? 'lent' : 'outro';
   const COR = t => TIPOS.find(x => x[0] === tipoK(t))[2];
@@ -72,6 +68,18 @@
   const uniao = tr => { const v = [...tr].sort((a, b) => a.x0 - b.x0), out = []; for (const t of v) { const u = out[out.length - 1]; if (u && t.x0 <= u.x1) u.x1 = Math.max(u.x1, t.x1); else out.push({ x0: t.x0, x1: t.x1 }); } return out; };
   const uniaoMs = (itens, p) => uniao(itens.filter(c => !c.indevido).flatMap(c => trechos(c, p))).reduce((a, t) => a + (t.x1 - t.x0), 0) * p.dias * EXP;
 
+  // expediente decorrido do período até agora: período fechado = expediente inteiro (dias × 13h);
+  // período em andamento = só as horas de 08h–21h que já passaram
+  function expDec(p) {
+    if (p.semDados) return 0;
+    let t = 0;
+    for (let i = 0; i < p.dias; i++) {
+      const d = addD(p.ini, i), a = new Date(d.getFullYear(), d.getMonth(), d.getDate(), HORA_INI).getTime(), b = new Date(d.getFullYear(), d.getMonth(), d.getDate(), HORA_FIM).getTime();
+      t += Math.max(0, Math.min(ctx.now, b) - a);
+    }
+    return t;
+  }
+  const pctDe = (ms, exp) => exp > 0 ? ms / exp * 100 : 0;
   function estat(p) {
     const its = ctx.itens.filter(c => noPeriodo(c, p));
     const val = its.filter(c => !c.indevido);
@@ -87,7 +95,8 @@
     let msTot = 0, cs = -1, ce = -1;
     for (const [a, b] of iv) { if (a > ce) { if (ce > cs) msTot += ce - cs; cs = a; ce = b; } else if (b > ce) ce = b; }
     if (ce > cs) msTot += ce - cs;
-    return { n: val.length, ind: its.length - val.length, ms, msTot: p.semDados ? 0 : msTot, pct: pctNum(ms, p), porTipo, nSis: sis.size, top: top ? top[0] : '' };
+    const exp = expDec(p);
+    return { n: val.length, ids: val.map(c => c.id), sisMs: sis, ind: its.length - val.length, ms, msTot: p.semDados ? 0 : msTot, exp, pct: pctDe(ms, exp), porTipo, nSis: sis.size, top: top ? top[0] : '' };
   }
 
   // ---------------- rótulos ----------------
@@ -95,12 +104,17 @@
   const rotLongo = p => `${p.tipo === 'DIA' ? WD[p.ini.getDay()].toLowerCase() + ', ' : p.tipo === 'SEMANA' ? 'semana ' : ''}${rot(p)}${p.andamento ? ' (em andamento)' : ''}`;
   const rotTab = p => p.tipo === 'DIA' ? `${WD[p.ini.getDay()].charAt(0) + WD[p.ini.getDay()].slice(1).toLowerCase()} ${ddmm(p.ini)}` : p.tipo === 'SEMANA' ? `${ddmm(p.ini)}–${ddmm(addD(p.fim, -1))}` : `${MES[p.ini.getMonth()]}/${String(p.ini.getFullYear()).slice(2)}`;
   const tituloPer = (t, s) => t === 'DIA' ? (s ? 'Dia selecionado' : 'Hoje') : t === 'SEMANA' ? (s ? 'Semana selecionada' : 'Semana atual') : (s ? 'Mês selecionado' : 'Mês atual');
-  const nomeAnt = (t, p) => t === 'DIA' ? (filtroDia != null ? WD_ANT[filtroDia] : ddmm(p.ini)) : t === 'SEMANA' ? 'semana ' + ddmm(p.ini) : MES[p.ini.getMonth()].toLowerCase();
-  const seta = v => v === 0 ? '' : v > 0 ? '▲ ' : '▼ ';
-  // aqui mais é pior: subir = rosa, cair = verde (melhorou)
-  const dlt = (v, suf) => `<span class="dlt ${v === 0 ? 'neu' : v > 0 ? 'down' : 'up'}">${seta(v)}${Math.abs(v).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}${suf}</span>`;
-  // comparação só com os dois períodos fechados (período em andamento ainda vai crescer)
-  const comparavel = (p, a) => a && !p.andamento && !a.andamento && !p.semDados && !a.semDados;
+  // acumulado dos períodos visíveis (cards sem seleção): chamados e sistemas distintos, tempos somados
+  function acumulado(ps, st) {
+    const ok = ps.map((p, i) => [p, st[i]]).filter(([p]) => !p.semDados);
+    const ids = new Set(), sis = new Map();
+    let ms = 0, exp = 0;
+    for (const [, s] of ok) { s.ids.forEach(id => ids.add(id)); s.sisMs.forEach((v, k) => sis.set(k, (sis.get(k) || 0) + v)); ms += s.ms; exp += s.exp; }
+    const top = [...sis.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'))[0];
+    return { vazio: !ok.length, n: ids.size, ms, exp, pct: pctDe(ms, exp), nSis: sis.size, top: top ? top[0] : '' };
+  }
+  const yy = d => String(d.getFullYear()).slice(2);
+  const rotFaixa = (a, b) => a.tipo === 'MES' ? `${MES[a.ini.getMonth()]}/${yy(a.ini)} a ${MES[b.ini.getMonth()]}/${yy(b.ini)}` : `${ddmm(a.ini)} a ${ddmm(b.tipo === 'SEMANA' ? addD(b.fim, -1) : b.ini)}`;
 
   // ---------------- desenho ----------------
   function render(c) {
@@ -111,19 +125,19 @@
     const st = ps.map(estat);
     const iSel = sel ? ps.findIndex(p => p.ordem === sel) : -1;
     const i = iSel >= 0 ? iSel : ps.length - 1, p = ps[i], s = st[i];
-    // anterior: o período antes desse (no filtro de dia da semana, o mesmo dia da semana anterior)
-    const pa = i > 0 ? ps[i - 1] : null, sa = i > 0 ? st[i - 1] : null;
     const kc = iSel >= 0 ? 'kpi ksel' : 'kpi';
-    const cmp = comparavel(p, pa);
-    const vs = pa ? ` vs ${esc(nomeAnt(modo, pa))}` : '';
-    const sN = p.semDados ? 'sem dados de sistemas' : !pa ? 'sem período anterior' : !cmp ? '<span class="parc">em andamento</span>' : `${dlt(s.n - sa.n, '')}${vs}`;
-    const sT = p.semDados ? '' : !pa || !cmp ? `${pctTxt(s.pct)} do expediente` : `${dlt(Math.round((s.pct - sa.pct) * 10) / 10, ' p.p.')}${vs}`;
-    const kN = p.semDados ? '—' : s.n ? s.n : '<span class="okv">0</span>';
+    // sem seleção: acumulado dos períodos da tela; com seleção: só o período escolhido. Sem comparação com o período anterior.
+    const unid = modo === 'DIA' ? (filtroDia != null ? WD_PLURAL[filtroDia] : 'dias') : modo === 'SEMANA' ? 'semanas' : 'meses';
+    const a = iSel >= 0 ? (p.semDados ? { vazio: true } : { vazio: false, n: s.n, ms: s.ms, exp: s.exp, pct: s.pct, nSis: s.nSis, top: s.top }) : acumulado(ps, st);
+    const ondeN = iSel >= 0 ? (modo === 'DIA' ? 'no dia' : modo === 'SEMANA' ? 'na semana' : 'no mês') + (p.andamento ? ' · <b class="dias">em andamento</b>' : '') : `em ${ps.length} ${unid}`;
+    const zero = '<span class="okv">0</span>';
+    const perV = iSel >= 0 ? rot(p) : rotFaixa(ps[0], ps[ps.length - 1]);
+    const perL = iSel >= 0 ? tituloPer(modo, true) : 'Período';
     const k = `
-      <div class="${kc}"><div class="l">Chamados</div><div class="v">${kN}</div><div class="s">${sN}</div></div>
-      <div class="${kc}"><div class="l">Tempo com falha</div><div class="v">${p.semDados ? '—' : s.ms ? fmtH(s.ms) : '<span class="okv">0</span>'}</div><div class="s">${sT}</div></div>
-      <div class="${kc}"><div class="l">Sistemas afetados</div><div class="v">${p.semDados ? '—' : s.nSis || '<span class="okv">0</span>'}</div><div class="s">${s.top ? 'mais tempo: ' + esc(s.top) : p.semDados ? '' : '<span class="okt">sem ocorrência</span>'}</div></div>
-      <div class="${kc} kper"><div class="l">${modo === 'DIA' && filtroDia != null && iSel < 0 ? WD_ULTIMO[filtroDia] : tituloPer(modo, iSel >= 0)}</div><div class="v">${esc(rot(p))}</div><div class="s">${modo === 'DIA' ? DIAS_SEMANA[p.ini.getDay()] + (p.andamento ? ' · <b class="dias">em andamento</b>' : '') : p.andamento ? `<b class="dias">em andamento</b> · ${Math.round((now - p.ini) / 864e5 + 0.5)} de ${p.dias} dias` : `completo · ${p.dias} dias`}</div></div>`;
+      <div class="${kc}"><div class="l">Chamados</div><div class="v">${a.vazio ? '—' : a.n || zero}</div><div class="s">${a.vazio ? 'sem dados de sistemas' : ondeN}</div></div>
+      <div class="${kc}"><div class="l">Tempo com falha</div><div class="v">${a.vazio ? '—' : a.ms ? fmtH(a.ms) : zero}</div><div class="s">${a.vazio ? '' : `${pctTxt(a.pct)} do expediente`}</div></div>
+      <div class="${kc}"><div class="l">Sistemas afetados</div><div class="v">${a.vazio ? '—' : a.nSis || zero}</div><div class="s">${a.top ? 'mais tempo: ' + esc(a.top) : a.vazio ? '' : '<span class="okt">sem ocorrência</span>'}</div></div>
+      <div class="${kc} kper"><div class="l">${perL}</div><div class="v">${esc(perV)}</div><div class="s">${a.vazio ? '' : `${fmtH(a.exp)} de expediente`}</div></div>`;
     const filtro = modo !== 'DIA' ? '<div style="height:12px"></div>' : `
       <div class="wdf" role="group" aria-label="Comparar o mesmo dia da semana">
         ${[0, 1, 2, 3, 4, 5, 6].map(w => `<button data-wd="${w}" class="${w === 0 ? 'dom' : ''}${filtroDia === w ? ' on' : ''}" aria-pressed="${filtroDia === w}">${WD[w]}</button>`).join('')}
@@ -131,7 +145,7 @@
       </div>`;
     const fd = modo === 'DIA' ? filtroDia : null;
     const porX = modo === 'DIA' ? (fd != null ? ' · ' + WD_PLURAL[fd] : ' por dia') : modo === 'SEMANA' ? ' por semana' : ' por mês';
-    const capSel = iSel >= 0 ? `${esc(rotLongo(p))} — ${p.semDados ? 'sem dados de sistemas' : s.n ? `${s.n} chamado${s.n > 1 ? 's' : ''} · ${fmtH(s.ms)} (${pctTxt(s.pct)}) no expediente` : 'nenhum chamado'}` : '';
+    const capSel = iSel >= 0 ? `${esc(rotLongo(p))} — ${p.semDados ? 'sem dados de sistemas' : s.n ? `${s.n} chamado${s.n > 1 ? 's' : ''} · ${fmtH(s.ms)} (${pctTxt(s.pct)}) de ${fmtH(s.exp)} de expediente` : 'nenhum chamado'}` : '';
     const dica = 'Toque numa coluna para selecionar · toque de novo para limpar.';
     c.root.innerHTML = `
       <div class="card topbar">
@@ -143,8 +157,8 @@
         <div class="kpis kpis2">${k}</div>
         ${filtro}
         <div class="card chart"><h2>Tempo com falha no expediente${porX}</h2>${chartT(ps, st)}
-          <div class="legend"><span><i style="background:var(--tot)"></i>tempo com algum sistema com problema (sobreposição conta uma vez)</span>${ps.some(x => x.andamento) ? '<span><i class="hach"></i>período em andamento</span>' : ''}${ps.some(x => x.semDados) ? '<span><i class="sd"></i>sem dados</span>' : ''}</div>
-          <div class="cap${iSel >= 0 ? ' capsel' : ''}">${iSel >= 0 ? capSel : '% = tempo com falha ÷ expediente do período inteiro (dia 13h; semana 7 × 13h; mês dias × 13h).'}</div></div>
+          <div class="legend"><span><i style="background:var(--expbg)"></i>expediente 08h–21h (no período em andamento, até agora)</span><span><i style="background:var(--tot)"></i>tempo com algum sistema com problema (sobreposição conta uma vez)</span>${ps.some(x => x.semDados) ? '<span><i class="sd"></i>sem dados</span>' : ''}</div>
+          <div class="cap${iSel >= 0 ? ' capsel' : ''}">${iSel >= 0 ? capSel : '% = tempo com falha ÷ expediente (dia 13h; semana 7 × 13h; mês dias × 13h). No período em andamento, só as horas de expediente que já passaram.'}</div></div>
         ${matriz(ps, iSel >= 0 ? sel : null)}
         ${tabela(ps, st)}
       </div>`;
@@ -159,7 +173,7 @@
     const cor = on ? 'var(--selink)' : dom ? 'var(--domc)' : 'var(--ink2)';
     return `<text x="${cx}" y="${y}" text-anchor="middle" style="fill:${cor};font-size:11px;font-weight:${on ? 800 : 650}">${a}${p.andamento ? '*' : ''}</text><text x="${cx}" y="${y + 13}" text-anchor="middle" style="fill:${dom ? 'var(--domc)' : 'var(--ink3)'};font-size:9.5px">${b}</text>`;
   }
-  const W = 360, H = 200, T = 22, B = 34, L = 6, R = 6;
+  const W = 360, H = 210, T = 32, B = 34, L = 6, R = 6;
   function quadro(ps, barras) {
     const n = ps.length, bw = (W - L - R) / n;
     const band = ps.map((p, i) => sel === p.ordem ? `<rect x="${L + i * bw + 1}" y="2" width="${bw - 2}" height="${H - 4}" rx="8" style="fill:var(--selbg);stroke:var(--selln)"/>` : '').join('');
@@ -170,20 +184,22 @@
   }
   const halo = 'paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:round';
   const sdRect = (x, bw) => `<rect x="${x + bw * 0.2}" y="${T}" width="${bw * 0.6}" height="${H - B - T}" rx="5" style="fill:url(#sdpat)"/>`;
-  const defs = `<defs><pattern id="sdpat" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(135)"><rect width="8" height="8" style="fill:var(--sdA)"/><rect width="4" height="8" style="fill:var(--sdB)"/></pattern>
-    <pattern id="hachpat" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" style="fill:var(--tot);opacity:.55"/><rect width="3" height="6" style="fill:var(--tot)"/></pattern></defs>`;
+  const defs = `<defs><pattern id="sdpat" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(135)"><rect width="8" height="8" style="fill:var(--sdA)"/><rect width="4" height="8" style="fill:var(--sdB)"/></pattern></defs>`;
+  // Tempo com falha: o fundo lilás é o expediente (100% = expediente inteiro do período, todas as colunas alinhadas);
+  // no período em andamento o fundo sobe conforme as horas passam. O preenchimento é o tempo afetado, na mesma escala.
   function chartT(ps, st) {
-    const max = Math.max(...st.map(s => s.pct), 0.0001);
-    const top = max * 1.25;
     const hh = H - B - T;
     return quadro(ps, bw => defs + ps.map((p, i) => {
       const x = L + i * bw, cx = x + bw / 2, s = st[i], w = Math.min(34, bw * 0.56);
       if (p.semDados) return sdRect(x, bw);
-      if (!s.ms) return `<text x="${cx}" y="${H - B - 8}" text-anchor="middle" style="fill:var(--ok);font-size:12px;font-weight:800">✓</text>`;
-      const h = Math.max(2, s.pct / top * hh), y = H - B - h;
-      return `<rect x="${cx - w / 2}" y="${y}" width="${w}" height="${h}" rx="4" style="fill:${p.andamento ? 'url(#hachpat)' : 'var(--tot)'}"/>` +
-        `<text x="${cx}" y="${y - 17}" text-anchor="middle" style="fill:var(--ink);font-size:11px;font-weight:800;${halo}">${fmtHc(s.ms)}</text>` +
-        `<text x="${cx}" y="${y - 5}" text-anchor="middle" style="fill:var(--ink2);font-size:9.5px;font-weight:600;${halo}">${pctTxt(s.pct)}</text>`;
+      const full = p.dias * EXP, hb = s.exp / full * hh, yb = H - B - hb;
+      const fundo = hb > 0 ? `<rect class="expbg" x="${cx - w / 2}" y="${yb}" width="${w}" height="${hb}" rx="4" style="fill:var(--expbg)"/>` : '';
+      const yl = hb > 0 ? yb : H - B;
+      if (!s.ms) return fundo + `<text x="${cx}" y="${yl - 6}" text-anchor="middle" style="fill:var(--ok);font-size:12px;font-weight:800">✓</text>`;
+      const hf = Math.max(2, s.ms / full * hh), yf = H - B - hf;
+      return fundo + `<rect class="falha" x="${cx - w / 2}" y="${yf}" width="${w}" height="${hf}" rx="4" style="fill:var(--tot)"/>` +
+        `<text x="${cx}" y="${yl - 17}" text-anchor="middle" style="fill:var(--ink);font-size:11px;font-weight:800;${halo}">${fmtHc(s.ms)}</text>` +
+        `<text x="${cx}" y="${yl - 5}" text-anchor="middle" style="fill:var(--ink2);font-size:9.5px;font-weight:600;${halo}">${pctTxt(s.pct)}</text>`;
     }).join(''));
   }
 
@@ -298,7 +314,7 @@
       if (!itens.length) return;
       celSel = { ordem: p.ordem, sis: s }; redesenhar();
       const ms = uniaoMs(itens, p);
-      ctx.abrirLista(tot ? 'Todos os sistemas' : s, `${rotLongo(p)} · ${itens.length} chamado${itens.length > 1 ? 's' : ''} · ${fmtH(ms)} (${pctTxt(pctNum(ms, p))}) no expediente`,
+      ctx.abrirLista(tot ? 'Todos os sistemas' : s, `${rotLongo(p)} · ${itens.length} chamado${itens.length > 1 ? 's' : ''} · ${fmtH(ms)} (${pctTxt(pctDe(ms, expDec(p)))}) no expediente`,
         itens.map(x => x.id), () => { celSel = null; redesenhar(); });
     });
   }

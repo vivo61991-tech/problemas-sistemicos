@@ -12,6 +12,9 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
+/* fundo do expediente no gráfico de tempo */
+:root{--expbg:#ebe0f4}
+@media (prefers-color-scheme: dark){:root{--expbg:#33244a}}
 :root{
   /* paleta da empresa (a mesma do Painel - Nível de Serviço) */
   --roxo:#642A90; --verdeB:#99CC33; --laranja:#FF9901; --rosa:#EC357D; --azulB:#0164C9;
@@ -253,6 +256,9 @@ h2.sec .rt{white-space:nowrap;font-size:12.5px;text-transform:none;letter-spacin
 .kpi .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap}
 .kpi .s{font-size:12px;color:var(--ink3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi.kper .v{font-size:17px;margin-top:5px;margin-bottom:3px}
+/* período ("14/10 a 20/10", "Abr/26 a Out/26") cabe nos celulares pequenos */
+@media (max-width:380px){.kpi.kper .v{font-size:15px;letter-spacing:-.2px}}
+@media (max-width:340px){.kpi.kper .v{font-size:14px;letter-spacing:-.3px}.kpi{padding:10px}}
 .kpi.ksel{border-color:var(--selln);background:linear-gradient(0deg,var(--selbg),var(--selbg)),var(--card)}
 .okv{color:var(--ok)} .okt{color:var(--ok);font-weight:600}
 b.dias,.parc{color:var(--p700);font-weight:700}

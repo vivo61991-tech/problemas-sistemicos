@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.9.0)
+# Problemas Sistêmicos (v1.10.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -33,8 +33,8 @@ A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fix
    - **filtro de sistema** numa lista própria do app (não a do navegador): nome à esquerda e quantidade de ocorrências (sem indevidos) numa cápsula lilás à direita. Com um sistema escolhido, a caixa mostra o nome, a quantidade e um **✕ à esquerda** para remover o filtro na hora;
    - filtro por tipo de falha (ou só indevidos).
 3. **Painel**: o mesmo painel do app de NS: Dia / Semana / Mês (botão ou arrastar para o lado), filtro do dia da semana no modo Dia, seleção de coluna (toque no gráfico, na tabela ou no cabeçalho da matriz) e:
-   - cards do período;
-   - gráfico **Tempo com falha no expediente** (o gráfico "Chamados por dia" saiu);
+   - **cards sem comparação** com o período anterior. Sem nada selecionado, mostram o **acumulado dos 7 períodos da tela**: chamados distintos ("em 7 dias"), tempo com falha somado e o **% do expediente**, sistemas afetados e o **Período** ("14/10 a 20/10") com as **horas de expediente** somadas (dias fechados = 13h cada; o dia em andamento conta só as horas que já passaram). Com uma coluna selecionada, os mesmos cards mostram só aquele período;
+   - gráfico **Tempo com falha no expediente** (o gráfico "Chamados por dia" saiu): o **fundo lilás claro** é o expediente de cada coluna (100% = expediente inteiro, todas as colunas fechadas alinhadas na mesma altura; no período em andamento o fundo sobe conforme as horas passam) e o **preenchimento** é o tempo afetado, na mesma escala;
    - matriz **Sistemas × períodos**, com a linha **Chamados** embaixo do Total: quantidade de chamados de todos os sistemas (sem indevidos) em cada coluna e, à direita, os chamados distintos da tela inteira. Tocar no número abre a lista;
    - tabela com **CHAM.**, **TEMPO TOTAL** (tempo com falha no período em qualquer horário) e **NO EXPED.** (a parte dentro de 08h–21h), sem colunas de variação. No modo Dia, o domingo aparece em vermelho, como no gráfico.
 
@@ -44,13 +44,12 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 - **Semana**: as 7 últimas semanas, de segunda a domingo.
 - **Mês**: os 7 últimos meses do calendário.
 - Um chamado conta em todos os períodos em que esteve ativo. O tempo é o trecho dentro do **expediente 08h–21h**; no total, sobreposição conta uma vez e indevido fica fora.
-- **% do expediente** = tempo ÷ expediente do período inteiro (dia 13h; semana 7 × 13h; mês dias × 13h).
+- **% do expediente** = tempo com falha ÷ expediente (dia 13h; semana 7 × 13h; mês dias × 13h). No período em andamento, só as horas de expediente que já passaram.
 - Período em andamento leva `*` (ainda vai crescer). Período antes do 1º chamado do arquivo fica listrado ("sem dados").
-- Variação: ▲ rosa = piorou, ▼ verde = melhorou.
 
 ## Cores
 - Falha sempre em tons de vermelho a amarelo (rosa e laranja da empresa): Indisp. total `#D61F4F`, Indisp. parcial `#F2603E`, Intermitência `#FF9901`, Lentidão `#FFC629`. Total de todos os sistemas: rosa escuro `#B4245E`.
-- **Verde** para "sem ocorrência" (card do topo, dia sem chamado, melhora) e para o selo de card novo.
+- **Verde** para "sem ocorrência" (card do topo, dia sem chamado) e para o selo de card novo.
 - Chamado encerrado e indevido: neutro (cinza-lilás).
 
 ## Em andamento
