@@ -1,0 +1,24 @@
+Tipo	Titulo	Texto	Data_Inicial	Data_Final	Obrigatorio	Status
+Informação	Nova funcionalidade no histórico	Adicionámos um novo filtro na aba de histórico para facilitar as buscas dos técnicos.	21/10/2026 10:10		Não	Ativo
+Aviso	Manutenção da base de dados	O sistema passará por manutenção preventiva no domingo. Poderá haver lentidão nas consultas.	21/10/2026 10:30	25/10/2026 00:00	Não	Ativo
+Crítico	Indisponibilidade - Portal Integra	Falha geral ao aceder ao Portal Integra. Equipa técnica a atuar na resolução do incidente de forma prioritária.	21/10/2026 10:50		Sim	Ativo
+Interrogação	Pesquisa: Novo Layout	Gostaria de dar o seu feedback sobre o novo layout do sistema? Clique aqui para responder.	21/10/2026 11:10		Não	Ativo
+Informação	Teste de formatação	"*Teste de Formatação*
+
+_Vamos observar o comportamento da formatação_
+
+Negrito: *Negrito*
+Itálico: _Itálico_
+Tachado: ~Tachado~
+Monoespaçado: ```Monoespaçado```
+
+Negrito e Itálico: *_Negrito e Itálico_*
+Itálico e Tachado: _~Itálico e Tachado~_
+
+Roxo: %Roxo%
+Verde: #Verde#
+Laranja: $Laranja$
+Pink: !Pink!
+ 
+Link: @google.com@"	21/10/2026 11:30			Ativo
+Informação	Nova funcionalidade no histórico	Adicionámos um novo filtro na aba de histórico para facilitar as buscas dos técnicos.	21/10/2026 11:50		Não	Inativo
