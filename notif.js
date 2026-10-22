@@ -5,7 +5,7 @@
    Vale só STATUS = ATIVO e dentro das datas (sem início = já vale; sem fim = vale até alguém desativar). */
 (function () {
   'use strict';
-  const VERSAO = '1.13.0';
+  const VERSAO = '1.14.0';
   const K = { dados: 'ps.notif', lidas: 'ps.notif.lidas' };
   const OBRIG = ['ID', 'TIPO', 'TITULO', 'TEXTO'];
   const TAGS = ['b', 'i', 's', 'm', 'roxo', 'verde', 'laranja', 'pink', 'link'];
@@ -165,7 +165,7 @@
       if (!at.length) { fechar(); return; }
       box.className = 'nt nt-lista';
       box.innerHTML = `<div class="nt-top"><h3 id="ntTit">Notificações</h3><span class="sp"></span>${X}</div>
-        <div class="nt-itens">${at.map(it => { const l = lida(it); return `<button class="nt-it${l ? ' lida' : ''}" data-nid="${esc(it.id)}"><span class="nt-ic">${ICONE[it.tipo]}</span><span class="nt-tt">${esc(it.titulo || NOME[it.tipo])}</span><span class="nt-pt" aria-label="${l ? 'lida' : 'não lida'}"></span></button>`; }).join('')}</div>`;
+        <div class="nt-itens">${[...at.filter(x => !lida(x)), ...at.filter(x => lida(x))].map(it => { const l = lida(it); return `<button class="nt-it${l ? ' lida' : ''}" data-nid="${esc(it.id)}"><span class="nt-ic">${ICONE[it.tipo]}</span><span class="nt-tt">${esc(it.titulo || NOME[it.tipo])}</span><span class="nt-pt" aria-label="${l ? 'lida' : 'não lida'}"></span></button>`; }).join('')}</div>`;
       box.querySelectorAll('.nt-it').forEach(b => b.onclick = () => { N.modal = { modo: 'uma', id: b.dataset.nid, daLista: true }; desenhar(); });
     }
     box.querySelector('#ntX').onclick = () => fechar();

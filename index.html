@@ -452,7 +452,7 @@ table.tdias tbody tr.sel td.c1 .pa{color:var(--selink)}
 /* janela de notificação: por cima de tudo, fundo do cartão (branco no tema claro) */
 .nt-bg{position:fixed;inset:0;z-index:60;background:rgba(20,12,29,.5);display:flex;align-items:center;justify-content:center;padding:16px}
 .nt-bg[hidden]{display:none}
-.nt{width:100%;max-width:480px;max-height:min(80vh,640px);overflow:auto;background:var(--card);color:var(--ink);border-radius:18px;box-shadow:0 20px 60px rgba(20,8,40,.4);padding:18px 22px 24px;border-top:5px solid var(--ntc,var(--p700))}
+.nt{width:100%;max-width:480px;max-height:min(80vh,640px);overflow:auto;background:var(--card);color:var(--ink);border-radius:18px;box-shadow:0 20px 60px rgba(20,8,40,.4);padding:18px 22px 28px;border-top:5px solid var(--ntc,var(--p700))}
 .nt.t-CRITICO{--ntc:#D61F4F} .nt.t-AVISO{--ntc:#FFC629} .nt.t-INFORMACAO{--ntc:#5F8A12} .nt.t-INTERROGACAO{--ntc:#642A90}
 .nt-top{display:flex;align-items:center;gap:8px;min-height:32px}
 .nt-top .sp{flex:1}
@@ -472,7 +472,7 @@ table.tdias tbody tr.sel td.c1 .pa{color:var(--selink)}
 .cap{display:inline-block;border-radius:999px;padding:0 9px;font-weight:650;line-height:1.55}
 .cap-roxo{color:#3A1658;background:#EBE0F4} .cap-verde{color:#3F5E0A;background:#E8F4D2} .cap-laranja{color:#7A4100;background:#FFEBCC} .cap-pink{color:#9C1450;background:#FDE0EC}
 @media (prefers-color-scheme: dark){.cap-roxo{color:#E6D8F5;background:#3A2356}.cap-verde{color:#D2EDA0;background:#2A3A12}.cap-laranja{color:#FFD9A0;background:#3D2A08}.cap-pink{color:#FFC2DA;background:#45142B}}
-.nt-ciente{display:block;width:auto;min-width:120px;margin:26px auto 4px;border:0;border-radius:12px;padding:12px 30px;background:var(--p700);color:#fff;font-weight:800;font-size:15px;cursor:pointer}
+.nt-ciente{display:block;width:auto;min-width:0;margin:16px auto 10px;border:0;border-radius:10px;padding:8px 22px;background:var(--p700);color:#fff;font-weight:800;font-size:14px;cursor:pointer}
 @media (prefers-color-scheme: dark){.nt-ciente{background:#8549b5}}
 /* lista: não lida com bolinha cheia; lida com bolinha vazada (texto e ícone iguais) */
 .nt-itens{display:flex;flex-direction:column;gap:8px;margin-top:14px}
