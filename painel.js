@@ -4,7 +4,7 @@
    Os períodos são montados aqui a partir das datas de cada chamado (o sistemas.txt tem uma linha por ID). */
 (function () {
   'use strict';
-  const VERSAO = '1.8.1';
+  const VERSAO = '1.9.0';
   const HORA_INI = 8, HORA_FIM = 21, EXP = (HORA_FIM - HORA_INI) * 3600e3;   // expediente 08:00–21:00 (13h)
   const POS14 = ((14 - HORA_INI) / (HORA_FIM - HORA_INI) * 100).toFixed(2);   // marca das 14h na coluna do dia
   const LIMITE = 7;                                                         // 7 dias, 7 semanas, 7 meses
@@ -81,7 +81,13 @@
     const sis = new Map();
     val.forEach(c => { const t = trechos(c, p).reduce((a, x) => a + x.ms, 0); sis.set(c.sistema, (sis.get(c.sistema) || 0) + t); });
     const top = [...sis.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'))[0];
-    return { n: val.length, ind: its.length - val.length, ms, pct: pctNum(ms, p), porTipo, nSis: sis.size, top: top ? top[0] : '' };
+    // tempo total do período (dia inteiro, não só o expediente), sobreposição conta uma vez, indevido fora
+    const fimP = Math.min(p.fim.getTime(), ctx.now);
+    const iv = val.map(c => [Math.max(c.ini.getTime(), p.ini.getTime()), Math.min(c.fimCalc.getTime(), fimP)]).filter(([a, b]) => b > a).sort((x, y) => x[0] - y[0]);
+    let msTot = 0, cs = -1, ce = -1;
+    for (const [a, b] of iv) { if (a > ce) { if (ce > cs) msTot += ce - cs; cs = a; ce = b; } else if (b > ce) ce = b; }
+    if (ce > cs) msTot += ce - cs;
+    return { n: val.length, ind: its.length - val.length, ms, msTot: p.semDados ? 0 : msTot, pct: pctNum(ms, p), porTipo, nSis: sis.size, top: top ? top[0] : '' };
   }
 
   // ---------------- rótulos ----------------
@@ -136,9 +142,6 @@
       <div id="pag">
         <div class="kpis kpis2">${k}</div>
         ${filtro}
-        <div class="card chart"><h2>Chamados${porX}</h2>${chartN(ps, st)}
-          <div class="legend">${TIPOS.filter(([k]) => st.some(x => x.porTipo[k])).map(([, n, cor]) => `<span><i style="background:${cor}"></i>${n}</span>`).join('') || '<span>Sem chamados no período</span>'}</div>
-          <div class="cap${iSel >= 0 ? ' capsel' : ''}">${iSel >= 0 ? capSel : (fd != null ? `Só ${WD_PLURAL[fd]} · ${LIMITE} mais recentes. ` : '') + dica}</div></div>
         <div class="card chart"><h2>Tempo com falha no expediente${porX}</h2>${chartT(ps, st)}
           <div class="legend"><span><i style="background:var(--tot)"></i>tempo com algum sistema com problema (sobreposição conta uma vez)</span>${ps.some(x => x.andamento) ? '<span><i class="hach"></i>período em andamento</span>' : ''}${ps.some(x => x.semDados) ? '<span><i class="sd"></i>sem dados</span>' : ''}</div>
           <div class="cap${iSel >= 0 ? ' capsel' : ''}">${iSel >= 0 ? capSel : '% = tempo com falha ÷ expediente do período inteiro (dia 13h; semana 7 × 13h; mês dias × 13h).'}</div></div>
@@ -169,24 +172,6 @@
   const sdRect = (x, bw) => `<rect x="${x + bw * 0.2}" y="${T}" width="${bw * 0.6}" height="${H - B - T}" rx="5" style="fill:url(#sdpat)"/>`;
   const defs = `<defs><pattern id="sdpat" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(135)"><rect width="8" height="8" style="fill:var(--sdA)"/><rect width="4" height="8" style="fill:var(--sdB)"/></pattern>
     <pattern id="hachpat" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" style="fill:var(--tot);opacity:.55"/><rect width="3" height="6" style="fill:var(--tot)"/></pattern></defs>`;
-  function chartN(ps, st) {
-    const max = Math.max(1, ...st.map(s => s.n));
-    const top = max <= 4 ? max + 1 : Math.ceil(max * 1.15);
-    const hh = H - B - T;
-    return quadro(ps, bw => defs + ps.map((p, i) => {
-      const x = L + i * bw, cx = x + bw / 2, s = st[i], w = Math.min(34, bw * 0.56);
-      if (p.semDados) return sdRect(x, bw);
-      let y = H - B, out = '';
-      for (const [k, , cor] of TIPOS) {
-        const v = s.porTipo[k]; if (!v) continue;
-        const h = v / top * hh; y -= h;
-        out += `<rect x="${cx - w / 2}" y="${y}" width="${w}" height="${h}" style="fill:${cor}"/>`;
-      }
-      out += s.n ? `<text x="${cx}" y="${y - 6}" text-anchor="middle" style="fill:var(--ink);font-size:12px;font-weight:800;${halo}">${s.n}</text>`
-        : `<text x="${cx}" y="${H - B - 8}" text-anchor="middle" style="fill:var(--ok);font-size:12px;font-weight:800">✓</text>`;
-      return out;
-    }).join(''));
-  }
   function chartT(ps, st) {
     const max = Math.max(...st.map(s => s.pct), 0.0001);
     const top = max * 1.25;
@@ -242,17 +227,26 @@
       const p = ps[ci], marcada = celSel && celSel.ordem === p.ordem && celSel.sis == null;
       return `<button class="${clsCel(p, temNaCol(ci), marcada)} tcel" data-ordem="${p.ordem}" data-tot="1" aria-label="Todos os sistemas · ${esc(rot(p))}${p.semDados ? ' · sem dados' : ''}">${p.semDados ? '' : divisoes()}${u.map(t => `<span class="bar tot" style="left:${(t.x0 * 100).toFixed(2)}%;width:${((t.x1 - t.x0) * 100).toFixed(2)}%"></span>`).join('')}</button>`;
     }).join('') + `<div class="tot tt">${fmtHc(totMs) || ''}</div>`;
+    // chamados consolidados (todos os sistemas, sem indevidos) por coluna; à direita, chamados distintos da tela inteira
+    const idsTela = new Set();
+    const linhaCham = `<div class="sys ncl">Chamados</div>` + ps.map(p => {
+      if (p.semDados) return `<div class="ncel sd" aria-label="${esc(rot(p))} · sem dados">–</div>`;
+      const its = validos.filter(c => !c.indevido && noPeriodo(c, p)); its.forEach(c => idsTela.add(c.id));
+      const marcada = celSel && celSel.ordem === p.ordem && celSel.sis == null;
+      return its.length ? `<button class="ncel tem${marcada ? ' sel' : selOrdem === p.ordem ? ' colsel' : ''}" data-ordem="${p.ordem}" data-tot="1" aria-label="${its.length} chamado${its.length > 1 ? 's' : ''} · ${esc(rot(p))}">${its.length}</button>`
+        : `<div class="ncel zero${selOrdem === p.ordem ? ' colsel' : ''}" aria-label="nenhum chamado · ${esc(rot(p))}">0</div>`;
+    }).join('') + `<div class="tot nt">${idsTela.size}</div>`;
     const temSd = ps.some(p => p.semDados);
     const sub = modo === 'DIA' ? 'Cada coluna = expediente das 08h às 21h (linha = 14h).' : modo === 'SEMANA' ? 'Cada coluna = 7 dias (seg a dom), cada dia das 08h às 21h.' : 'Cada coluna = os dias do mês, cada dia das 08h às 21h.';
     const lab = mxAberto ? (window.innerWidth < 380 ? 92 : 112) + 'px' : 'max-content';
     return `<div class="card mxcard ${mxAberto ? 'mx-on' : 'mx-off'}" id="cardSis">
       <button class="mxhead" id="bMx" aria-expanded="${mxAberto}" aria-label="${mxAberto ? 'Fechar' : 'Abrir'} a matriz de sistemas"><h2>${titulo}</h2><span class="seta" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="${mxAberto ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'}"/></svg></span></button>
       ${mxAberto ? `<div class="mxsub">${sub} Horas = no expediente; no Total, tempo com algum sistema com problema.</div>` : ''}
-      <div class="mx" style="--n:${ps.length};--lab:${lab}"><div class="corner">${mxAberto ? 'Sistema' : ''}</div>${cab}<div class="tot hd2">Horas</div>${mxAberto ? linhas + (sis.length ? '<div class="sep"></div>' : '') : ''}${linhaTot}</div>
+      <div class="mx" style="--n:${ps.length};--lab:${lab}"><div class="corner">${mxAberto ? 'Sistema' : ''}</div>${cab}<div class="tot hd2">Horas</div>${mxAberto ? linhas + (sis.length ? '<div class="sep"></div>' : '') : ''}${linhaTot}${linhaCham}</div>
       ${mxAberto && !sis.length ? `<div class="vazio">Nenhum sistema com chamado nesse período.</div>` : ''}
       <div class="legend">
         ${mxAberto ? TIPOS.slice(0, 4).map(([, n, cor]) => `<span><i style="background:${cor}"></i>${n}</span>`).join('') + '<span><i class="fora"></i>fora do expediente</span><span><i class="indev"></i>indevido</span>' : ''}
-        <span><i style="background:var(--tot)"></i>Total: todos os sistemas juntos</span>
+        <span><i style="background:var(--tot)"></i>Total: todos os sistemas juntos</span><span><b class="lgn">nº</b>Chamados: todos os sistemas, sem indevidos</span>
         ${temSd ? '<span><i class="sd"></i>sem dados de sistemas</span>' : ''}
       </div>
       <div class="cap">${mxAberto ? 'Toque numa célula com chamado para ver a lista · toque no cabeçalho da coluna para selecionar o período.' : ''}</div>
@@ -262,16 +256,15 @@
   function tabela(ps, st) {
     const fd = modo === 'DIA' ? filtroDia : null;
     const nome = modo === 'DIA' ? (fd != null ? WD_PLURAL[fd].charAt(0).toUpperCase() + WD_PLURAL[fd].slice(1) : 'Dias') : modo === 'SEMANA' ? 'Semanas' : 'Meses';
-    const linhas = ps.map((p, i) => ({ p, s: st[i], a: i > 0 ? ps[i - 1] : null, sa: i > 0 ? st[i - 1] : null })).reverse().map(({ p, s, a, sa }) => {
-      const cmp = comparavel(p, a);
-      const vN = cmp ? `<td class="tv">${dlt(s.n - sa.n, '')}</td>` : '<td class="tv nd">—</td>';
-      const vT = cmp ? `<td class="tv">${dlt(Math.round((s.pct - sa.pct) * 10) / 10, '')}</td>` : '<td class="tv nd">—</td>';
+    const linhas = ps.map((p, i) => ({ p, s: st[i] })).reverse().map(({ p, s }) => {
       const nCel = p.semDados ? '<td class="nd">—</td>' : s.n ? `<td>${s.n}</td>` : '<td><span class="pill okp">0</span></td>';
-      return `<tr data-ordem="${p.ordem}" class="${p.ordem === sel ? 'sel' : ''}" aria-selected="${p.ordem === sel}"><td>${esc(rotTab(p))}${p.andamento ? '*' : ''}</td>${nCel}${vN}<td>${p.semDados ? '—' : s.ms ? fmtH(s.ms) : '0'}</td><td>${p.semDados ? '—' : pctTxt(s.pct)}</td>${vT}</tr>`;
+      const dom = p.tipo === 'DIA' && p.ini.getDay() === 0;
+      const tm = v => p.semDados ? '<td class="nd">—</td>' : `<td>${v ? fmtH(v) : '0'}</td>`;
+      return `<tr data-ordem="${p.ordem}" class="${p.ordem === sel ? 'sel' : ''}${dom ? ' dom' : ''}" aria-selected="${p.ordem === sel}"><td>${esc(rotTab(p))}${p.andamento ? '*' : ''}</td>${nCel}${tm(s.msTot)}${tm(s.ms)}</tr>`;
     }).join('');
     return `<div class="card"><h2>${nome}</h2><div style="overflow-x:auto"><table class="conf tsel">
-      <thead><tr><th>${modo === 'DIA' ? 'DIA' : modo === 'SEMANA' ? 'SEMANA' : 'MÊS'}</th><th>CHAM.</th><th>VAR.</th><th>TEMPO</th><th>% EXP.</th><th>VAR.</th></tr></thead><tbody>${linhas}</tbody></table></div>
-      <div class="small muted" style="margin-top:6px">CHAM. = chamados no período (sem indevidos) · TEMPO = tempo com falha no expediente · % EXP. = tempo ÷ expediente do período · VAR. = variação contra ${modo === 'DIA' ? (fd != null ? WD_ANT[fd] : 'o dia anterior') : modo === 'SEMANA' ? 'a semana anterior' : 'o mês anterior'} (p.p. no %), só com os dois períodos fechados. * = em andamento.</div></div>`;
+      <thead><tr><th>${modo === 'DIA' ? 'DIA' : modo === 'SEMANA' ? 'SEMANA' : 'MÊS'}</th><th>CHAM.</th><th>TEMPO TOTAL</th><th>NO EXPED.</th></tr></thead><tbody>${linhas}</tbody></table></div>
+      <div class="small muted" style="margin-top:6px">CHAM. = chamados no período (sem indevidos) · TEMPO TOTAL = tempo com algum sistema com falha no período, em qualquer horário · NO EXPED. = a parte desse tempo dentro do expediente (08h–21h). Sobreposição conta uma vez. * = em andamento.</div></div>`;
   }
 
   // ---------------- toques ----------------
@@ -298,7 +291,7 @@
     const bx = root.querySelector('#bWdx'); if (bx) bx.onclick = () => setFiltroDia(null);
     root.querySelectorAll('svg .hit, table.tsel tr[data-ordem], .mx .hd').forEach(el => el.onclick = () => toggleSel(el.dataset.ordem));
     root.querySelector('#bMx').onclick = () => { mxAberto = !mxAberto; if (!mxAberto) celSel = null; redesenhar(); };
-    root.querySelectorAll('.mx .cel').forEach(b => b.onclick = () => {
+    root.querySelectorAll('.mx .cel, .mx button.ncel').forEach(b => b.onclick = () => {
       const p = ps.find(q => q.ordem === b.dataset.ordem); if (!p || p.semDados) return;
       const tot = !!b.dataset.tot, s = tot ? null : b.dataset.sis;
       const itens = ctx.itens.filter(x => (tot || x.sistema === s) && noPeriodo(x, p)).sort((a, b2) => a.ini - b2.ini);

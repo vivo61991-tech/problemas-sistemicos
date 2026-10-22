@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.8.1)
+# Problemas Sistêmicos (v1.9.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -32,7 +32,11 @@ A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fix
    - **busca** por texto (campo com lupa);
    - **filtro de sistema** numa lista própria do app (não a do navegador): nome à esquerda e quantidade de ocorrências (sem indevidos) numa cápsula lilás à direita. Com um sistema escolhido, a caixa mostra o nome, a quantidade e um **✕ à esquerda** para remover o filtro na hora;
    - filtro por tipo de falha (ou só indevidos).
-3. **Painel**: o mesmo painel do app de NS: Dia / Semana / Mês (botão ou arrastar para o lado), filtro do dia da semana no modo Dia, seleção de coluna (toque no gráfico, na tabela ou no cabeçalho da matriz), cards, gráficos, matriz sistemas × períodos e tabela.
+3. **Painel**: o mesmo painel do app de NS: Dia / Semana / Mês (botão ou arrastar para o lado), filtro do dia da semana no modo Dia, seleção de coluna (toque no gráfico, na tabela ou no cabeçalho da matriz) e:
+   - cards do período;
+   - gráfico **Tempo com falha no expediente** (o gráfico "Chamados por dia" saiu);
+   - matriz **Sistemas × períodos**, com a linha **Chamados** embaixo do Total: quantidade de chamados de todos os sistemas (sem indevidos) em cada coluna e, à direita, os chamados distintos da tela inteira. Tocar no número abre a lista;
+   - tabela com **CHAM.**, **TEMPO TOTAL** (tempo com falha no período em qualquer horário) e **NO EXPED.** (a parte dentro de 08h–21h), sem colunas de variação. No modo Dia, o domingo aparece em vermelho, como no gráfico.
 
 ## Como o Painel monta os períodos
 O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pelo app:
@@ -41,7 +45,7 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 - **Mês**: os 7 últimos meses do calendário.
 - Um chamado conta em todos os períodos em que esteve ativo. O tempo é o trecho dentro do **expediente 08h–21h**; no total, sobreposição conta uma vez e indevido fica fora.
 - **% do expediente** = tempo ÷ expediente do período inteiro (dia 13h; semana 7 × 13h; mês dias × 13h).
-- Período em andamento leva `*` e não tem variação (ainda vai crescer). Período antes do 1º chamado do arquivo fica listrado ("sem dados").
+- Período em andamento leva `*` (ainda vai crescer). Período antes do 1º chamado do arquivo fica listrado ("sem dados").
 - Variação: ▲ rosa = piorou, ▼ verde = melhorou.
 
 ## Cores

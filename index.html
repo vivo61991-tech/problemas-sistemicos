@@ -313,6 +313,18 @@ table.tsel tbody tr.sel td:last-child{border-right-color:var(--selln)}
 .mx .sys{font-size:11px;line-height:1.15;font-weight:600;color:var(--ink);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;align-self:center;padding-right:2px}
 .mx .sys.sel{color:var(--selink)}
 .mx .sys.totl{font-weight:800;color:var(--tot)}
+/* linha "Chamados": quantidade consolidada por coluna, embaixo do Total */
+.mx .sys.ncl{font-weight:800;color:var(--ink2)}
+.mx .ncel{height:24px;border-radius:6px;border:0;padding:0;display:grid;place-items:center;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);background:var(--grid);min-width:0;width:100%}
+.mx button.ncel{cursor:pointer;background:color-mix(in srgb,var(--tot) 12%,var(--card));color:var(--tot)}
+.mx .ncel.zero{color:var(--ok);background:var(--grid);font-weight:700}
+.mx .ncel.sd{color:var(--ink3);background:repeating-linear-gradient(135deg,var(--sdA) 0 4px,var(--sdB) 4px 8px)}
+.mx .ncel.colsel{outline:1px solid var(--selln);outline-offset:-1px}
+.mx .ncel.sel{outline:2px solid #FF9901;outline-offset:-1px}
+.mx .tot.nt{color:var(--ink2)}
+.mxcard .legend b.lgn{font-size:10px;font-weight:800;color:var(--tot);background:color-mix(in srgb,var(--tot) 12%,var(--card));border-radius:3px;padding:0 3px}
+/* tabela de dias: domingo em vermelho, como no gráfico */
+table.conf tr.dom td:first-child{color:var(--domc)}
 @media (prefers-color-scheme: dark){.mx .hd.and{color:#d3b5f0}}
 .mx .sep{grid-column:1 / -1;height:1px;background:var(--line);margin:2px 0}
 .mx .cel{position:relative;height:28px;border-radius:6px;background:var(--grid);overflow:hidden;cursor:default;border:0;padding:0;display:block;width:100%;min-width:0}
