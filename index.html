@@ -331,6 +331,38 @@ table.tsel tbody tr.sel td:last-child{border-right-color:var(--selln)}
 .mxcard .legend b.lgn{font-size:10px;font-weight:800;color:var(--tot);background:color-mix(in srgb,var(--tot) 12%,var(--card));border-radius:3px;padding:0 3px}
 /* tabela de dias: domingo em vermelho, como no gráfico */
 table.conf tr.dom td:first-child{color:var(--domc)}
+/* tabela de dias do Painel */
+.tdw{overflow-x:auto}
+table.tdias{width:100%;border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums;font-size:13.5px}
+table.tdias th{font-size:10px;font-weight:700;letter-spacing:.5px;line-height:1.2;color:var(--p700);text-align:center;padding:8px 4px;background:var(--p50);white-space:normal}
+table.tdias th:first-child{border-radius:10px 0 0 10px}
+table.tdias th:last-child{border-radius:0 10px 10px 0}
+@media (prefers-color-scheme: dark){table.tdias th{background:#2a1c3d;color:#d3b5f0}}
+table.tdias td{text-align:center;padding:9px 4px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle;color:var(--ink)}
+table.tdias tbody tr:last-child td{border-bottom:0}
+table.tdias td.c1,table.tdias th.c1{text-align:left;padding-left:10px}
+table.tdias td.c1 .pa{display:block;font-size:14px;font-weight:800}
+table.tdias td.c1 .pb{display:block;font-size:11px;color:var(--ink3);margin-top:1px;white-space:normal;line-height:1.25}
+table.tdias tr.dom td.c1 .pa,table.tdias tr.dom td.c1 .pb{color:var(--domc)}
+table.tdias tr.and td.c1 .pb{color:var(--p700);font-weight:600}
+@media (prefers-color-scheme: dark){table.tdias tr.and td.c1 .pb{color:#d3b5f0}}
+table.tdias td.ex{font-weight:800}
+table.tdias td.nd{color:var(--ink3);font-size:12.5px}
+table.tdias .z{color:var(--ink3);font-weight:600}
+table.tdias .nchip{display:inline-block;min-width:26px;padding:2px 8px;border-radius:999px;font-weight:800;font-size:12.5px;background:color-mix(in srgb,var(--tot) 13%,var(--card));color:var(--tot)}
+table.tdias .nchip.ok{background:var(--okbg);color:var(--ok)}
+table.tdias td.pc{min-width:62px}
+table.tdias td.pc .pt{display:block;font-weight:800;font-size:12.5px}
+table.tdias td.pc .pt.z{color:var(--ok)}
+table.tdias .pbar{display:block;height:5px;border-radius:999px;background:var(--expbg);margin:4px auto 0;width:52px;overflow:hidden}
+table.tdias .pbar i{display:block;height:100%;border-radius:999px;background:var(--tot)}
+table.tdias tbody tr{cursor:pointer}
+table.tdias tbody tr:hover td{background:color-mix(in srgb,var(--p50) 60%,transparent)}
+table.tdias tbody tr.sel td{background:var(--selbg)}
+table.tdias tbody tr.sel td.c1{box-shadow:inset 3px 0 0 #FF9901}
+table.tdias tbody tr.sel td.c1 .pa{color:var(--selink)}
+.tnota{margin-top:8px;line-height:1.45}
+@media (max-width:360px){table.tdias{font-size:12.5px}table.tdias td{padding:9px 2px}table.tdias th{padding:8px 2px;font-size:9.5px;letter-spacing:.2px}table.tdias td.c1,table.tdias th.c1{padding-left:6px}table.tdias .pbar{width:42px}table.tdias td.pc{min-width:50px}}
 @media (prefers-color-scheme: dark){.mx .hd.and{color:#d3b5f0}}
 .mx .sep{grid-column:1 / -1;height:1px;background:var(--line);margin:2px 0}
 .mx .cel{position:relative;height:28px;border-radius:6px;background:var(--grid);overflow:hidden;cursor:default;border:0;padding:0;display:block;width:100%;min-width:0}

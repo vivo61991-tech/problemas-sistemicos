@@ -4,7 +4,7 @@
    Os períodos são montados aqui a partir das datas de cada chamado (o sistemas.txt tem uma linha por ID). */
 (function () {
   'use strict';
-  const VERSAO = '1.10.0';
+  const VERSAO = '1.11.0';
   const HORA_INI = 8, HORA_FIM = 21, EXP = (HORA_FIM - HORA_INI) * 3600e3;   // expediente 08:00–21:00 (13h)
   const POS14 = ((14 - HORA_INI) / (HORA_FIM - HORA_INI) * 100).toFixed(2);   // marca das 14h na coluna do dia
   const LIMITE = 7;                                                         // 7 dias, 7 semanas, 7 meses
@@ -29,7 +29,8 @@
   const COR = t => TIPOS.find(x => x[0] === tipoK(t))[2];
 
   // ---------------- estado (só enquanto o app está aberto) ----------------
-  let modo = 'DIA', filtroDia = null, sel = null, mxAberto = true, celSel = null;
+  // a matriz de sistemas sempre começa fechada (e volta a fechar ao entrar na página do Painel)
+  let modo = 'DIA', filtroDia = null, sel = null, mxAberto = false, celSel = null;
   let ctx = null;   // { itens, inicio, now, abrirLista(titulo, sub, ids), root, rerender }
 
   // ---------------- períodos montados a partir das datas ----------------
@@ -269,18 +270,28 @@
     </div>`;
   }
 
+  // tabela: dia (data em destaque e dia da semana embaixo), chamados, tempo total, no expediente e % do expediente
   function tabela(ps, st) {
     const fd = modo === 'DIA' ? filtroDia : null;
     const nome = modo === 'DIA' ? (fd != null ? WD_PLURAL[fd].charAt(0).toUpperCase() + WD_PLURAL[fd].slice(1) : 'Dias') : modo === 'SEMANA' ? 'Semanas' : 'Meses';
+    const cel1 = p => {
+      const a = p.tipo === 'DIA' ? ddmm(p.ini) : p.tipo === 'SEMANA' ? ddmm(p.ini) : MES[p.ini.getMonth()];
+      const b = p.tipo === 'DIA' ? WD[p.ini.getDay()].toLowerCase() : p.tipo === 'SEMANA' ? 'a ' + ddmm(addD(p.fim, -1)) : String(p.ini.getFullYear());
+      return `<b class="pa">${a}${p.andamento ? '*' : ''}</b><small class="pb">${b}${p.andamento ? '<br>em andamento' : ''}</small>`;
+    };
     const linhas = ps.map((p, i) => ({ p, s: st[i] })).reverse().map(({ p, s }) => {
-      const nCel = p.semDados ? '<td class="nd">—</td>' : s.n ? `<td>${s.n}</td>` : '<td><span class="pill okp">0</span></td>';
       const dom = p.tipo === 'DIA' && p.ini.getDay() === 0;
-      const tm = v => p.semDados ? '<td class="nd">—</td>' : `<td>${v ? fmtH(v) : '0'}</td>`;
-      return `<tr data-ordem="${p.ordem}" class="${p.ordem === sel ? 'sel' : ''}${dom ? ' dom' : ''}" aria-selected="${p.ordem === sel}"><td>${esc(rotTab(p))}${p.andamento ? '*' : ''}</td>${nCel}${tm(s.msTot)}${tm(s.ms)}</tr>`;
+      const cls = [p.ordem === sel ? 'sel' : '', dom ? 'dom' : '', p.andamento ? 'and' : '', p.semDados ? 'sd' : ''].filter(Boolean).join(' ');
+      if (p.semDados) return `<tr data-ordem="${p.ordem}" class="${cls}" aria-selected="${p.ordem === sel}"><td class="c1">${cel1(p)}</td><td colspan="4" class="nd">sem dados de sistemas</td></tr>`;
+      const ch = s.n ? `<span class="nchip">${s.n}</span>` : '<span class="nchip ok">0</span>';
+      const tm = v => v ? fmtH(v) : '<span class="z">0</span>';
+      const pc = Math.min(100, s.pct);
+      return `<tr data-ordem="${p.ordem}" class="${cls}" aria-selected="${p.ordem === sel}"><td class="c1">${cel1(p)}</td><td>${ch}</td><td>${tm(s.msTot)}</td><td class="ex">${tm(s.ms)}</td>` +
+        `<td class="pc"><span class="pt${s.ms ? '' : ' z'}">${pctTxt(s.pct)}</span><span class="pbar" aria-hidden="true"><i style="width:${pc.toFixed(1)}%"></i></span></td></tr>`;
     }).join('');
-    return `<div class="card"><h2>${nome}</h2><div style="overflow-x:auto"><table class="conf tsel">
-      <thead><tr><th>${modo === 'DIA' ? 'DIA' : modo === 'SEMANA' ? 'SEMANA' : 'MÊS'}</th><th>CHAM.</th><th>TEMPO TOTAL</th><th>NO EXPED.</th></tr></thead><tbody>${linhas}</tbody></table></div>
-      <div class="small muted" style="margin-top:6px">CHAM. = chamados no período (sem indevidos) · TEMPO TOTAL = tempo com algum sistema com falha no período, em qualquer horário · NO EXPED. = a parte desse tempo dentro do expediente (08h–21h). Sobreposição conta uma vez. * = em andamento.</div></div>`;
+    return `<div class="card"><h2>${nome}</h2><div class="tdw"><table class="tdias tsel">
+      <thead><tr><th class="c1">${modo === 'DIA' ? 'DIA' : modo === 'SEMANA' ? 'SEMANA' : 'MÊS'}</th><th>CHAM.</th><th>TEMPO<br>TOTAL</th><th>NO<br>EXPED.</th><th>%<br>EXPED.</th></tr></thead><tbody>${linhas}</tbody></table></div>
+      <div class="small muted tnota">CHAM. = chamados no período (sem indevidos) · TEMPO TOTAL = tempo com algum sistema com falha, em qualquer horário · NO EXPED. = a parte dentro do expediente (08h–21h) · % EXPED. = NO EXPED. ÷ expediente (no período em andamento, só as horas que já passaram). Sobreposição conta uma vez. * = em andamento.</div></div>`;
   }
 
   // ---------------- toques ----------------
@@ -354,6 +365,7 @@
 
   window.PSPainel = {
     versao: VERSAO, render, gesto, trechos,
+    recolher: () => { mxAberto = false; celSel = null; },
     estado: () => ({ modo, filtroDia, sel, mxAberto, celSel }),
     msExpediente: c => { let ms = 0; for (let d = dia0(c.ini); d < c.fimCalc; d = addD(d, 1)) ms += trechos(c, { ini: d, dias: 1 }).reduce((a, t) => a + t.ms, 0); return ms; },
   };

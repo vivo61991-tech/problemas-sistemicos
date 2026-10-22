@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.10.0';
+const VERSION = '1.11.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -571,6 +571,7 @@ function renderTab() {
 function setTab(t) {
   if (!TABS[t] || t === S.tab) return;
   S.tab = t;
+  if (t === 'painel' && window.PSPainel && PSPainel.recolher) PSPainel.recolher();   // matriz de sistemas sempre começa fechada
   Object.entries(TABS).forEach(([k, id]) => { $(id).hidden = k !== t; });
   document.querySelectorAll('#tabs button').forEach(b => { const on = b.dataset.v === t; b.classList.toggle('on', on); b.setAttribute('aria-current', on ? 'page' : 'false'); });
   renderTab();
