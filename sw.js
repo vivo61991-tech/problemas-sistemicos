@@ -1,5 +1,5 @@
 /* Problemas Sistêmicos — service worker */
-const VERSION = '1.14.0';
+const VERSION = '1.15.0';
 const CACHE = 'sistemicos-v' + VERSION;
 const CORE = ['./', 'index.html', 'painel.js', 'notif.js', 'app.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
@@ -15,8 +15,8 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
   // sistemas.txt e notificacao.txt nunca passam pelo cache do SW: a última cópia válida fica guardada pelo próprio app
   if (/\/(sistemas|notificacao)\.txt$/.test(url.pathname)) return;
-  // app: rede primeiro; sem rede, usa a cópia guardada
-  e.respondWith(fetch(e.request).then(res => {
+  // app: rede primeiro, sempre conferindo com o servidor (sem usar cópia velha do navegador); sem rede, usa a cópia guardada
+  e.respondWith(fetch(e.request.url, { cache: 'no-cache', credentials: 'same-origin' }).then(res => {
     if (res.ok) { const cp = res.clone(); caches.open(CACHE).then(c => c.put(e.request, cp)); }
     return res;
   }).catch(() => caches.match(e.request, { ignoreSearch: true })

@@ -5,7 +5,7 @@
    Vale só STATUS = ATIVO e dentro das datas (sem início = já vale; sem fim = vale até alguém desativar). */
 (function () {
   'use strict';
-  const VERSAO = '1.14.0';
+  const VERSAO = '1.15.0';
   const K = { dados: 'ps.notif', lidas: 'ps.notif.lidas' };
   const OBRIG = ['ID', 'TIPO', 'TITULO', 'TEXTO'];
   const TAGS = ['b', 'i', 's', 'm', 'roxo', 'verde', 'laranja', 'pink', 'link'];
@@ -154,7 +154,7 @@
       if (!it) { fechar(); return; }
       const pend = it.obrig && !lida(it);
       box.className = `nt t-${it.tipo}`;
-      box.innerHTML = `<div class="nt-top">${m.daLista ? '<button class="nt-volta" id="ntVolta">‹ Notificações</button>' : ''}<span class="sp"></span>${X}</div>
+      box.innerHTML = `<div class="nt-top">${m.daLista ? '<button class="nt-x nt-volta" id="ntVolta" aria-label="Voltar para a lista" title="Voltar para a lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>' : ''}<span class="sp"></span>${X}</div>
         <div class="nt-h"><span class="nt-ic">${ICONE[it.tipo]}</span><h3 id="ntTit">${esc(it.titulo || NOME[it.tipo])}</h3></div>
         <div class="nt-corpo">${html(it.texto)}</div>
         ${pend ? '<button class="nt-ciente" id="ntCiente">Ciente</button>' : ''}`;

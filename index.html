@@ -458,9 +458,8 @@ table.tdias tbody tr.sel td.c1 .pa{color:var(--selink)}
 .nt-top .sp{flex:1}
 .nt-top h3{margin:0;font-size:17px}
 .nt:focus{outline:none}
-.nt-x{flex:none;width:34px;height:34px;border-radius:50%;border:0;background:var(--bg);color:var(--ink2);font-size:16px;cursor:pointer}
-.nt-volta{border:0;background:none;color:var(--p700);font-weight:700;font-size:14px;cursor:pointer;padding:4px 0}
-@media (prefers-color-scheme: dark){.nt-volta{color:#d3b5f0}}
+.nt-x{flex:none;width:34px;height:34px;border-radius:50%;border:0;background:var(--bg);color:var(--ink2);font-size:16px;cursor:pointer;display:grid;place-items:center;padding:0}
+.nt-volta svg{width:22px;height:22px;display:block}
 .nt-h{display:flex;align-items:center;gap:14px;margin-top:14px}
 .nt-h h3{margin:0;font-size:19px;line-height:1.25;letter-spacing:-.2px;overflow-wrap:anywhere}
 .nt-ic{flex:none;width:38px;height:38px;display:block}
@@ -496,7 +495,7 @@ body.nt-on{overflow:hidden}
       <div class="sync"><span class="dot" id="syncDot"></span><span id="syncTx">Carregando…</span></div>
     </div>
     <button class="ib" id="btNotif" hidden aria-label="Notificações" title="Notificações">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
       <span class="nbd num" hidden></span>
     </button>
     <button class="ib" id="btBell" aria-label="Avisos no aparelho" title="Avisar no aparelho quando um chamado mudar">
@@ -552,8 +551,8 @@ body.nt-on{overflow:hidden}
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="painel.js"></script>
-<script src="notif.js"></script>
-<script src="app.js"></script>
+<script src="painel.js?v=1.15.0"></script>
+<script src="notif.js?v=1.15.0"></script>
+<script src="app.js?v=1.15.0"></script>
 </body>
 </html>
