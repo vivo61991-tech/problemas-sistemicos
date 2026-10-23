@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.24.1';
+const VERSION = '1.25.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -16,7 +16,7 @@ const KNOWN = ['ID', 'SISTEMA', 'CHAMADO', 'STATUS', 'CRITICIDADE', 'EVOLUCAO', 
   'DATA_INICIO', 'DATA_FIM', 'TIPO_FALHA', 'GRUPOS_RESPONSAVEIS', 'GRUPOS_IMPACTADOS', 'AREA_ACIONADA',
   'ALERTA_ENVIADO', 'DATA_ATUALIZACAO', 'DADO_ATUALIZADO', 'TEMPO_DECORRIDO'];
 // campos acompanhados: mudança em qualquer um entra em "Últimas mudanças"
-const TRACK = [['STATUS', 'Status'], ['EVOLUCAO', 'Evolução'], ['DATA_FIM', 'Fim'], ['CRITICIDADE', 'Criticidade'], ['TIPO_FALHA', 'Tipo de falha']];
+const TRACK = [['STATUS', 'Status'], ['EVOLUCAO', 'Evolução'], ['DATA_FIM', 'Fim'], ['CRITICIDADE', 'Criticidade'], ['TIPO_FALHA', 'Tipo de falha'], ['ALERTA_ENVIADO', 'Alerta enviado']];
 
 // colunas que continuam sendo lidas (mudanças, conferência), mas não aparecem nos cards nem no detalhe
 const OCULTAS = ['FLAG', 'TEMPO_DECORRIDO', 'DADO_ATUALIZADO', 'DATA_ATUALIZACAO'];
@@ -152,7 +152,7 @@ function parseTxt(text) {
 /* ---------- comparação por ID ---------- */
 function snapOf(rows) {
   const s = {};
-  rows.forEach(r => { s[r.ID] = { STATUS: r.STATUS, EVOLUCAO: r.EVOLUCAO || '', DATA_FIM: r.DATA_FIM || '', CRITICIDADE: r.CRITICIDADE || '', TIPO_FALHA: r.TIPO_FALHA || '', U: r.DATA_ATUALIZACAO || '', SIS: r.SISTEMA, INC: r.CHAMADO || '' }; });
+  rows.forEach(r => { s[r.ID] = { STATUS: r.STATUS, EVOLUCAO: r.EVOLUCAO || '', DATA_FIM: r.DATA_FIM || '', CRITICIDADE: r.CRITICIDADE || '', TIPO_FALHA: r.TIPO_FALHA || '', ALERTA_ENVIADO: r.ALERTA_ENVIADO || '', U: r.DATA_ATUALIZACAO || '', SIS: r.SISTEMA, INC: r.CHAMADO || '' }; });
   return s;
 }
 function diff(prev, rows, at) {
@@ -166,6 +166,7 @@ function diff(prev, rows, at) {
     if (!p) { out.push({ ...base, kind: 'novo', st: r.STATUS, evo: r.EVOLUCAO || '' }); continue; }
     const ch = [];
     for (const [f, label] of TRACK) {
+      if (!(f in p)) continue;   // campo que a cópia anterior ainda não guardava (ex.: depois de atualizar o app): não é mudança
       const a = p[f] || '', b = r[f] || '';
       if (a !== b) ch.push({ f, label, de: a, para: b });
     }
@@ -401,7 +402,7 @@ function renderOpen() {
       <div class="ft"><div class="timer num"><small>aberto há</small><span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span></div>
         <div class="when">${r.EVOLUCAO ? `<span class="evo">${esc(r.EVOLUCAO)}</span>` : ''}<span class="ini num">início ${ini} ${fHM(r._ini)}</span></div></div>
       ${barraDia(r, now)}
-      ${rk ? `<span class="selo">${rk === 'novo' ? 'NOVO' : 'MUDOU'}</span>` : ''}
+      ${rk ? `<span class="selo" role="button" tabindex="0" data-log="${esc(r.ID)}" aria-label="${rk === 'novo' ? 'Novo' : 'Mudou'}: ver as últimas mudanças" title="Ver as últimas mudanças">${rk === 'novo' ? 'NOVO' : 'MUDOU'}</span>` : ''}
       ${al ? `<span class="alrt" role="button" tabindex="0" data-alerta="${esc(r.ID)}" aria-label="Alerta enviado" title="Alerta enviado">${SIRENE_SVG}</span>` : ''}
     </button>`;
   }).join('');
@@ -420,8 +421,8 @@ function alternarPin(id) {
 }
 // janela informativa do alerta enviado
 const AL = { aberto: false, hist: false, ignorarPop: false };
-function abrirAlerta(id) {
-  const r = S.rows.find(x => x.ID === id); if (!r) return;
+// janela informativa (mesma caixa para o alerta enviado e para as últimas mudanças do card)
+function abrirInfo(titulo, corpo) {
   let bg = $('alBg');
   if (!bg) {
     bg = document.createElement('div'); bg.id = 'alBg'; bg.className = 'nt-bg'; bg.hidden = true;
@@ -430,16 +431,31 @@ function abrirAlerta(id) {
     document.body.appendChild(bg);
   }
   const ic = window.PSNotif && PSNotif.icone ? PSNotif.icone('INFORMACAO') : '';
-  $('alBox').innerHTML = `<div class="nt-h"><span class="nt-ic">${ic}</span><h3 id="alTit">Alerta enviado</h3></div>
-    <div class="nt-corpo"><p class="al-sis"><span class="idc num">${esc(r.ID)}</span> <b>${esc(r.SISTEMA)}</b></p>
-      <p>Foi enviado um <b>alerta</b> para <b>reforçar a solicitação com a área responsável</b>${r.AREA_ACIONADA && r.AREA_ACIONADA !== 'undefined' ? ` (<b>${esc(r.AREA_ACIONADA)}</b>)` : ''}.</p>
-      <p>O chamado continua em acompanhamento até ser normalizado.</p></div>
+  $('alBox').innerHTML = `<div class="nt-h"><span class="nt-ic">${ic}</span><h3 id="alTit">${titulo}</h3></div>
+    <div class="nt-corpo">${corpo}</div>
     <div class="nt-acoes"><button class="nt-bt" id="alX" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg><span>Fechar</span></button></div>`;
   $('alX').onclick = () => fecharAlerta();
   bg.hidden = false; document.body.classList.add('al-on'); document.documentElement.classList.add('trava');
   if (!AL.aberto) { try { history.pushState({ alerta: 1 }, ''); AL.hist = true; } catch (e) { AL.hist = false; } }
   AL.aberto = true;
+  $('alBox').scrollTop = 0;
   $('alBox').focus({ preventScroll: true });
+}
+function abrirAlerta(id) {
+  const r = S.rows.find(x => x.ID === id); if (!r) return;
+  abrirInfo('Alerta enviado', `<p class="al-sis"><span class="idc num">${esc(r.ID)}</span> <b>${esc(r.SISTEMA)}</b></p>
+      <p>Foi enviado um <b>alerta</b> para <b>reforçar a solicitação com a área responsável</b>${r.AREA_ACIONADA && r.AREA_ACIONADA !== 'undefined' ? ` (<b>${esc(r.AREA_ACIONADA)}</b>)` : ''}.</p>
+      <p>O chamado continua em acompanhamento até ser normalizado.</p>`);
+}
+// selo NOVO / MUDOU: mostra as últimas mudanças registradas desse chamado (o que o selo está anunciando)
+const LOG_JANELA = 10;
+function abrirLog(id) {
+  const r = S.rows.find(x => x.ID === id); if (!r) return;
+  const now = Date.now(), hist = S.log.filter(c => c.id === id);
+  abrirInfo('Últimas mudanças', `<p class="al-sis"><span class="idc num">${esc(r.ID)}</span> <b>${esc(r.SISTEMA)}</b></p>` +
+    (hist.length ? `<div class="feed log-jan">${hist.slice(0, LOG_JANELA).map(c => feedItem(c, now).replace(/data-id="[^"]*"/, 'disabled')).join('')}</div>` +
+      (hist.length > LOG_JANELA ? `<p class="log-mais">Mostrando as ${LOG_JANELA} mais recentes de ${hist.length}. O histórico completo fica no detalhe do chamado.</p>` : '')
+      : '<p>Nenhuma mudança registrada neste aparelho.</p>'));
 }
 function fecharAlerta(porHistorico) {
   if (!AL.aberto) return;
@@ -500,6 +516,7 @@ function feedItem(c, now) {
     if (x.f === 'DATA_FIM') { const f = parseDate(x.para); return f ? fDM(f) + ' ' + fHM(f) : x.para; }
     if (x.f === 'TIPO_FALHA') return tipo({ TIPO_FALHA: x.para }).longo;
     if (x.f === 'CRITICIDADE') return x.para;
+    if (x.f === 'ALERTA_ENVIADO') return x.para === '1' ? 'Sim' : x.para === '0' ? 'Não' : x.para;
     return cap(x.para);
   };
   let itens;
@@ -725,6 +742,7 @@ function drawDet(id, list) {
   const hist = S.log.filter(c => c.id === id);
   const msExp = window.PSPainel ? PSPainel.msExpediente({ ini: r._ini, fimCalc: new Date(endOf(r, now)) }) : null;
   $('sheet').innerHTML = `<button class="fechar" id="shX" aria-label="Fechar" title="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+    <button class="shr" id="shShare" aria-label="Compartilhar as informações do chamado" title="Compartilhar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button>
     ${list ? '<button class="volta" id="shVolta">‹ Voltar à lista</button>' : ''}
     <h3 id="shTitle" class="dt-h"><span class="nm">${esc(r.SISTEMA)}</span><span class="cap-id num" title="ID da solicitação no sistêmico">ID ${esc(r.ID)}</span><span class="stl"><span class="cap-t k-${t.k}">${esc(t.longo)}</span>${statusTag(r.STATUS)}</span></h3>
     <div class="big">
@@ -750,9 +768,45 @@ function drawDet(id, list) {
     ${hist.length ? `<div class="feed">${hist.map(c => feedItem(c, now).replace(/data-id="[^"]*"/, 'disabled')).join('')}</div>` : '<div class="empty" style="padding:0">Nenhuma mudança registrada neste aparelho.</div>'}
     ${analiseHtml(r, now)}`;
   $('shX').onclick = () => history.back();
+  $('shShare').onclick = () => compartilhar(r);
   if ($('shCham')) $('shCham').onclick = () => copiarChamado($('shCham').dataset.cham);
   if (list) $('shVolta').onclick = () => { S.sheet = { mode: 'list', id: null, list }; refreshSheet(); };
   return true;
+}
+/* ---------- compartilhar (WhatsApp, Teams, Outlook...) ----------
+   Título em *negrito* (WhatsApp); depois tipo de falha · status · ID e a lista do chamado até "Alerta enviado".
+   Mudanças registradas e análise do histórico não entram. */
+function textoCompartilhar(r, now = Date.now()) {
+  const t = tipo(r), open = isOpen(r);
+  const msExp = window.PSPainel ? PSPainel.msExpediente({ ini: r._ini, fimCalc: new Date(endOf(r, now)) }) : null;
+  const yn = v => (v === '1' ? 'Sim' : v === '0' ? 'Não' : (v || '—'));
+  const lin = [];
+  const add = (k, v) => { if (v != null && String(v).trim() !== '') lin.push(`${k}: ${v}`); };
+  add('Chamado', temChamado(r.CHAMADO) ? r.CHAMADO : 'Sem chamado');
+  add('Início', fFull(r._ini));
+  add('Fim', r._fim ? fFull(r._fim) : (open ? 'em andamento' : '—'));
+  add('Duração', fDur(endOf(r, now) - r._ini));
+  if (msExp != null) add('No expediente (08h–21h)', msExp ? fDur(msExp) : 'fora do expediente');
+  add('Segmento', r.SEGMENTO);
+  add('Área acionada', r.AREA_ACIONADA);
+  add('Grupos responsáveis', r.GRUPOS_RESPONSAVEIS);
+  add('Grupos impactados', r.GRUPOS_IMPACTADOS);
+  add('Evolução', r.EVOLUCAO);
+  add('Impacto', r.IMPACTO_OPERACIONAL);
+  if ('ALERTA_ENVIADO' in r) add('Alerta enviado', yn(r.ALERTA_ENVIADO));
+  return `*${r.SISTEMA}*\n${t.longo} · ${cap(r.STATUS)} · ID ${r.ID}\n\n${lin.join('\n')}`;
+}
+async function compartilhar(r) {
+  const texto = textoCompartilhar(r);
+  if (navigator.share) {
+    try { await navigator.share({ title: `${r.SISTEMA} · ID ${r.ID}`, text: texto }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }   // a pessoa cancelou: nada a fazer
+  }
+  let ok = false;
+  try { await navigator.clipboard.writeText(texto); ok = true; } catch (e) {
+    try { const ta = document.createElement('textarea'); ta.value = texto; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); ok = document.execCommand('copy'); ta.remove(); } catch (e2) { ok = false; }
+  }
+  toast(ok ? 'Informações do chamado copiadas. Cole no WhatsApp, Teams ou Outlook.' : 'Não foi possível compartilhar neste aparelho.', false, ok ? 3500 : 5000);
 }
 /* ---------- análise do histórico (detalhe) ----------
    Amostra: todo o arquivo (6 meses fechados + o mês atual), mesmo SISTEMA e mesmo tipo de falha.
@@ -858,6 +912,8 @@ function init() {
     if (pn) { e.preventDefault(); alternarPin(pn.dataset.pin); return; }
     const ale = e.target.closest('[data-alerta]');
     if (ale) { e.preventDefault(); abrirAlerta(ale.dataset.alerta); return; }
+    const lg = e.target.closest('[data-log]');
+    if (lg) { e.preventDefault(); abrirLog(lg.dataset.log); return; }
     const it = e.target.closest('[data-id]');
     if (it && !it.disabled) {
       if (it.closest('#sheet')) {   // item da lista do Painel: abre o detalhe com "Voltar à lista"
@@ -890,7 +946,7 @@ function init() {
   // Enter/Espaço no alfinete e na sirene (estão dentro do card)
   document.addEventListener('keydown', e => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
-    const x = e.target.closest && e.target.closest('[data-pin], [data-alerta]');
+    const x = e.target.closest && e.target.closest('[data-pin], [data-alerta], [data-log]');
     if (x) { e.preventDefault(); e.stopPropagation(); x.click(); }
   }, true);
   window.addEventListener('popstate', () => {
