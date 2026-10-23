@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.30.1)
+# Problemas Sistêmicos (v1.30.2)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -88,6 +88,7 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 - Funciona como um **log** discreto, para não concorrer com os chamados: hora (e data, se for de outro dia) à esquerda; em letra pequena o ID e o sistema; embaixo, em letra menor ainda, **uma linha com marcador para cada campo que mudou**: "• **Evolução:** Realizando restart", "• **Status:** Fechado", "• **Fim:** 22/10 12:40" (só o valor que entrou, sem o anterior). Chamado novo: "• **Novo chamado**", "• **Status:** Aberto". O número do chamado não aparece no log.
 - A cada arquivo novo, o app compara cada `ID` com o anterior e registra: chamado novo; mudança em **qualquer campo** do chamado (sistema, chamado, status, criticidade, evolução, segmento, impacto, início, fim, tipo de falha, grupos responsáveis, grupos impactados, área acionada e alerta enviado; só ficam de fora os campos de controle `DATA_ATUALIZACAO`, `DADO_ATUALIZADO`, `TEMPO_DECORRIDO` e `FLAG`); dados atualizados; chamado que saiu do arquivo. Mais de 3 sumindo de uma vez vira alerta.
 - O registro fica **no aparelho** (últimas 300 mudanças).
+- Limpeza automática: registros com ID inválido (com espaço ou aspas — restos de versões anteriores à 1.30, que partiam o arquivo quando o estágio tinha quebra de linha) são apagados ao abrir o app; se a cópia de comparação estiver corrompida, ela é descartada e a comparação recomeça no próximo arquivo, sem gerar mudanças falsas.
 - 🔔 liga avisos do aparelho com o app aberto (mesmo em segundo plano). Com o app fechado não há aviso: isso exige um serviço de envio (push).
 
 ## Conferência dos dados

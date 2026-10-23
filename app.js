@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.30.1';
+const VERSION = '1.30.2';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -167,6 +167,7 @@ function parseTxt(text) {
     const ln = lines[i].ln;
     if (v.length !== cols.length) warns.push(`Linha ${ln} (ID ${r.ID || '?'}): ${v.length} colunas, o cabeçalho tem ${cols.length}`);
     if (!r.ID) { warns.push(`Linha ${ln}: sem ID, ignorada`); continue; }
+    if (!idOk(r.ID)) { warns.push(`Linha ${ln}: ID inválido ("${r.ID.slice(0, 30)}…"), ignorada`); continue; }
     r._ini = parseDate(r.DATA_INICIO);
     if (!r._ini) { warns.push(`Linha ${ln} (ID ${r.ID}): DATA_INICIO inválida ("${r.DATA_INICIO}"), ignorada`); continue; }
     r._fim = parseDate(r.DATA_FIM);
@@ -284,11 +285,29 @@ const S = {
 };
 if (!Array.isArray(S.log)) S.log = [];
 S.pins = load(K.pins, []); if (!Array.isArray(S.pins)) S.pins = [];   // cards fixados: o mais recente primeiro
+// limpeza de restos de leitura errada: versões antigas (antes da 1.30) partiam o arquivo quando um campo livre
+// tinha quebra de linha, e pedaços de texto viravam "chamados" (ID = texto). ID válido não tem espaço nem aspas.
+const idOk = id => /^[^\s"]{1,30}$/.test(String(id == null ? '' : id));
+(function limparRestos() {
+  try {
+    if (S.snap && Object.keys(S.snap).some(k => !idOk(k))) { S.snap = null; S.limparSaiu = true; localStorage.removeItem(K.snap); }   // cópia de comparação corrompida: recomeça do próximo arquivo, sem mudanças falsas
+    const antes = S.log.length;
+    S.log = S.log.filter(c => c.id == null ? (c.kind !== 'saiu-varios' || (c.ids || []).every(idOk)) : idOk(c.id));
+    if (S.log.length !== antes) save(K.log, S.log);
+    const pins = S.pins.filter(idOk); if (pins.length !== S.pins.length) { S.pins = pins; save(K.pins, S.pins); }
+  } catch (e) { /* armazenamento indisponível: segue sem limpar */ }
+})();
 
 function applyText(text, meta, fromStore) {
   const p = parseTxt(text);
   if (!p.ok) return p;
   S.rows = p.rows; S.cols = p.cols; S.warns = p.warns; S.text = text;
+  if (S.limparSaiu) {   // depois de cópia corrompida: "saiu do arquivo" de chamado que continua no arquivo era falso
+    S.limparSaiu = false;
+    const tem = new Set(p.rows.map(r => r.ID)), antes = S.log.length;
+    S.log = S.log.filter(c => !((c.kind === 'saiu' && tem.has(c.id)) || (c.kind === 'saiu-varios' && (c.ids || []).length && c.ids.every(i => tem.has(i)))));
+    if (S.log.length !== antes) save(K.log, S.log);
+  }
   if (meta) { S.etag = meta.etag || S.etag; S.source = meta.source || S.source; S.loadedAt = meta.loadedAt || S.loadedAt; }
   if (!fromStore) {
     const at = new Date().toISOString();
