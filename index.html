@@ -496,15 +496,12 @@ table.tdias tbody tr.sel td.c1 .pa{color:var(--selink)}
 .sheet:not(.show){visibility:hidden;transition:transform .22s ease,visibility 0s .22s}
 .sheet.show{transform:none}
 /* fechar: seta para baixo centralizada no topo (no lugar do ✕) */
-/* topo do detalhe: seta de fechar e compartilhar lado a lado, centralizados */
-.sheet .sh-top{display:flex;justify-content:center;align-items:center;gap:8px;margin:0 0 8px}
-.sheet .fechar{display:flex;align-items:center;justify-content:center;width:64px;height:30px;margin:0;border:0;border-radius:999px;background:var(--bg);color:var(--ink2);cursor:pointer}
+.sheet .fechar{display:flex;align-items:center;justify-content:center;width:64px;height:30px;margin:0 auto 8px;border:0;border-radius:999px;background:var(--bg);color:var(--ink2);cursor:pointer}
 .sheet .fechar:active{background:var(--line)}
 .sheet .fechar svg{width:24px;height:24px}
-/* compartilhar do detalhe: círculo do mesmo tom da seta, à direita dela */
-.sheet .shr{flex:none;width:30px;height:30px;display:grid;place-items:center;border:0;border-radius:50%;background:var(--bg);color:var(--p700);cursor:pointer;padding:0}
-@media (prefers-color-scheme: dark){.sheet .shr{color:#d3b5f0}}
-.sheet .shr svg{width:16px;height:16px}
+/* compartilhar: pequeno, no canto superior direito do detalhe, sem mexer no resto do layout */
+.sheet .shr{position:absolute;top:8px;right:14px;width:30px;height:30px;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:var(--ink2);cursor:pointer;padding:0}
+.sheet .shr svg{width:18px;height:18px}
 .sheet .shr:active{background:var(--bg)}
 .sheet h3{margin:0 0 12px;font-size:20px;letter-spacing:-.3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .sheet h3 .cap-id{color:var(--p700);font-size:12.5px;letter-spacing:0}
@@ -670,8 +667,8 @@ html.trava{overflow:hidden}
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="painel.js?v=1.26.0"></script>
-<script src="notif.js?v=1.26.0"></script>
-<script src="app.js?v=1.26.0"></script>
+<script src="painel.js?v=1.27.0"></script>
+<script src="notif.js?v=1.27.0"></script>
+<script src="app.js?v=1.27.0"></script>
 </body>
 </html>

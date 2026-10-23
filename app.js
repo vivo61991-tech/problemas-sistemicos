@@ -3,10 +3,10 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.26.0';
+const VERSION = '1.27.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
-const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
+const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
 const LOG_MAX = 300;                 // mudanças guardadas no aparelho
 // histórico: ao entrar mostra o mês atual e o anterior; depois, um mês por vez ("Mostrar mês de Agosto")
 const MESES_LONGO = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -15,8 +15,11 @@ const REQUIRED = ['ID', 'SISTEMA', 'STATUS', 'DATA_INICIO'];
 const KNOWN = ['ID', 'SISTEMA', 'CHAMADO', 'STATUS', 'CRITICIDADE', 'EVOLUCAO', 'SEGMENTO', 'IMPACTO_OPERACIONAL',
   'DATA_INICIO', 'DATA_FIM', 'TIPO_FALHA', 'GRUPOS_RESPONSAVEIS', 'GRUPOS_IMPACTADOS', 'AREA_ACIONADA',
   'ALERTA_ENVIADO', 'DATA_ATUALIZACAO', 'DADO_ATUALIZADO', 'TEMPO_DECORRIDO'];
-// campos acompanhados: mudança em qualquer um entra em "Últimas mudanças"
-const TRACK = [['STATUS', 'Status'], ['EVOLUCAO', 'Evolução'], ['DATA_FIM', 'Fim'], ['CRITICIDADE', 'Criticidade'], ['TIPO_FALHA', 'Tipo de falha'], ['ALERTA_ENVIADO', 'Alerta enviado']];
+// campos acompanhados: mudança em QUALQUER campo do chamado entra em "Últimas mudanças" e marca o card
+// (ficam de fora só os de controle, que mudam a toda atualização: DATA_ATUALIZACAO, DADO_ATUALIZADO, TEMPO_DECORRIDO, FLAG)
+const TRACK = [['SISTEMA', 'Sistema'], ['CHAMADO', 'Chamado'], ['STATUS', 'Status'], ['CRITICIDADE', 'Criticidade'], ['EVOLUCAO', 'Evolução'], ['SEGMENTO', 'Segmento'],
+  ['IMPACTO_OPERACIONAL', 'Impacto'], ['DATA_INICIO', 'Início'], ['DATA_FIM', 'Fim'], ['TIPO_FALHA', 'Tipo de falha'], ['GRUPOS_RESPONSAVEIS', 'Grupos responsáveis'],
+  ['GRUPOS_IMPACTADOS', 'Grupos impactados'], ['AREA_ACIONADA', 'Área acionada'], ['ALERTA_ENVIADO', 'Alerta enviado']];
 
 // colunas que continuam sendo lidas (mudanças, conferência), mas não aparecem nos cards nem no detalhe
 const OCULTAS = ['FLAG', 'TEMPO_DECORRIDO', 'DADO_ATUALIZADO', 'DATA_ATUALIZACAO'];
@@ -152,7 +155,7 @@ function parseTxt(text) {
 /* ---------- comparação por ID ---------- */
 function snapOf(rows) {
   const s = {};
-  rows.forEach(r => { s[r.ID] = { STATUS: r.STATUS, EVOLUCAO: r.EVOLUCAO || '', DATA_FIM: r.DATA_FIM || '', CRITICIDADE: r.CRITICIDADE || '', TIPO_FALHA: r.TIPO_FALHA || '', ALERTA_ENVIADO: r.ALERTA_ENVIADO || '', U: r.DATA_ATUALIZACAO || '', SIS: r.SISTEMA, INC: r.CHAMADO || '' }; });
+  rows.forEach(r => { const o = { U: r.DATA_ATUALIZACAO || '', SIS: r.SISTEMA, INC: r.CHAMADO || '' }; for (const [f] of TRACK) if (f in r) o[f] = r[f] || ''; s[r.ID] = o; });
   return s;
 }
 function diff(prev, rows, at) {
@@ -402,7 +405,7 @@ function renderOpen() {
       <div class="ft"><div class="timer num"><small>aberto há</small><span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span></div>
         <div class="when">${r.EVOLUCAO ? `<span class="evo">${esc(r.EVOLUCAO)}</span>` : ''}<span class="ini num">início ${ini} ${fHM(r._ini)}</span></div></div>
       ${barraDia(r, now)}
-      ${rk ? `<span class="selo" role="button" tabindex="0" data-log="${esc(r.ID)}" aria-label="${rk === 'novo' ? 'Novo' : 'Mudou'}: ver as últimas mudanças" title="Ver as últimas mudanças">${rk === 'novo' ? 'NOVO' : 'MUDOU'}</span>` : ''}
+      ${rk ? `<span class="selo" role="button" tabindex="0" data-log="${esc(r.ID)}" aria-label="${rk === 'novo' ? 'Novo' : 'Alterações'}: ver a última mudança" title="Ver a última mudança">${rk === 'novo' ? 'NOVO' : 'ALTERAÇÕES'}</span>` : ''}
       ${al ? `<span class="alrt" role="button" tabindex="0" data-alerta="${esc(r.ID)}" aria-label="Alerta enviado" title="Alerta enviado">${SIRENE_SVG}</span>` : ''}
     </button>`;
   }).join('');
@@ -448,15 +451,12 @@ function abrirAlerta(id) {
       <p>Foi enviado um <b>alerta</b> para <b>reforçar a solicitação com a área responsável</b>${r.AREA_ACIONADA && r.AREA_ACIONADA !== 'undefined' ? ` (<b>${esc(r.AREA_ACIONADA)}</b>)` : ''}.</p>
       <p>O chamado continua em acompanhamento até ser normalizado.</p>`);
 }
-// selo NOVO / MUDOU: mostra as últimas mudanças registradas desse chamado (o que o selo está anunciando)
-const LOG_JANELA = 10;
+// selo NOVO / ALTERAÇÕES: mostra só a mudança mais recente desse chamado (a que o selo está anunciando)
 function abrirLog(id) {
   const r = S.rows.find(x => x.ID === id); if (!r) return;
-  const now = Date.now(), hist = S.log.filter(c => c.id === id);
-  abrirInfo('Últimas mudanças', `<p class="al-sis"><span class="idc num">${esc(r.ID)}</span> <b>${esc(r.SISTEMA)}</b></p>` +
-    (hist.length ? `<div class="feed log-jan">${hist.slice(0, LOG_JANELA).map(c => feedItem(c, now).replace(/data-id="[^"]*"/, 'disabled')).join('')}</div>` +
-      (hist.length > LOG_JANELA ? `<p class="log-mais">Mostrando as ${LOG_JANELA} mais recentes de ${hist.length}. O histórico completo fica no detalhe do chamado.</p>` : '')
-      : '<p>Nenhuma mudança registrada neste aparelho.</p>'));
+  const now = Date.now(), ult = S.log.find(c => c.id === id && (c.kind === 'novo' || c.kind === 'muda')) || S.log.find(c => c.id === id);
+  abrirInfo(ult && ult.kind === 'novo' ? 'Novo chamado' : 'Última mudança', `<p class="al-sis"><span class="idc num">${esc(r.ID)}</span> <b>${esc(r.SISTEMA)}</b></p>` +
+    (ult ? `<div class="feed log-jan">${feedItem(ult, now).replace(/data-id="[^"]*"/, 'disabled')}</div>` : '<p>Nenhuma mudança registrada neste aparelho.</p>'));
 }
 function fecharAlerta(porHistorico) {
   if (!AL.aberto) return;
@@ -514,11 +514,12 @@ function feedItem(c, now) {
   const li = (rot, val) => `<li><b>${esc(rot)}${val != null ? ':' : ''}</b>${val != null ? ' ' + esc(val) : ''}</li>`;
   const valor = x => {
     if (!x.para) return x.f === 'DATA_FIM' ? 'retirado' : '—';
-    if (x.f === 'DATA_FIM') { const f = parseDate(x.para); return f ? fDM(f) + ' ' + fHM(f) : x.para; }
+    if (x.f === 'DATA_FIM' || x.f === 'DATA_INICIO') { const f = parseDate(x.para); return f ? fDM(f) + ' ' + fHM(f) : x.para; }
     if (x.f === 'TIPO_FALHA') return tipo({ TIPO_FALHA: x.para }).longo;
     if (x.f === 'CRITICIDADE') return x.para;
     if (x.f === 'ALERTA_ENVIADO') return x.para === '1' ? 'Sim' : x.para === '0' ? 'Não' : x.para;
-    return cap(x.para);
+    if (x.f === 'STATUS' || x.f === 'EVOLUCAO') return cap(x.para);
+    return x.para;   // demais campos: como vieram no arquivo
   };
   let itens;
   if (c.kind === 'novo') itens = li('Novo chamado') + li('Status', cap(c.st)) + (c.evo ? li('Evolução', cap(c.evo)) : '');
@@ -743,8 +744,8 @@ function drawDet(id, list) {
   const extra = S.cols.filter(c => !KNOWN.includes(c) && !OCULTAS.includes(c));
   const hist = S.log.filter(c => c.id === id);
   const msExp = window.PSPainel ? PSPainel.msExpediente({ ini: r._ini, fimCalc: new Date(endOf(r, now)) }) : null;
-  $('sheet').innerHTML = `<div class="sh-top"><button class="fechar" id="shX" aria-label="Fechar" title="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-    <button class="shr" id="shShare" aria-label="Compartilhar as informações do chamado" title="Compartilhar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button></div>
+  $('sheet').innerHTML = `<button class="fechar" id="shX" aria-label="Fechar" title="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+    <button class="shr" id="shShare" aria-label="Compartilhar as informações do chamado" title="Compartilhar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button>
     ${list ? '<button class="volta" id="shVolta">‹ Voltar à lista</button>' : ''}
     <h3 id="shTitle" class="dt-h"><span class="nm">${esc(r.SISTEMA)}</span><span class="cap-id num" title="ID da solicitação no sistêmico">ID ${esc(r.ID)}</span><span class="stl"><span class="cap-t k-${t.k}">${esc(t.longo)}</span>${statusTag(r.STATUS)}</span></h3>
     <div class="big">
