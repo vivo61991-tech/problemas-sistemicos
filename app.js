@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.23.0';
+const VERSION = '1.24.1';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -399,9 +399,10 @@ function renderOpen() {
       ${r.IMPACTO_OPERACIONAL ? `<div class="imp">${esc(r.IMPACTO_OPERACIONAL)}</div>` : ''}
       <div class="tl"><span class="cap-t k-${t.k}">${esc(t.longo)}</span>${seg ? `<span class="para">para <b>${esc(seg)}</b></span>` : ''}</div>
       <div class="ft"><div class="timer num"><small>aberto há</small><span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span></div>
-        <div class="when">${r.EVOLUCAO || al ? `<span class="stx">${al ? `<span class="alrt" role="button" tabindex="0" data-alerta="${esc(r.ID)}" aria-label="Alerta enviado" title="Alerta enviado">${SIRENE_SVG}</span>` : ''}${r.EVOLUCAO ? `<span class="evo">${esc(r.EVOLUCAO)}</span>` : ''}</span>` : ''}<span class="ini num">início ${ini} ${fHM(r._ini)}</span></div></div>
+        <div class="when">${r.EVOLUCAO ? `<span class="evo">${esc(r.EVOLUCAO)}</span>` : ''}<span class="ini num">início ${ini} ${fHM(r._ini)}</span></div></div>
       ${barraDia(r, now)}
       ${rk ? `<span class="selo">${rk === 'novo' ? 'NOVO' : 'MUDOU'}</span>` : ''}
+      ${al ? `<span class="alrt" role="button" tabindex="0" data-alerta="${esc(r.ID)}" aria-label="Alerta enviado" title="Alerta enviado">${SIRENE_SVG}</span>` : ''}
     </button>`;
   }).join('');
 }
@@ -429,11 +430,11 @@ function abrirAlerta(id) {
     document.body.appendChild(bg);
   }
   const ic = window.PSNotif && PSNotif.icone ? PSNotif.icone('INFORMACAO') : '';
-  $('alBox').innerHTML = `<div class="nt-top"><span class="sp"></span><button class="nt-x" id="alX" aria-label="Fechar">✕</button></div>
-    <div class="nt-h"><span class="nt-ic">${ic}</span><h3 id="alTit">Alerta enviado</h3></div>
+  $('alBox').innerHTML = `<div class="nt-h"><span class="nt-ic">${ic}</span><h3 id="alTit">Alerta enviado</h3></div>
     <div class="nt-corpo"><p class="al-sis"><span class="idc num">${esc(r.ID)}</span> <b>${esc(r.SISTEMA)}</b></p>
       <p>Foi enviado um <b>alerta</b> para <b>reforçar a solicitação com a área responsável</b>${r.AREA_ACIONADA && r.AREA_ACIONADA !== 'undefined' ? ` (<b>${esc(r.AREA_ACIONADA)}</b>)` : ''}.</p>
-      <p>O chamado continua em acompanhamento até ser normalizado.</p></div>`;
+      <p>O chamado continua em acompanhamento até ser normalizado.</p></div>
+    <div class="nt-acoes"><button class="nt-bt" id="alX" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg><span>Fechar</span></button></div>`;
   $('alX').onclick = () => fecharAlerta();
   bg.hidden = false; document.body.classList.add('al-on'); document.documentElement.classList.add('trava');
   if (!AL.aberto) { try { history.pushState({ alerta: 1 }, ''); AL.hist = true; } catch (e) { AL.hist = false; } }

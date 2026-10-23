@@ -5,7 +5,7 @@
    Vale só STATUS = ATIVO e dentro das datas (sem início = já vale; sem fim = vale até alguém desativar). */
 (function () {
   'use strict';
-  const VERSAO = '1.23.0';
+  const VERSAO = '1.24.1';
   const K = { dados: 'ps.notif', lidas: 'ps.notif.lidas' };
   const OBRIG = ['ID', 'TIPO', 'TITULO', 'TEXTO'];
   const TAGS = ['b', 'i', 's', 'm', 'roxo', 'verde', 'laranja', 'pink', 'link'];
@@ -146,6 +146,8 @@
     return bg;
   }
   const X = '<button class="nt-x" id="ntX" aria-label="Fechar">✕</button>';
+  const SETA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>';
+  const XIS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   function desenhar() {
     const bg = montar(), box = bg.querySelector('#nt'), m = N.modal; if (!m) return;
     const at = ativas();
@@ -154,22 +156,24 @@
       if (!it) { fechar(); return; }
       const pend = it.obrig && !lida(it);
       box.className = `nt t-${it.tipo}`;
-      box.innerHTML = `<div class="nt-top">${m.daLista ? '<button class="nt-x nt-volta" id="ntVolta" aria-label="Voltar para a lista" title="Voltar para a lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>' : ''}<span class="sp"></span>${X}</div>
-        <div class="nt-h"><span class="nt-ic">${ICONE[it.tipo]}</span><h3 id="ntTit">${esc(it.titulo || NOME[it.tipo])}</h3></div>
+      // botões embaixo (não empurram o texto): Ciente (se obrigatória) e, numa linha, Voltar e Fechar com a mesma largura
+      box.innerHTML = `<div class="nt-h"><span class="nt-ic">${ICONE[it.tipo]}</span><h3 id="ntTit">${esc(it.titulo || NOME[it.tipo])}</h3></div>
         <div class="nt-corpo">${html(it.texto)}</div>
-        ${pend ? '<button class="nt-ciente" id="ntCiente">Ciente</button>' : ''}`;
+        ${pend ? '<button class="nt-ciente" id="ntCiente">Ciente</button>' : ''}
+        <div class="nt-acoes">${m.daLista ? `<button class="nt-bt" id="ntVolta" aria-label="Voltar para a lista">${SETA}<span>Voltar</span></button>` : ''}<button class="nt-bt" id="ntX" aria-label="Fechar">${XIS}<span>Fechar</span></button></div>`;
       if (!it.obrig && !lida(it)) { marcarLida(it); renderBotao(at); }
       if (pend) box.querySelector('#ntCiente').onclick = () => { marcarLida(it); renderBotao(ativas()); if (m.daLista) { N.modal = { modo: 'lista' }; desenhar(); } else fechar(); };
       if (m.daLista) box.querySelector('#ntVolta').onclick = () => { N.modal = { modo: 'lista' }; desenhar(); };
     } else {
       if (!at.length) { fechar(); return; }
       box.className = 'nt nt-lista';
+      // lista: o título e o ✕ ficam parados no topo; só a lista rola
       box.innerHTML = `<div class="nt-top"><h3 id="ntTit">Notificações</h3><span class="sp"></span>${X}</div>
         <div class="nt-itens">${[...at.filter(x => !lida(x)), ...at.filter(x => lida(x))].map(it => { const l = lida(it); return `<button class="nt-it${l ? ' lida' : ''}" data-nid="${esc(it.id)}"><span class="nt-ic">${ICONE[it.tipo]}</span><span class="nt-tt">${esc(it.titulo || NOME[it.tipo])}</span><span class="nt-pt" aria-label="${l ? 'lida' : 'não lida'}"></span></button>`; }).join('')}</div>`;
       box.querySelectorAll('.nt-it').forEach(b => b.onclick = () => { N.modal = { modo: 'uma', id: b.dataset.nid, daLista: true }; desenhar(); });
     }
     box.querySelector('#ntX').onclick = () => fechar();
-    box.scrollTop = 0;
+    box.scrollTop = 0; const li = box.querySelector('.nt-itens'); if (li) li.scrollTop = 0;
   }
   function abrir(m) {
     const novo = !N.modal;
