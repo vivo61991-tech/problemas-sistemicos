@@ -5,7 +5,7 @@
    Vale só STATUS = ATIVO e dentro das datas (sem início = já vale; sem fim = vale até alguém desativar). */
 (function () {
   'use strict';
-  const VERSAO = '1.30.2';
+  const VERSAO = '1.30.3';
   const K = { dados: 'ps.notif', lidas: 'ps.notif.lidas' };
   const OBRIG = ['ID', 'TIPO', 'TITULO', 'TEXTO'];
   const TAGS = ['b', 'i', 's', 'm', 'roxo', 'verde', 'laranja', 'pink', 'link'];
@@ -147,6 +147,7 @@
   }
   const X = '<button class="nt-x" id="ntX" aria-label="Fechar">✕</button>';
   const SETA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>';
+  const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
   const XIS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   function desenhar() {
     const bg = montar(), box = bg.querySelector('#nt'), m = N.modal; if (!m) return;
@@ -159,8 +160,7 @@
       // botões embaixo (não empurram o texto): Ciente (se obrigatória) e, numa linha, Voltar e Fechar com a mesma largura
       box.innerHTML = `<div class="nt-h"><span class="nt-ic">${ICONE[it.tipo]}</span><h3 id="ntTit">${esc(it.titulo || NOME[it.tipo])}</h3></div>
         <div class="nt-corpo">${html(it.texto)}</div>
-        ${pend ? '<button class="nt-ciente" id="ntCiente">Ciente</button>' : ''}
-        <div class="nt-acoes">${m.daLista ? `<button class="nt-bt" id="ntVolta" aria-label="Voltar para a lista">${SETA}<span>Voltar</span></button>` : ''}<button class="nt-bt" id="ntX" aria-label="Fechar">${XIS}<span>Fechar</span></button></div>`;
+        <div class="nt-acoes">${m.daLista ? `<button class="nt-bt" id="ntVolta" aria-label="Voltar para a lista">${SETA}<span>Voltar</span></button>` : ''}${pend ? `<button class="nt-bt nt-ciente" id="ntCiente">${CHECK}<span>Ciente</span></button>` : ''}<button class="nt-bt" id="ntX" aria-label="Fechar">${XIS}<span>Fechar</span></button></div>`;
       if (!it.obrig && !lida(it)) { marcarLida(it); renderBotao(at); }
       if (pend) box.querySelector('#ntCiente').onclick = () => { marcarLida(it); renderBotao(ativas()); if (m.daLista) { N.modal = { modo: 'lista' }; desenhar(); } else fechar(); };
       if (m.daLista) box.querySelector('#ntVolta').onclick = () => { N.modal = { modo: 'lista' }; desenhar(); };

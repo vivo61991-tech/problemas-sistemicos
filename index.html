@@ -606,8 +606,7 @@ table.tdias tbody tr.sel td.c1 .pa{color:var(--selink)}
 .nt-x{flex:none;width:34px;height:34px;border-radius:50%;border:0;background:var(--bg);color:var(--ink2);font-size:16px;cursor:pointer;display:grid;place-items:center;padding:0}
 /* botões de baixo (Voltar / Fechar): retângulos arredondados, mesma largura, centralizados, sem ocupar a janela toda */
 .nt-acoes{display:flex;justify-content:center;gap:10px;margin-top:20px}
-.nt-ciente+.nt-acoes{margin-top:12px}
-.nt-bt{flex:none;width:118px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:10px;padding:9px 12px;background:var(--bg);color:var(--ink2);font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.nt-bt{flex:0 1 118px;min-width:0;width:118px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:10px;padding:9px 12px;background:var(--bg);color:var(--ink2);font:inherit;font-size:14px;font-weight:700;cursor:pointer}
 .nt-bt svg{width:16px;height:16px;flex:none}
 .nt-bt:active{background:var(--line)}
 .nt-h{display:flex;align-items:center;gap:12px;margin-top:4px}
@@ -621,8 +620,13 @@ table.tdias tbody tr.sel td.c1 .pa{color:var(--selink)}
 .cap{display:inline-block;border-radius:999px;padding:0 9px;font-weight:650;line-height:1.55}
 .cap-roxo{color:#3A1658;background:#EBE0F4} .cap-verde{color:#3F5E0A;background:#E8F4D2} .cap-laranja{color:#7A4100;background:#FFEBCC} .cap-pink{color:#9C1450;background:#FDE0EC}
 @media (prefers-color-scheme: dark){.cap-roxo{color:#E6D8F5;background:#3A2356}.cap-verde{color:#D2EDA0;background:#2A3A12}.cap-laranja{color:#FFD9A0;background:#3D2A08}.cap-pink{color:#FFC2DA;background:#45142B}}
-.nt-ciente{display:block;width:118px;min-width:0;margin:18px auto 0;border:0;border-radius:10px;padding:9px 12px;background:var(--p700);color:#fff;font-weight:800;font-size:14px;cursor:pointer}
-@media (prefers-color-scheme: dark){.nt-ciente{background:#8549b5}}
+/* Ciente: na mesma linha do Fechar (e do Voltar), mesma largura, em roxo com o check */
+.nt-bt.nt-ciente{background:var(--p700);color:#fff;font-weight:800}
+.nt-bt.nt-ciente:active{background:var(--p800)}
+@media (prefers-color-scheme: dark){.nt-bt.nt-ciente{background:#8549b5}}
+.nt-bt span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:360px){.nt-acoes{gap:6px}.nt-bt{padding:9px 8px;gap:4px}}
+@media (max-width:340px){.nt{padding-left:16px;padding-right:16px}.nt-bt{padding:9px 5px;gap:3px;font-size:13px}.nt-bt svg{width:14px;height:14px}}
 /* lista: não lida com bolinha cheia; lida com bolinha vazada (texto e ícone iguais) */
 /* lista: título e ✕ fixos no topo; só a lista rola */
 .nt.nt-lista{display:flex;flex-direction:column;overflow:hidden;padding-bottom:18px}
@@ -713,8 +717,8 @@ html.trava{overflow:hidden}
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="painel.js?v=1.30.2"></script>
-<script src="notif.js?v=1.30.2"></script>
-<script src="app.js?v=1.30.2"></script>
+<script src="painel.js?v=1.30.3"></script>
+<script src="notif.js?v=1.30.3"></script>
+<script src="app.js?v=1.30.3"></script>
 </body>
 </html>
