@@ -5,7 +5,7 @@
    Vale só STATUS = ATIVO e dentro das datas (sem início = já vale; sem fim = vale até alguém desativar). */
 (function () {
   'use strict';
-  const VERSAO = '1.28.1';
+  const VERSAO = '1.30.0';
   const K = { dados: 'ps.notif', lidas: 'ps.notif.lidas' };
   const OBRIG = ['ID', 'TIPO', 'TITULO', 'TEXTO'];
   const TAGS = ['b', 'i', 's', 'm', 'roxo', 'verde', 'laranja', 'pink', 'link'];
@@ -168,9 +168,14 @@
       if (!at.length) { fechar(); return; }
       box.className = 'nt nt-lista';
       // lista: o título e o ✕ ficam parados no topo; só a lista rola
-      box.innerHTML = `<div class="nt-top"><h3 id="ntTit">Notificações</h3><span class="sp"></span>${X}</div>
+      // contador: só o total quando nada foi lido "(10)"; depois não lidas/total "(9/10)" … "(0/10)"
+      const nl = at.filter(x => !lida(x)).length, cont = nl === at.length ? `${at.length}` : `${nl}/${at.length}`;
+      box.innerHTML = `<div class="nt-top"><h3 id="ntTit">Notificações <span class="nt-cont num" aria-label="${nl} não lida${nl === 1 ? '' : 's'} de ${at.length}">(${cont})</span></h3><span class="sp"></span>${X}</div>
         <div class="nt-itens">${[...at.filter(x => !lida(x)), ...at.filter(x => lida(x))].map(it => { const l = lida(it); return `<button class="nt-it${l ? ' lida' : ''}" data-nid="${esc(it.id)}"><span class="nt-ic">${ICONE[it.tipo]}</span><span class="nt-tt">${esc(it.titulo || NOME[it.tipo])}</span><span class="nt-pt" aria-label="${l ? 'lida' : 'não lida'}"></span></button>`; }).join('')}</div>`;
       box.querySelectorAll('.nt-it').forEach(b => b.onclick = () => { N.modal = { modo: 'uma', id: b.dataset.nid, daLista: true }; desenhar(); });
+      // barra de rolagem só enquanto a lista se mexe (some ~0,8 s depois de parar)
+      const li = box.querySelector('.nt-itens'); let tm;
+      li.addEventListener('scroll', () => { li.classList.add('rolando'); clearTimeout(tm); tm = setTimeout(() => li.classList.remove('rolando'), 800); }, { passive: true });
     }
     box.querySelector('#ntX').onclick = () => fechar();
     box.scrollTop = 0; const li = box.querySelector('.nt-itens'); if (li) li.scrollTop = 0;

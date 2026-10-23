@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.28.1';
+const VERSION = '1.30.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -12,14 +12,14 @@ const LOG_MAX = 300;                 // mudanças guardadas no aparelho
 const MESES_LONGO = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 const REQUIRED = ['ID', 'SISTEMA', 'STATUS', 'DATA_INICIO'];
-const KNOWN = ['ID', 'SISTEMA', 'CHAMADO', 'STATUS', 'CRITICIDADE', 'EVOLUCAO', 'SEGMENTO', 'IMPACTO_OPERACIONAL',
+const KNOWN = ['ID', 'SISTEMA', 'CHAMADO', 'STATUS', 'CRITICIDADE', 'EVOLUCAO', 'SEGMENTO', 'IMPACTO_OPERACIONAL', 'ESTAGIO',
   'DATA_INICIO', 'DATA_FIM', 'TIPO_FALHA', 'GRUPOS_RESPONSAVEIS', 'GRUPOS_IMPACTADOS', 'AREA_ACIONADA',
   'ALERTA_ENVIADO', 'DATA_ATUALIZACAO', 'DADO_ATUALIZADO', 'TEMPO_DECORRIDO'];
 // campos acompanhados: mudança em QUALQUER campo do chamado entra em "Últimas mudanças" e marca o card
 // (ficam de fora só os de controle, que mudam a toda atualização: DATA_ATUALIZACAO, DADO_ATUALIZADO, TEMPO_DECORRIDO, FLAG)
 const TRACK = [['SISTEMA', 'Sistema'], ['CHAMADO', 'Chamado'], ['STATUS', 'Status'], ['CRITICIDADE', 'Criticidade'], ['EVOLUCAO', 'Evolução'], ['SEGMENTO', 'Segmento'],
   ['IMPACTO_OPERACIONAL', 'Impacto'], ['DATA_INICIO', 'Início'], ['DATA_FIM', 'Fim'], ['TIPO_FALHA', 'Tipo de falha'], ['GRUPOS_RESPONSAVEIS', 'Grupos responsáveis'],
-  ['GRUPOS_IMPACTADOS', 'Grupos impactados'], ['AREA_ACIONADA', 'Área acionada'], ['ALERTA_ENVIADO', 'Alerta enviado']];
+  ['GRUPOS_IMPACTADOS', 'Grupos impactados'], ['AREA_ACIONADA', 'Área acionada'], ['ALERTA_ENVIADO', 'Alerta enviado'], ['ESTAGIO', 'Estágio']];
 
 // colunas que continuam sendo lidas (mudanças, conferência), mas não aparecem nos cards nem no detalhe
 const OCULTAS = ['FLAG', 'TEMPO_DECORRIDO', 'DADO_ATUALIZADO', 'DATA_ATUALIZACAO'];
@@ -120,19 +120,52 @@ function stClass(s) { s = up(s); return s === 'ABERTO' ? 'a' : s === 'FECHADO' |
 const statusTag = s => `<span class="st ${stClass(s)}">${esc(s || '—')}</span>`;
 
 /* ---------- leitura do arquivo ---------- */
+// Separa o arquivo em registros e campos (tabulação), respeitando aspas como o Oracle SQL Developer exporta:
+// campo entre aspas pode ter quebra de linha, tabulação e aspas ("" = uma aspa). Devolve { regs: [{ v, ln }], aberto }.
+function splitTsv(text) {
+  const t = String(text || '').replace(/^\uFEFF/, ''), regs = [];
+  let campo = '', reg = [], ln = 1, ini = 1, i = 0, n = t.length;
+  const fechaReg = () => { reg.push(campo); campo = ''; if (reg.length > 1 || reg[0].trim() !== '') regs.push({ v: reg, ln: ini }); reg = []; };
+  while (i < n) {
+    const ch = t[i];
+    if (ch === '"' && campo === '') {          // campo entre aspas
+      i++;
+      while (true) {
+        if (i >= n) return { regs, aberto: ini };   // aspas sem fechamento: arquivo cortado ou estrutura quebrada
+        const c = t[i];
+        if (c === '"') { if (t[i + 1] === '"') { campo += '"'; i += 2; continue; } i++; break; }
+        if (c === '\r' && t[i + 1] === '\n') { campo += '\n'; i += 2; ln++; continue; }
+        if (c === '\n' || c === '\r') ln++;
+        campo += c === '\r' ? '\n' : c; i++;
+      }
+      continue;
+    }
+    if (ch === '\t') { reg.push(campo); campo = ''; i++; continue; }
+    if (ch === '\r' || ch === '\n') { if (ch === '\r' && t[i + 1] === '\n') i++; i++; fechaReg(); ln++; ini = ln; continue; }
+    campo += ch; i++;
+  }
+  if (campo !== '' || reg.length) fechaReg();
+  return { regs, aberto: 0 };
+}
 function parseTxt(text) {
-  const lines = String(text || '').replace(/^﻿/, '').split(/\r?\n/).filter(l => l.trim() !== '');
+  const sp = splitTsv(text);
+  if (sp.aberto) return { ok: false, err: `aspas sem fechamento a partir da linha ${sp.aberto} (arquivo cortado ou com a estrutura quebrada)` };
+  const lines = sp.regs;
   if (lines.length < 2) return { ok: false, err: 'arquivo vazio ou só com o cabeçalho' };
-  const cols = lines[0].split('\t').map(c => c.trim().toUpperCase());
+  const cols = lines[0].v.map(c => c.trim().toUpperCase());
   const miss = REQUIRED.filter(c => !cols.includes(c));
   if (miss.length) return { ok: false, err: 'faltam as colunas ' + miss.join(', ') + ' (o arquivo precisa ser separado por tabulação)' };
+  // estrutura: registro com número de colunas diferente do cabeçalho = algum campo livre quebrou a linha sem aspas
+  const tortos = lines.slice(1).filter(l => l.v.length !== cols.length);
+  if (tortos.length && tortos.length > Math.max(2, (lines.length - 1) * 0.05)) return { ok: false, err: `${tortos.length} registros com número de colunas diferente do cabeçalho (a partir da linha ${tortos[0].ln}): estrutura quebrada; mantidos os últimos dados válidos` };
   const warns = [];
   const byId = new Map();
   for (let i = 1; i < lines.length; i++) {
-    const v = lines[i].split('\t');
+    const v = lines[i].v;
     const r = {};
     cols.forEach((c, j) => { r[c] = (v[j] == null ? '' : v[j]).trim(); });
-    const ln = i + 1;
+    const ln = lines[i].ln;
+    if (v.length !== cols.length) warns.push(`Linha ${ln} (ID ${r.ID || '?'}): ${v.length} colunas, o cabeçalho tem ${cols.length}`);
     if (!r.ID) { warns.push(`Linha ${ln}: sem ID, ignorada`); continue; }
     r._ini = parseDate(r.DATA_INICIO);
     if (!r._ini) { warns.push(`Linha ${ln} (ID ${r.ID}): DATA_INICIO inválida ("${r.DATA_INICIO}"), ignorada`); continue; }
@@ -403,7 +436,7 @@ function renderOpen() {
       ${r.IMPACTO_OPERACIONAL ? `<div class="imp">${esc(r.IMPACTO_OPERACIONAL)}</div>` : ''}
       <div class="tl"><span class="cap-t k-${t.k}">${esc(t.longo)}</span>${seg ? `<span class="para">para <b>${esc(seg)}</b></span>` : ''}</div>
       <div class="ft"><div class="timer num"><small>aberto há</small><span class="tm" role="button" tabindex="0" data-crono="${esc(r.ID)}" aria-label="Tempo decorrido: abrir o cronômetro" title="Tempo decorrido"><span class="crn">${CRONO_SVG}</span><span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span></span></div>
-        <div class="when">${r.EVOLUCAO ? `<span class="evo">${esc(r.EVOLUCAO)}</span>` : ''}<span class="ini num">início ${ini} ${fHM(r._ini)}</span></div></div>
+        <div class="when">${r.ESTAGIO ? `<span class="evo tem-est" role="button" tabindex="0" data-est="${esc(r.ID)}" aria-label="${esc(r.EVOLUCAO || 'Estágio')}: ver o estágio" title="Ver o estágio">${INFO_SVG}<span>${esc(r.EVOLUCAO || 'Estágio')}</span></span>` : r.EVOLUCAO ? `<span class="evo">${esc(r.EVOLUCAO)}</span>` : ''}<span class="ini num">início ${ini} ${fHM(r._ini)}</span></div></div>
       ${barraDia(r, now)}
       ${rk ? `<span class="selo" role="button" tabindex="0" data-log="${esc(r.ID)}" aria-label="${rk === 'novo' ? 'Novo' : 'Alterações'}: ver a última mudança" title="Ver a última mudança">${rk === 'novo' ? 'NOVO' : 'ALTERAÇÕES'}</span>` : ''}
       ${al ? `<span class="alrt" role="button" tabindex="0" data-alerta="${esc(r.ID)}" aria-label="Alerta enviado" title="Alerta enviado">${SIRENE_SVG}</span>` : ''}
@@ -466,8 +499,32 @@ function abrirCrono(id) {
       <div class="crono"><div class="cr-n num" id="crN" aria-live="off">${relogio(fim() - ini)}</div>
         <div class="cr-u"><span>horas</span><span>min</span><span>seg</span></div>
         <div class="cr-d">${open ? 'aberto' : 'durou'} desde ${fFull(r._ini)} · ${fDur(fim() - ini)}</div></div>
-      ${analiseHtml(r, now, true)}`, icoRoxo(CRONO_SVG));
+      ${analiseHtml(r, now, true)}
+      ${ultimasOcorr(r, now)}`, icoRoxo(CRONO_SVG));
   if (open) AL.tick = setInterval(() => { const e = $('crN'); if (!e || !AL.aberto) { clearInterval(AL.tick); return; } e.textContent = relogio(Date.now() - ini); }, 1000);
+}
+// últimas 3 ocorrências do mesmo problema (mesmo sistema e tipo de falha), sem repetir nome/tipo: só os números
+function ultimasOcorr(r, now) {
+  const k = tipo(r).k, sis = up(r.SISTEMA);
+  const ant = S.rows.filter(x => x.ID !== r.ID && up(x.SISTEMA) === sis && tipo(x).k === k && !isInd(x) && x._ini <= r._ini).sort((a, b) => b._ini - a._ini).slice(0, 3);
+  const exp = x => window.PSPainel ? PSPainel.msExpediente({ ini: x._ini, fimCalc: new Date(endOf(x, now)) }) : null;
+  return `<h5 class="uo-t">Últimas ocorrências</h5>` + (ant.length
+    ? `<table class="uo"><thead><tr><th>Data e hora</th><th>Tempo decorrido</th><th>Impacto no CO</th></tr></thead><tbody>${ant.map(x => { const e = exp(x);
+        return `<tr><td class="num">${fDM(x._ini)}/${String(x._ini.getFullYear()).slice(2)} ${fHM(x._ini)}</td><td class="num">${fDur(endOf(x, now) - x._ini)}${isOpen(x) ? ' <small>em andamento</small>' : ''}</td><td class="num">${e == null ? '—' : e ? fDur(e) : 'fora do expediente'}</td></tr>`; }).join('')}</tbody></table>
+      <p class="uo-obs">Impacto no CO = tempo dentro do expediente (08h–21h).</p>`
+    : `<p class="uo-vazio">Não há ocorrências anteriores deste problema na base.</p>`);
+}
+// estágio: texto livre do operador para o campo; só vale enquanto o chamado está aberto
+const INFO_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-5M12 8h.01"/></svg>';
+const resumoEst = t => String(t || '').replace(/\s+/g, ' ').trim() || '—';
+function abrirEstagio(id) {
+  const r = S.rows.find(x => x.ID === id); if (!r || !r.ESTAGIO) return;
+  const c = S.log.find(x => x.id === id && ((x.kind === 'muda' && x.ch.some(y => y.f === 'ESTAGIO')) || x.kind === 'novo'));
+  const quando = c ? new Date(c.at) : r._upd;
+  const qTxt = quando ? `${sameDay(quando, new Date()) ? 'hoje' : fDM(quando)} às ${fHM(quando)}` : '—';
+  abrirInfo('Estágio', `<p class="al-sis"><span class="idc num">${esc(r.ID)}</span> <b>${esc(r.SISTEMA)}</b></p>
+      <div class="est-meta"><span><small>Status</small><b>${esc(r.EVOLUCAO || cap(r.STATUS))}</b></span><span><small>Atualizado</small><b class="num">${qTxt}</b></span></div>
+      <div class="est-tx">${esc(r.ESTAGIO)}</div>`, `<span class="ic-roxo ic-info">${INFO_SVG}</span>`);
 }
 // selo NOVO / ALTERAÇÕES: mostra só a mudança mais recente desse chamado (a que o selo está anunciando)
 function abrirLog(id) {
@@ -529,7 +586,7 @@ function feedItem(c, now) {
   let tx;
   const nome = `<span class="fn">${idCap(c.id)}<span class="fs">${esc(c.sis)}</span></span>`;
   // cada campo que mudou vira uma linha "• Campo: valor que entrou" (sem o valor anterior)
-  const li = (rot, val) => `<li><b>${esc(rot)}${val != null ? ':' : ''}</b>${val != null ? ' ' + esc(val) : ''}</li>`;
+  const li = (rot, val, cls) => `<li${cls ? ` class="${cls}"` : ''}><b>${esc(rot)}${val != null ? ':' : ''}</b>${val != null ? ' ' + esc(val) : ''}</li>`;
   const valor = x => {
     if (!x.para) return x.f === 'DATA_FIM' ? 'retirado' : '—';
     if (x.f === 'DATA_FIM' || x.f === 'DATA_INICIO') { const f = parseDate(x.para); return f ? fDM(f) + ' ' + fHM(f) : x.para; }
@@ -541,7 +598,7 @@ function feedItem(c, now) {
   };
   let itens;
   if (c.kind === 'novo') itens = li('Novo chamado') + li('Status', cap(c.st)) + (c.evo ? li('Evolução', cap(c.evo)) : '');
-  else if (c.kind === 'muda') itens = c.ch.map(x => li(x.label, valor(x))).join('');
+  else if (c.kind === 'muda') itens = c.ch.map(x => x.f === 'ESTAGIO' ? li('Estágio', resumoEst(x.para), 'est') : li(x.label, valor(x))).join('');
   else if (c.kind === 'dados') itens = li('Dados do chamado atualizados');
   else if (c.kind === 'saiu') itens = li('Saiu do arquivo');
   if (c.kind === 'saiu-varios') tx = `<span class="fs">${c.n} chamados saíram do arquivo</span><ul class="lg">${li('IDs', c.ids.slice(0, 12).join(', ') + (c.ids.length > 12 ? '…' : ''))}</ul>`;
@@ -783,6 +840,7 @@ function drawDet(id, list) {
       ${row('Evolução', esc(r.EVOLUCAO))}
       ${row('Impacto', esc(r.IMPACTO_OPERACIONAL))}
       ${'ALERTA_ENVIADO' in r ? row('Alerta enviado', yn(r.ALERTA_ENVIADO)) : ''}
+      ${open && r.ESTAGIO ? `<dt>Estágio</dt><dd class="est">${esc(r.ESTAGIO)}</dd>` : ''}
     </dl>
     ${extra.length ? `<h4>Outras colunas</h4><dl class="kv">${extra.map(c => row(esc(c), esc(r[c]) || '—')).join('')}</dl>` : ''}
     <h4>Mudanças registradas</h4>
@@ -1075,6 +1133,8 @@ function init() {
     if (ale) { e.preventDefault(); abrirAlerta(ale.dataset.alerta); return; }
     const cr = e.target.closest('[data-crono]');
     if (cr) { e.preventDefault(); abrirCrono(cr.dataset.crono); return; }
+    const es = e.target.closest('[data-est]');
+    if (es) { e.preventDefault(); abrirEstagio(es.dataset.est); return; }
     const lg = e.target.closest('[data-log]');
     if (lg) { e.preventDefault(); abrirLog(lg.dataset.log); return; }
     const it = e.target.closest('[data-id]');
@@ -1110,7 +1170,7 @@ function init() {
   // Enter/Espaço no alfinete e na sirene (estão dentro do card)
   document.addEventListener('keydown', e => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
-    const x = e.target.closest && e.target.closest('[data-pin], [data-alerta], [data-log], [data-crono]');
+    const x = e.target.closest && e.target.closest('[data-pin], [data-alerta], [data-log], [data-crono], [data-est]');
     if (x) { e.preventDefault(); e.stopPropagation(); x.click(); }
   }, true);
   window.addEventListener('popstate', () => {

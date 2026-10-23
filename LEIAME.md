@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.28.1)
+# Problemas Sistêmicos (v1.30.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -17,6 +17,8 @@ TXT do SQL Developer, separado por **tabulação**, cabeçalho na 1ª linha.
 - **Não aparecem na tela:** `FLAG, TEMPO_DECORRIDO, DADO_ATUALIZADO, DATA_ATUALIZACAO`. Continuam sendo lidas: a `DATA_ATUALIZACAO` serve para registrar "dados atualizados" nas mudanças e para escolher a linha mais recente quando um ID vem repetido.
 - **Datas:** `20/10/26 08:22:00,000000000` (também aceita `20/10/2026 08:22` e `2026-10-20 08:22:00`).
 
+- **Campos livres com quebra de linha** (ex.: `ESTAGIO`): o Oracle exporta o texto **entre aspas**, e o app lê assim — dentro das aspas pode haver quebra de linha, tabulação e aspas (`""` = uma aspa) sem quebrar a estrutura. Se o arquivo vier cortado (aspas sem fechamento) ou com muitos registros com número de colunas diferente do cabeçalho, o app **mantém os últimos dados válidos** e avisa.
+
 ## Páginas (menu de baixo)
 A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fixa e visível ao rolar.
 
@@ -26,7 +28,8 @@ A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fix
    - o número do chamado não aparece no card, só no detalhe (toque no card);
    - selo verde **NOVO** (ou **ALTERAÇÕES**) metade dentro e metade fora do card, no canto inferior esquerdo, por 1 hora. **Tocar no selo** abre uma janela só com a **mudança mais recente** desse chamado (a que o selo anuncia), em vez do detalhe;
    - o tempo "aberto há" correndo ao vivo e, à direita, o status (evolução) acima do início;
-   - **cronômetro** (ícone à esquerda do tempo "aberto há"; tocar no ícone **ou no próprio tempo**): abre uma janela com o tempo decorrido **correndo a cada segundo**, em horas acumuladas (ex.: `74:12:05`, sem virar dias), desde quando abriu, e embaixo a **análise do histórico** do mesmo sistema com o mesmo tipo de falha (tempo médio, maior e menor tempo, frequência), igual à do detalhe;
+   - **cronômetro** (ícone à esquerda do tempo "aberto há"; tocar no ícone **ou no próprio tempo**): abre uma janela com o tempo decorrido **correndo a cada segundo**, em horas acumuladas (ex.: `74:12:05`, sem virar dias), desde quando abriu, e embaixo a **análise do histórico** do mesmo sistema com o mesmo tipo de falha (tempo médio, maior e menor tempo, frequência), igual à do detalhe e as **últimas 3 ocorrências** desse mesmo problema numa tabelinha só com números: data e hora, tempo decorrido e **impacto no CO** (tempo dentro do expediente 08h–21h). Sem ocorrências anteriores: "Não há ocorrências anteriores deste problema na base.";
+   - **estágio** (`ESTAGIO`, texto do operador para o campo): enquanto o chamado está aberto e tem estágio, a cápsula do status ganha um ícone **(i)** à esquerda; tocar no status abre o estágio completo (com as quebras de linha), o status e a hora da última mudança. No detalhe, "Estágio" aparece logo abaixo de "Alerta enviado", só com o chamado aberto. Mudança de estágio entra em "Últimas mudanças" abreviada numa linha ("• **Estágio:** Restart concluído. Ativações…");
    - **alerta enviado** (`ALERTA_ENVIADO` = 1): uma **sirene branca num círculo vermelho** na quina superior direita do card (parte dentro, parte fora, sem cobrir o ID). Tocar nela abre uma janela informativa (com a própria sirene no círculo vermelho): o alerta foi enviado para **reforçar a solicitação com a área responsável**. Fecha no botão **Fechar** (embaixo, centralizado), tocando fora, no Esc ou no voltar do celular; não abre o detalhe do chamado;
    - **alfinete** à esquerda do ID para **fixar** o card no topo. Desligado fica cinza e inclinado; ligado fica roxo, cheio e em pé, e o card ganha um contorno lilás. Dá para fixar vários: o último fixado vai para o topo e os anteriores descem uma posição. Desafixado, o card volta para a ordem normal. Fica guardado **no aparelho** (cada pessoa fixa os seus);
    - por último, a **barra do dia**: expediente de hoje das 08h às 21h (traço = 14h), preenchida na cor do tipo de falha com o trecho que o chamado já ocupou hoje, até agora. Chamado que vem de ontem começa a contar às 08h de hoje. Atualiza ao vivo. Sem ocorrência, aparece o card verde "Nenhuma ocorrência ativa". Embaixo, os **chamados de hoje** (abertos primeiro, depois os encerrados) e as **últimas mudanças** de status. O número de ocorrências ativas aparece no ícone do menu.
@@ -54,7 +57,7 @@ A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fix
 - **Ícone (balão de mensagem)** à esquerda do 🔔, só quando há notificação valendo, com o **número de não lidas** (na cor do tipo mais grave entre elas).
 - Tocar no ícone: com **uma** notificação abre direto; com **mais de uma** abre a **lista** (ícone + título; não lida com bolinha cheia, lida com bolinha vazada; texto e ícone ficam iguais nas duas). As **não lidas ficam sempre no topo** e as lidas descem na hora (ao voltar para a lista pelo botão ‹ redondo, ao lado do ✕); dentro de cada grupo vale a ordem abaixo. Cada notificação mostra só o **ícone do tipo**, o **título** e o **texto formatado**, com ✕ para fechar.
 - Ordem: Crítico, Aviso, Informação, Interrogação; dentro do tipo, a mais recente primeiro.
-- Na lista, ícone e título pequenos, em letra normal; o título "Notificações" e o ✕ ficam sempre no topo e só a lista rola. Dentro da notificação, os botões ficam **embaixo**, centralizados e com a mesma largura: "‹ Voltar" (quando veio da lista) e "✕ Fechar"; nas obrigatórias, o **Ciente** fica logo acima deles.
+- Na lista, ícone e título pequenos, em letra normal; o título "Notificações" e o ✕ ficam sempre no topo e só a lista rola. O título traz o contador: "(10)" quando nenhuma foi lida; depois **não lidas/total**, "(9/10)" … "(0/10)". A barra de rolagem só aparece enquanto a lista se mexe, fina e fora dos itens. Dentro da notificação, os botões ficam **embaixo**, centralizados e com a mesma largura: "‹ Voltar" (quando veio da lista) e "✕ Fechar"; nas obrigatórias, o **Ciente** fica logo acima deles.
 - Ícones (estilo MsgBox do VBA): Crítico ✕ no círculo vermelho; Aviso ! no triângulo amarelo; Interrogação ? no círculo roxo; Informação ! no círculo verde.
 - **Obrigatória** (OBRIGATORIO = S): abre sozinha ao entrar no app (e quando chega uma nova), **uma de cada vez, na ordem do ID**: fechou uma (Ciente ou ✕), abre a próxima. Só deixa de contar com o botão **Ciente**, e depois disso não abre mais sozinha (a pessoa pode reabrir pela lista). Fechada só no ✕, volta a abrir na próxima vez que o app for aberto.
 - Lida = aberta (não obrigatória) ou com Ciente (obrigatória). Fica guardado **no aparelho**. Se a notificação for editada (DATA_ATUALIZACAO nova), volta a ser não lida.
@@ -94,6 +97,7 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 - Sem internet, o app abre com a última cópia guardada.
 
 ## Dados fictícios (homologação)
+- O arquivo tem a coluna `ESTAGIO` (20 colunas). Linhas reais: estágio do arquivo de exemplo do Oracle (com quebras de linha entre aspas); o 311, aberto na nossa base, sem estágio. Linhas fictícias: estágios inventados que mudam ao longo da simulação. Último passo: 23/10/2026 14:23, com 7 em andamento (311, 326, 329, 330, 333, 334 e 335).
 - Enquanto a base não é atualizada, o `sistemas.txt` da raiz traz a base real **sem alteração** e, por cima, chamados **fictícios** a partir do ID 312 (todos com "(fictício)" no fim do `IMPACTO_OPERACIONAL`), até 23/10/2026 02:11: 6 em andamento (311 real + 322, 323, 325, 326 e 327), 3 deles com alerta enviado (322, 323 e 326). Trocar pelo arquivo real antes de ir para produção.
 
 ## Publicar
