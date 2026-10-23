@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.31.0)
+# Problemas Sistêmicos (v1.31.1)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -100,6 +100,10 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 ## Dados fictícios (homologação)
 - O arquivo tem a coluna `ESTAGIO` (20 colunas). Linhas reais: estágio do arquivo de exemplo do Oracle (com quebras de linha entre aspas); o 311, aberto na nossa base, sem estágio. Linhas fictícias: estágios inventados que mudam ao longo da simulação. Último passo: 23/10/2026 19:14, com 7 em andamento (311, 329, 334, 335, 336, 337 e 338).
 - Enquanto a base não é atualizada, o `sistemas.txt` da raiz traz a base real **sem alteração** e, por cima, chamados **fictícios** a partir do ID 312 (todos com "(fictício)" no fim do `IMPACTO_OPERACIONAL`), até 23/10/2026 02:11: 6 em andamento (311 real + 322, 323, 325, 326 e 327), 3 deles com alerta enviado (322, 323 e 326). Trocar pelo arquivo real antes de ir para produção.
+
+## Pré-visualização do link
+- O `index.html` tem as etiquetas de pré-visualização (Open Graph): ao colar ou compartilhar o link no WhatsApp, Teams, Outlook etc., aparece o card com a imagem `icons/og-image.jpg` (1200×630, ícone + nome do app), o título e a descrição. A imagem precisa estar publicada no endereço `https://vivo61991-tech.github.io/problemas-sistemicos/icons/og-image.jpg` (o repositório tem de ser público para os apps conseguirem ler).
+- Esses apps guardam a pré-visualização por um tempo: um link que já foi compartilhado antes sem imagem pode continuar sem ela por alguns dias. Para testar na hora, compartilhe com um parâmetro novo no fim, ex.: `…/problemas-sistemicos/?v=2`.
 
 ## Publicar
 1. Crie o repositório e suba todos os arquivos na raiz.
