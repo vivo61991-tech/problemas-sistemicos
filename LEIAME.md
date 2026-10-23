@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.28.0)
+# Problemas Sistêmicos (v1.28.1)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -26,7 +26,7 @@ A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fix
    - o número do chamado não aparece no card, só no detalhe (toque no card);
    - selo verde **NOVO** (ou **ALTERAÇÕES**) metade dentro e metade fora do card, no canto inferior esquerdo, por 1 hora. **Tocar no selo** abre uma janela só com a **mudança mais recente** desse chamado (a que o selo anuncia), em vez do detalhe;
    - o tempo "aberto há" correndo ao vivo e, à direita, o status (evolução) acima do início;
-   - **cronômetro** (ícone à esquerda do tempo "aberto há"): abre uma janela com o tempo decorrido **correndo a cada segundo**, em horas acumuladas (ex.: `74:12:05`, sem virar dias), desde quando abriu, e embaixo a **análise do histórico** do mesmo sistema com o mesmo tipo de falha (tempo médio, maior e menor tempo, frequência), igual à do detalhe;
+   - **cronômetro** (ícone à esquerda do tempo "aberto há"; tocar no ícone **ou no próprio tempo**): abre uma janela com o tempo decorrido **correndo a cada segundo**, em horas acumuladas (ex.: `74:12:05`, sem virar dias), desde quando abriu, e embaixo a **análise do histórico** do mesmo sistema com o mesmo tipo de falha (tempo médio, maior e menor tempo, frequência), igual à do detalhe;
    - **alerta enviado** (`ALERTA_ENVIADO` = 1): uma **sirene branca num círculo vermelho** na quina superior direita do card (parte dentro, parte fora, sem cobrir o ID). Tocar nela abre uma janela informativa (com a própria sirene no círculo vermelho): o alerta foi enviado para **reforçar a solicitação com a área responsável**. Fecha no botão **Fechar** (embaixo, centralizado), tocando fora, no Esc ou no voltar do celular; não abre o detalhe do chamado;
    - **alfinete** à esquerda do ID para **fixar** o card no topo. Desligado fica cinza e inclinado; ligado fica roxo, cheio e em pé, e o card ganha um contorno lilás. Dá para fixar vários: o último fixado vai para o topo e os anteriores descem uma posição. Desafixado, o card volta para a ordem normal. Fica guardado **no aparelho** (cada pessoa fixa os seus);
    - por último, a **barra do dia**: expediente de hoje das 08h às 21h (traço = 14h), preenchida na cor do tipo de falha com o trecho que o chamado já ocupou hoje, até agora. Chamado que vem de ontem começa a contar às 08h de hoje. Atualiza ao vivo. Sem ocorrência, aparece o card verde "Nenhuma ocorrência ativa". Embaixo, os **chamados de hoje** (abertos primeiro, depois os encerrados) e as **últimas mudanças** de status. O número de ocorrências ativas aparece no ícone do menu.
