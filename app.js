@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.22.0';
+const VERSION = '1.23.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -21,7 +21,7 @@ const TRACK = [['STATUS', 'Status'], ['EVOLUCAO', 'Evolução'], ['DATA_FIM', 'F
 // colunas que continuam sendo lidas (mudanças, conferência), mas não aparecem nos cards nem no detalhe
 const OCULTAS = ['FLAG', 'TEMPO_DECORRIDO', 'DADO_ATUALIZADO', 'DATA_ATUALIZACAO'];
 
-const K = { data: 'ps.data', snap: 'ps.snap', log: 'ps.log', bell: 'ps.bell' };
+const K = { data: 'ps.data', snap: 'ps.snap', log: 'ps.log', bell: 'ps.bell', pins: 'ps.pins' };
 
 /* ---------- armazenamento no aparelho ---------- */
 function load(key, fallback) {
@@ -246,6 +246,7 @@ const S = {
   tab: 'oc', sheet: null,       // sheet: {mode:'det'|'list', id, list:{titulo, sub, ids, onClose}}
 };
 if (!Array.isArray(S.log)) S.log = [];
+S.pins = load(K.pins, []); if (!Array.isArray(S.pins)) S.pins = [];   // cards fixados: o mais recente primeiro
 
 function applyText(text, meta, fromStore) {
   const p = parseTxt(text);
@@ -385,22 +386,68 @@ function renderOpen() {
       (last ? `<div class="ult"><small>Último normalizado:</small><div class="us"><span class="cc-id num">${esc(last.ID)}</span><span class="cc-nm">${esc(last.SISTEMA)} · ${sameDay(last._fim, new Date()) ? 'hoje' : fDM(last._fim)} às ${fHM(last._fim)}</span></div></div>` : '') + `</div>`;
     return;
   }
-  $('open').innerHTML = open.map(r => {
-    const t = tipo(r), rk = recentKind(r.ID, now);
+  const fixos = S.pins.map(id => open.find(r => r.ID === id)).filter(Boolean);
+  const ordem = fixos.concat(open.filter(r => !S.pins.includes(r.ID)));
+  $('open').innerHTML = ordem.map(r => {
+    const t = tipo(r), rk = recentKind(r.ID, now), fx = S.pins.includes(r.ID), al = r.ALERTA_ENVIADO === '1';
     const ini = sameDay(r._ini, new Date()) ? 'hoje' : fDM(r._ini);
     const seg = segTxt(r.SEGMENTO);
-    return `<button class="oc k-${t.k}${rk ? ' com-selo' : ''}" data-id="${esc(r.ID)}">
+    return `<button class="oc k-${t.k}${rk ? ' com-selo' : ''}${fx ? ' fixo' : ''}" data-id="${esc(r.ID)}">
       <div class="h"><span class="sis" title="${esc(r.SISTEMA)}">${esc(r.SISTEMA)}</span>
+        <span class="pin${fx ? ' on' : ''}" role="button" tabindex="0" data-pin="${esc(r.ID)}" aria-pressed="${fx}" aria-label="${fx ? 'Desafixar' : 'Fixar no topo'}" title="${fx ? 'Desafixar' : 'Fixar no topo'}">${PIN_SVG}</span>
         <span class="cap-id num" title="ID da solicitação no sistêmico">ID ${esc(r.ID)}</span></div>
       ${r.IMPACTO_OPERACIONAL ? `<div class="imp">${esc(r.IMPACTO_OPERACIONAL)}</div>` : ''}
       <div class="tl"><span class="cap-t k-${t.k}">${esc(t.longo)}</span>${seg ? `<span class="para">para <b>${esc(seg)}</b></span>` : ''}</div>
       <div class="ft"><div class="timer num"><small>aberto há</small><span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span></div>
-        <div class="when">${r.EVOLUCAO ? `<span class="evo">${esc(r.EVOLUCAO)}</span>` : ''}<span class="ini num">início ${ini} ${fHM(r._ini)}</span></div></div>
+        <div class="when">${r.EVOLUCAO || al ? `<span class="stx">${al ? `<span class="alrt" role="button" tabindex="0" data-alerta="${esc(r.ID)}" aria-label="Alerta enviado" title="Alerta enviado">${SIRENE_SVG}</span>` : ''}${r.EVOLUCAO ? `<span class="evo">${esc(r.EVOLUCAO)}</span>` : ''}</span>` : ''}<span class="ini num">início ${ini} ${fHM(r._ini)}</span></div></div>
       ${barraDia(r, now)}
       ${rk ? `<span class="selo">${rk === 'novo' ? 'NOVO' : 'MUDOU'}</span>` : ''}
     </button>`;
   }).join('');
 }
+// alfinete (fixar card) e sirene (alerta enviado): traço fino, no estilo das letras
+const PIN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path class="pc" d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>';
+const SIRENE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18v-5a5 5 0 0 1 10 0v5"/><path d="M5 21a1 1 0 0 1-1-1v-1a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1z"/><path d="M12 2v1.5M3.5 6.5l1.2 1M20.5 6.5l-1.2 1"/><path d="M10 13a2 2 0 0 1 2-2"/></svg>';
+// fixar/desafixar: quem é fixado vai para o topo (o último fixado fica em cima); desafixado volta à ordem normal
+function alternarPin(id) {
+  const i = S.pins.indexOf(id);
+  if (i >= 0) S.pins.splice(i, 1); else S.pins.unshift(id);
+  if (S.rows.length) S.pins = S.pins.filter(x => S.rows.some(r => r.ID === x));   // tira IDs que saíram do arquivo
+  save(K.pins, S.pins);
+  renderOpen();
+  if (i < 0) { const c = document.querySelector(`#open .oc[data-id="${CSS.escape(id)}"]`); if (c) { c.classList.add('subiu'); setTimeout(() => c.classList.remove('subiu'), 700); } }
+}
+// janela informativa do alerta enviado
+const AL = { aberto: false, hist: false, ignorarPop: false };
+function abrirAlerta(id) {
+  const r = S.rows.find(x => x.ID === id); if (!r) return;
+  let bg = $('alBg');
+  if (!bg) {
+    bg = document.createElement('div'); bg.id = 'alBg'; bg.className = 'nt-bg'; bg.hidden = true;
+    bg.innerHTML = '<div class="nt t-INFORMACAO" id="alBox" role="dialog" aria-modal="true" aria-labelledby="alTit" tabindex="-1"></div>';
+    bg.addEventListener('click', e => { if (e.target === bg) fecharAlerta(); });
+    document.body.appendChild(bg);
+  }
+  const ic = window.PSNotif && PSNotif.icone ? PSNotif.icone('INFORMACAO') : '';
+  $('alBox').innerHTML = `<div class="nt-top"><span class="sp"></span><button class="nt-x" id="alX" aria-label="Fechar">✕</button></div>
+    <div class="nt-h"><span class="nt-ic">${ic}</span><h3 id="alTit">Alerta enviado</h3></div>
+    <div class="nt-corpo"><p class="al-sis"><span class="idc num">${esc(r.ID)}</span> <b>${esc(r.SISTEMA)}</b></p>
+      <p>Foi enviado um <b>alerta</b> para <b>reforçar a solicitação com a área responsável</b>${r.AREA_ACIONADA && r.AREA_ACIONADA !== 'undefined' ? ` (<b>${esc(r.AREA_ACIONADA)}</b>)` : ''}.</p>
+      <p>O chamado continua em acompanhamento até ser normalizado.</p></div>`;
+  $('alX').onclick = () => fecharAlerta();
+  bg.hidden = false; document.body.classList.add('al-on'); document.documentElement.classList.add('trava');
+  if (!AL.aberto) { try { history.pushState({ alerta: 1 }, ''); AL.hist = true; } catch (e) { AL.hist = false; } }
+  AL.aberto = true;
+  $('alBox').focus({ preventScroll: true });
+}
+function fecharAlerta(porHistorico) {
+  if (!AL.aberto) return;
+  AL.aberto = false; $('alBg').hidden = true; document.body.classList.remove('al-on');
+  if (!document.body.matches('.nt-on, .sheet-on')) document.documentElement.classList.remove('trava');
+  if (!porHistorico && AL.hist) { AL.ignorarPop = true; history.back(); }
+  AL.hist = false;
+}
+
 // segmentos afetados: "B2B, B2C, CAMPO" → "B2B, B2C e CAMPO"
 function segTxt(s) {
   const l = String(s || '').split(',').map(x => x.trim()).filter(Boolean);
@@ -771,7 +818,7 @@ function closeSheet() {
   S.sheet = null;
   $('sheet').classList.remove('show'); $('sheet').scrollTop = 0;
   $('sheetBg').style.display = 'none';
-  document.body.classList.remove('sheet-on'); if (!document.body.classList.contains('nt-on')) document.documentElement.classList.remove('trava');
+  document.body.classList.remove('sheet-on'); if (!document.body.matches('.nt-on, .al-on')) document.documentElement.classList.remove('trava');
   if (l && l.onClose) l.onClose();
 }
 
@@ -806,6 +853,10 @@ function init() {
   if (window.PSNotif && PSNotif.versao === VERSION) { PSNotif.iniciar(); $('btNotif').onclick = () => PSNotif.tocarBotao(); renderBanners(); }
 
   document.addEventListener('click', e => {
+    const pn = e.target.closest('[data-pin]');
+    if (pn) { e.preventDefault(); alternarPin(pn.dataset.pin); return; }
+    const ale = e.target.closest('[data-alerta]');
+    if (ale) { e.preventDefault(); abrirAlerta(ale.dataset.alerta); return; }
     const it = e.target.closest('[data-id]');
     if (it && !it.disabled) {
       if (it.closest('#sheet')) {   // item da lista do Painel: abre o detalhe com "Voltar à lista"
@@ -835,12 +886,20 @@ function init() {
     if (e.key === 'Escape') { e.stopPropagation(); fecharSis(); $('pickB').focus(); }
   });
   $('sheetBg').onclick = () => history.back();
+  // Enter/Espaço no alfinete e na sirene (estão dentro do card)
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const x = e.target.closest && e.target.closest('[data-pin], [data-alerta]');
+    if (x) { e.preventDefault(); e.stopPropagation(); x.click(); }
+  }, true);
   window.addEventListener('popstate', () => {
+    if (AL.ignorarPop) { AL.ignorarPop = false; return; }
+    if (AL.aberto) { fecharAlerta(true); return; }
     if (window.PSNotif && PSNotif.consumirPop()) return;          // a própria janela de notificação voltou o histórico
     if (window.PSNotif && PSNotif.aberto()) { PSNotif.fechar(true); return; }
     if (S.sheet) closeSheet();
   });
-  document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (window.PSNotif && PSNotif.aberto()) PSNotif.fechar(); else if (S.sheet) history.back(); });
+  document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (AL.aberto) fecharAlerta(); else if (window.PSNotif && PSNotif.aberto()) PSNotif.fechar(); else if (S.sheet) history.back(); });
   if (window.PSPainel) PSPainel.gesto($('pgPainel'), () => S.tab === 'painel');
 
   document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - S.checkedAt > 15000) poll(); });

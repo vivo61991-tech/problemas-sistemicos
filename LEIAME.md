@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.22.0)
+# Problemas Sistêmicos (v1.23.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -26,6 +26,8 @@ A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fix
    - o número do chamado não aparece no card, só no detalhe (toque no card);
    - selo verde **NOVO** (ou **MUDOU**) metade dentro e metade fora do card, no canto inferior esquerdo, por 1 hora;
    - o tempo "aberto há" correndo ao vivo e, à direita, o status (evolução) acima do início;
+   - **alerta enviado** (`ALERTA_ENVIADO` = 1): uma **sirene** pequena, no traço das letras, à esquerda do status. Tocar nela abre uma janela informativa (ícone de informação): o alerta foi enviado para **reforçar a solicitação com a área responsável**. Fecha no ✕, tocando fora, no Esc ou no voltar do celular; não abre o detalhe do chamado;
+   - **alfinete** à esquerda do ID para **fixar** o card no topo. Desligado fica cinza e inclinado; ligado fica roxo, cheio e em pé, e o card ganha um contorno lilás. Dá para fixar vários: o último fixado vai para o topo e os anteriores descem uma posição. Desafixado, o card volta para a ordem normal. Fica guardado **no aparelho** (cada pessoa fixa os seus);
    - por último, a **barra do dia**: expediente de hoje das 08h às 21h (traço = 14h), preenchida na cor do tipo de falha com o trecho que o chamado já ocupou hoje, até agora. Chamado que vem de ontem começa a contar às 08h de hoje. Atualiza ao vivo. Sem ocorrência, aparece o card verde "Nenhuma ocorrência ativa". Embaixo, os **chamados de hoje** (abertos primeiro, depois os encerrados) e as **últimas mudanças** de status. O número de ocorrências ativas aparece no ícone do menu.
    - **detalhe do chamado** (toque no card): no alto, centralizada, uma **seta para baixo** que fecha o detalhe (não há mais ✕); o **nome do sistema** alinhado à esquerda (quebra linha se for grande) e o **ID** em cápsula só com borda na ponta direita; na linha de baixo, a cápsula do **tipo de falha** na cor dele à esquerda e o **status** na ponta direita (sem a criticidade); depois as caixas **Chamado | Duração** e **Início | Fim** (tocar no chamado copia o número para a área de transferência e aparece "Chamado … copiado"), tudo do chamado (na lista de campos: Segmento, No expediente, Área acionada, Grupos responsáveis, Grupos impactados, **Evolução**, **Impacto** e Alerta enviado) e, no fim, a **Análise do histórico** do mesmo sistema com o mesmo tipo de falha, usando a base inteira (6 meses fechados + mês atual): **tempo médio**, **maior** e **menor** tempo (início → fim dos chamados encerrados, indevidos fora), se o chamado aberto está dentro ou acima da média, e a **frequência** ("ocorre em média a cada 9 dias" = dias da base ÷ ocorrências, contando desde o 1º dia do mês mais antigo do arquivo).
 2. **Histórico**: todos os chamados por dia. Ao entrar mostra o **mês atual e o anterior**; no fim da lista, o botão **"Mostrar mês de Agosto"** traz o mês seguinte para trás que tiver chamado (depois "Julho", …; de outro ano aparece "Dezembro de 2025"). Mudar busca, filtro ou sistema volta para os 2 meses. Com:
@@ -84,6 +86,9 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 - Linha com `DATA_INICIO` inválida é ignorada; `DATA_FIM` inválida vira "sem fim"; `ID` repetido fica com a linha de atualização mais recente. Os avisos aparecem num alerta amarelo no fim da página, como último item (toque para ver a lista). Erros do arquivo e falha ao guardar continuam em vermelho no topo.
 - Se o aparelho não conseguir guardar a cópia, aparece alerta vermelho.
 - Sem internet, o app abre com a última cópia guardada.
+
+## Dados fictícios (homologação)
+- Enquanto a base não é atualizada, o `sistemas.txt` da raiz traz a base real **sem alteração** e, por cima, chamados **fictícios** a partir do ID 312 (todos com "(fictício)" no fim do `IMPACTO_OPERACIONAL`), até 23/10/2026 02:11: 6 em andamento (311 real + 322, 323, 325, 326 e 327), 3 deles com alerta enviado (322, 323 e 326). Trocar pelo arquivo real antes de ir para produção.
 
 ## Publicar
 1. Crie o repositório e suba todos os arquivos na raiz.

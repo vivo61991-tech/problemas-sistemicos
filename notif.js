@@ -5,7 +5,7 @@
    Vale só STATUS = ATIVO e dentro das datas (sem início = já vale; sem fim = vale até alguém desativar). */
 (function () {
   'use strict';
-  const VERSAO = '1.22.0';
+  const VERSAO = '1.23.0';
   const K = { dados: 'ps.notif', lidas: 'ps.notif.lidas' };
   const OBRIG = ['ID', 'TIPO', 'TITULO', 'TEXTO'];
   const TAGS = ['b', 'i', 's', 'm', 'roxo', 'verde', 'laranja', 'pink', 'link'];
@@ -181,7 +181,7 @@
   // porHistorico = já veio do botão voltar do aparelho
   function fechar(porHistorico) {
     if (!N.modal) return;
-    N.modal = null; const bg = document.getElementById('ntBg'); if (bg) bg.hidden = true; document.body.classList.remove('nt-on'); if (!document.body.classList.contains('sheet-on')) document.documentElement.classList.remove('trava');
+    N.modal = null; const bg = document.getElementById('ntBg'); if (bg) bg.hidden = true; document.body.classList.remove('nt-on'); if (!document.body.matches('.sheet-on, .al-on')) document.documentElement.classList.remove('trava');
     if (!porHistorico && N.hist) { N.hist = false; N.ignorarPop = true; history.back(); } else N.hist = false;
     setTimeout(proximaObrigatoria, 50);
   }
@@ -193,7 +193,7 @@
   // Fechou uma (✕ ou Ciente) → abre a próxima. Com "Ciente" não abre sozinha de novo;
   // fechada só no ✕, volta a abrir na próxima vez que o app for aberto.
   function proximaObrigatoria() {
-    if (N.modal || !N.pronto || document.querySelector('.sheet.show')) return;
+    if (N.modal || !N.pronto || document.querySelector('.sheet.show') || document.body.classList.contains('al-on')) return;
     const it = ativas().filter(x => x.obrig && !lida(x) && !N.autoVistos.has(x.id + '|' + x.versao))
       .sort((a, b) => a.id.localeCompare(b.id, 'pt-BR', { numeric: true }))[0];
     if (!it) return;
@@ -212,6 +212,7 @@
 
   window.PSNotif = {
     versao: VERSAO, ler, html, ativas, aplicar, atualizar, tocarBotao, fechar,
+    icone: t => ICONE[t] || ICONE.INFORMACAO,
     iniciar() { carregarGuardado(); N.pronto = true; atualizar(); },
     aberto: () => !!N.modal,
     consumirPop: () => { if (N.ignorarPop) { N.ignorarPop = false; return true; } return false; },
