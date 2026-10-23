@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.30.0';
+const VERSION = '1.30.1';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -521,10 +521,11 @@ function abrirEstagio(id) {
   const r = S.rows.find(x => x.ID === id); if (!r || !r.ESTAGIO) return;
   const c = S.log.find(x => x.id === id && ((x.kind === 'muda' && x.ch.some(y => y.f === 'ESTAGIO')) || x.kind === 'novo'));
   const quando = c ? new Date(c.at) : r._upd;
-  const qTxt = quando ? `${sameDay(quando, new Date()) ? 'hoje' : fDM(quando)} às ${fHM(quando)}` : '—';
+  const qTxt = quando ? `${fDM(quando)}/${String(quando.getFullYear()).slice(2)} ${fHM(quando)}` : '';
   abrirInfo('Estágio', `<p class="al-sis"><span class="idc num">${esc(r.ID)}</span> <b>${esc(r.SISTEMA)}</b></p>
-      <div class="est-meta"><span><small>Status</small><b>${esc(r.EVOLUCAO || cap(r.STATUS))}</b></span><span><small>Atualizado</small><b class="num">${qTxt}</b></span></div>
-      <div class="est-tx">${esc(r.ESTAGIO)}</div>`, `<span class="ic-roxo ic-info">${INFO_SVG}</span>`);
+      <div class="est-st"><small>Status</small><b>${esc(r.EVOLUCAO || cap(r.STATUS))}</b></div>
+      <div class="est-tx">${esc(r.ESTAGIO)}</div>
+      <div class="est-qd num">${qTxt}</div>`, `<span class="ic-roxo ic-info">${INFO_SVG}</span>`);
 }
 // selo NOVO / ALTERAÇÕES: mostra só a mudança mais recente desse chamado (a que o selo está anunciando)
 function abrirLog(id) {
@@ -1041,8 +1042,15 @@ function analise(r, now) {
   const media = fech.length ? fech.reduce((a, f) => a + f.ms, 0) / fech.length : null;
   return { n: mesmos.length, nFech: fech.length, media, menor: fech[0] || null, maior: fech[fech.length - 1] || null, base0, dias };
 }
-function freqTxt(a) {
+function freqTxt(a, curto) {
   if (!a.n || !a.base0) return '';
+  if (curto) {   // janela do cronômetro: frase curta
+    const dd = Math.round(a.dias), iv = a.dias / a.n;
+    if (a.n === 1) return `Primeira ocorrência na base (${dd} dias).`;
+    if (iv < 1) return `Média de <b>${(a.n / a.dias).toFixed(1).replace('.', ',')} por dia</b> (${a.n} ocorrências em ${dd} dias).`;
+    const d = Math.round(iv);
+    return `Média a cada <b>${d} dia${d > 1 ? 's' : ''}</b> (${a.n} ocorrências em ${dd} dias).`;
+  }
   const intervalo = a.dias / a.n;
   const periodo = `${a.n} ocorrência${a.n > 1 ? 's' : ''} em ${Math.round(a.dias)} dias de base`;
   if (a.n === 1) return `Primeira ocorrência desse problema na base (${Math.round(a.dias)} dias).`;
@@ -1056,7 +1064,8 @@ function analiseHtml(r, now, semTitulo) {
   let cmp = '';
   if (isOpen(r) && a.media != null) {
     const aberto = now - r._ini;
-    cmp = `<p class="an-cmp ${aberto > a.media ? 'acima' : ''}">Este chamado está aberto há <b>${fDur(aberto)}</b>: ${aberto > a.maior.ms ? 'já passou do maior tempo da base' : aberto > a.media ? 'acima da média' : 'dentro da média'}.</p>`;
+    const sit = aberto > a.maior.ms ? (semTitulo ? 'ultrapassou o maior tempo da base' : 'já passou do maior tempo da base') : aberto > a.media ? 'acima da média' : 'dentro da média';
+    cmp = `<p class="an-cmp ${aberto > a.media ? 'acima' : ''}">${semTitulo ? `Aberto há <b>${fDur(aberto)}</b>: ${sit}.` : `Este chamado está aberto há <b>${fDur(aberto)}</b>: ${sit}.`}</p>`;
   }
   const corpo = !a.nFech ? `<div class="empty" style="padding:0">Ainda não há chamado encerrado de ${esc(r.SISTEMA)} com ${esc(t.longo.toLowerCase())} na base para calcular os tempos.</div>`
     : `<div class="an-box">
@@ -1068,8 +1077,8 @@ function analiseHtml(r, now, semTitulo) {
     <div class="an">
       <div class="an-t">${esc(r.SISTEMA)} · <span class="tf" style="--fc:${t.c}"><i></i>${esc(t.longo)}</span></div>
       ${corpo}
-      ${a.n ? `<p class="an-fq">${freqTxt(a)}</p>` : ''}
-      <p class="an-base">Base: ${a.nFech} chamado${a.nFech === 1 ? '' : 's'} encerrado${a.nFech === 1 ? '' : 's'} desse sistema com esse tipo de falha${a.base0 ? `, de ${fDM(a.base0)}/${String(a.base0.getFullYear()).slice(2)} até hoje` : ''} · tempo total do início ao fim · indevidos fora.</p>
+      ${a.n ? `<p class="an-fq">${freqTxt(a, semTitulo)}</p>` : ''}
+      ${semTitulo ? '' : `<p class="an-base">Base: ${a.nFech} chamado${a.nFech === 1 ? '' : 's'} encerrado${a.nFech === 1 ? '' : 's'} desse sistema com esse tipo de falha${a.base0 ? `, de ${fDM(a.base0)}/${String(a.base0.getFullYear()).slice(2)} até hoje` : ''} · tempo total do início ao fim · indevidos fora.</p>`}
     </div>`;
 }
 /* ---------- copiar o número do chamado ---------- */
