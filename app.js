@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.27.0';
+const VERSION = '1.28.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -402,7 +402,7 @@ function renderOpen() {
         <span class="cap-id num" title="ID da solicitação no sistêmico">ID ${esc(r.ID)}</span></div>
       ${r.IMPACTO_OPERACIONAL ? `<div class="imp">${esc(r.IMPACTO_OPERACIONAL)}</div>` : ''}
       <div class="tl"><span class="cap-t k-${t.k}">${esc(t.longo)}</span>${seg ? `<span class="para">para <b>${esc(seg)}</b></span>` : ''}</div>
-      <div class="ft"><div class="timer num"><small>aberto há</small><span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span></div>
+      <div class="ft"><div class="timer num"><small>aberto há</small><span class="tm"><span class="crn" role="button" tabindex="0" data-crono="${esc(r.ID)}" aria-label="Tempo decorrido: abrir o cronômetro" title="Tempo decorrido">${CRONO_SVG}</span><span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span></span></div>
         <div class="when">${r.EVOLUCAO ? `<span class="evo">${esc(r.EVOLUCAO)}</span>` : ''}<span class="ini num">início ${ini} ${fHM(r._ini)}</span></div></div>
       ${barraDia(r, now)}
       ${rk ? `<span class="selo" role="button" tabindex="0" data-log="${esc(r.ID)}" aria-label="${rk === 'novo' ? 'Novo' : 'Alterações'}: ver a última mudança" title="Ver a última mudança">${rk === 'novo' ? 'NOVO' : 'ALTERAÇÕES'}</span>` : ''}
@@ -425,7 +425,8 @@ function alternarPin(id) {
 // janela informativa do alerta enviado
 const AL = { aberto: false, hist: false, ignorarPop: false };
 // janela informativa (mesma caixa para o alerta enviado e para as últimas mudanças do card)
-function abrirInfo(titulo, corpo, icone, acoes) {
+function abrirInfo(titulo, corpo, icone, acoes, faixa) {
+  clearInterval(AL.tick);
   let bg = $('alBg');
   if (!bg) {
     bg = document.createElement('div'); bg.id = 'alBg'; bg.className = 'nt-bg'; bg.hidden = true;
@@ -434,7 +435,7 @@ function abrirInfo(titulo, corpo, icone, acoes) {
     document.body.appendChild(bg);
   }
   const ic = icone != null ? icone : (window.PSNotif && PSNotif.icone ? PSNotif.icone('INFORMACAO') : '');
-  $('alBox').className = 'nt ' + (icone != null ? 't-INTERROGACAO' : 't-INFORMACAO');   // compartilhar: faixa roxa do app; avisos: verde de informação
+  $('alBox').className = 'nt ' + (faixa || (icone != null ? 't-INTERROGACAO' : 't-INFORMACAO'));   // compartilhar: faixa roxa do app; avisos: verde de informação
   $('alBox').innerHTML = `<div class="nt-h">${ic ? `<span class="nt-ic">${ic}</span>` : ''}<h3 id="alTit">${titulo}</h3></div>
     <div class="nt-corpo">${corpo}</div>
     <div class="nt-acoes">${acoes || ''}<button class="nt-bt" id="alX" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg><span>Fechar</span></button></div>`;
@@ -449,7 +450,24 @@ function abrirAlerta(id) {
   const r = S.rows.find(x => x.ID === id); if (!r) return;
   abrirInfo('Alerta enviado', `<p class="al-sis"><span class="idc num">${esc(r.ID)}</span> <b>${esc(r.SISTEMA)}</b></p>
       <p>Foi enviado um <b>alerta</b> para <b>reforçar a solicitação com a área responsável</b>${r.AREA_ACIONADA && r.AREA_ACIONADA !== 'undefined' ? ` (<b>${esc(r.AREA_ACIONADA)}</b>)` : ''}.</p>
-      <p>O chamado continua em acompanhamento até ser normalizado.</p>`);
+      <p>O chamado continua em acompanhamento até ser normalizado.</p>`, `<span class="ic-verm">${SIRENE_SVG}</span>`, '', 't-CRITICO');
+}
+// cronômetro: tempo decorrido correndo a cada segundo, em horas acumuladas (ex.: 74:12:05), + análise do histórico
+const CRONO_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2h4"/><path d="m12 14 3-3"/><circle cx="12" cy="14" r="8"/></svg>';
+function relogio(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+}
+function abrirCrono(id) {
+  const r = S.rows.find(x => x.ID === id); if (!r) return;
+  const now = Date.now(), ini = r._ini.getTime(), open = isOpen(r);
+  const fim = () => open ? Date.now() : endOf(r, Date.now());
+  abrirInfo('Tempo decorrido', `<p class="al-sis"><span class="idc num">${esc(r.ID)}</span> <b>${esc(r.SISTEMA)}</b></p>
+      <div class="crono"><div class="cr-n num" id="crN" aria-live="off">${relogio(fim() - ini)}</div>
+        <div class="cr-u"><span>horas</span><span>min</span><span>seg</span></div>
+        <div class="cr-d">${open ? 'aberto' : 'durou'} desde ${fFull(r._ini)} · ${fDur(fim() - ini)}</div></div>
+      ${analiseHtml(r, now, true)}`, icoRoxo(CRONO_SVG));
+  if (open) AL.tick = setInterval(() => { const e = $('crN'); if (!e || !AL.aberto) { clearInterval(AL.tick); return; } e.textContent = relogio(Date.now() - ini); }, 1000);
 }
 // selo NOVO / ALTERAÇÕES: mostra só a mudança mais recente desse chamado (a que o selo está anunciando)
 function abrirLog(id) {
@@ -460,7 +478,7 @@ function abrirLog(id) {
 }
 function fecharAlerta(porHistorico) {
   if (!AL.aberto) return;
-  AL.aberto = false; $('alBg').hidden = true; document.body.classList.remove('al-on');
+  AL.aberto = false; clearInterval(AL.tick); $('alBg').hidden = true; document.body.classList.remove('al-on');
   if (!document.body.matches('.nt-on, .sheet-on')) document.documentElement.classList.remove('trava');
   if (!porHistorico && AL.hist) { AL.ignorarPop = true; history.back(); }
   AL.hist = false;
@@ -974,7 +992,7 @@ function freqTxt(a) {
   const d = Math.round(intervalo);
   return `Esse problema ocorre em média <b>a cada ${d} dia${d > 1 ? 's' : ''}</b> (${periodo}).`;
 }
-function analiseHtml(r, now) {
+function analiseHtml(r, now, semTitulo) {
   const t = tipo(r), a = analise(r, now);
   const quando = f => `<small class="qd">${fDM(f.x._ini)}/${String(f.x._ini.getFullYear()).slice(2)}</small>`;
   let cmp = '';
@@ -988,7 +1006,7 @@ function analiseHtml(r, now) {
         <div><small>Maior tempo</small><b class="num">${fDur(a.maior.ms)}</b>${quando(a.maior)}</div>
         <div><small>Menor tempo</small><b class="num">${fDur(a.menor.ms)}</b>${quando(a.menor)}</div>
       </div>${cmp}`;
-  return `<h4>Análise do histórico</h4>
+  return `${semTitulo ? '' : '<h4>Análise do histórico</h4>'}
     <div class="an">
       <div class="an-t">${esc(r.SISTEMA)} · <span class="tf" style="--fc:${t.c}"><i></i>${esc(t.longo)}</span></div>
       ${corpo}
@@ -1055,6 +1073,8 @@ function init() {
     if (pn) { e.preventDefault(); alternarPin(pn.dataset.pin); return; }
     const ale = e.target.closest('[data-alerta]');
     if (ale) { e.preventDefault(); abrirAlerta(ale.dataset.alerta); return; }
+    const cr = e.target.closest('[data-crono]');
+    if (cr) { e.preventDefault(); abrirCrono(cr.dataset.crono); return; }
     const lg = e.target.closest('[data-log]');
     if (lg) { e.preventDefault(); abrirLog(lg.dataset.log); return; }
     const it = e.target.closest('[data-id]');
@@ -1090,7 +1110,7 @@ function init() {
   // Enter/Espaço no alfinete e na sirene (estão dentro do card)
   document.addEventListener('keydown', e => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
-    const x = e.target.closest && e.target.closest('[data-pin], [data-alerta], [data-log]');
+    const x = e.target.closest && e.target.closest('[data-pin], [data-alerta], [data-log], [data-crono]');
     if (x) { e.preventDefault(); e.stopPropagation(); x.click(); }
   }, true);
   window.addEventListener('popstate', () => {
