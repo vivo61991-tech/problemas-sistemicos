@@ -5,7 +5,7 @@
    Vale só STATUS = ATIVO e dentro das datas (sem início = já vale; sem fim = vale até alguém desativar). */
 (function () {
   'use strict';
-  const VERSAO = '1.30.3';
+  const VERSAO = '1.31.0';
   const K = { dados: 'ps.notif', lidas: 'ps.notif.lidas' };
   const OBRIG = ['ID', 'TIPO', 'TITULO', 'TEXTO'];
   const TAGS = ['b', 'i', 's', 'm', 'roxo', 'verde', 'laranja', 'pink', 'link'];
@@ -171,7 +171,7 @@
       // contador: só o total quando nada foi lido "(10)"; depois não lidas/total "(9/10)" … "(0/10)"
       const nl = at.filter(x => !lida(x)).length, cont = nl === at.length ? `${at.length}` : `${nl}/${at.length}`;
       box.innerHTML = `<div class="nt-top"><h3 id="ntTit">Notificações <span class="nt-cont num" aria-label="${nl} não lida${nl === 1 ? '' : 's'} de ${at.length}">(${cont})</span></h3><span class="sp"></span>${X}</div>
-        <div class="nt-itens">${[...at.filter(x => !lida(x)), ...at.filter(x => lida(x))].map(it => { const l = lida(it); return `<button class="nt-it${l ? ' lida' : ''}" data-nid="${esc(it.id)}"><span class="nt-ic">${ICONE[it.tipo]}</span><span class="nt-tt">${esc(it.titulo || NOME[it.tipo])}</span><span class="nt-pt" aria-label="${l ? 'lida' : 'não lida'}"></span></button>`; }).join('')}</div>`;
+        <div class="nt-itens">${[...at.filter(x => !lida(x)), ...at.filter(x => lida(x))].map(it => { const l = lida(it); return `<button class="nt-it${l ? ' lida' : ''}${it.obrig && !l ? ' obrig' : ''}" data-nid="${esc(it.id)}"><span class="nt-ic">${ICONE[it.tipo]}</span><span class="nt-tt">${esc(it.titulo || NOME[it.tipo])}</span><span class="nt-pt" aria-label="${l ? 'lida' : 'não lida'}"></span></button>`; }).join('')}</div>`;
       box.querySelectorAll('.nt-it').forEach(b => b.onclick = () => { N.modal = { modo: 'uma', id: b.dataset.nid, daLista: true }; desenhar(); });
       // barra de rolagem só enquanto a lista se mexe (some ~0,8 s depois de parar)
       const li = box.querySelector('.nt-itens'); let tm;

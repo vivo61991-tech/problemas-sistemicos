@@ -1,26 +1,31 @@
 ID	SISTEMA	CHAMADO	STATUS	CRITICIDADE	EVOLUCAO	SEGMENTO	IMPACTO_OPERACIONAL	ESTAGIO	DATA_INICIO	DATA_FIM	TIPO_FALHA	GRUPOS_RESPONSAVEIS	GRUPOS_IMPACTADOS	AREA_ACIONADA	ALERTA_ENVIADO	DATA_ATUALIZACAO	DADO_ATUALIZADO	TEMPO_DECORRIDO	FLAG
-335	URA CO	INC5284233	ABERTO	P3	EM ANÁLISE	B2B, B2C	Ligações caindo após 2 minutos de espera (fictício)	"Chamado aberto e encaminhado para CCGI - CIM.
-Equipe realizando análise inicial do problema."	23/10/26 13:40:00,000000000		INTERMITÊNCIA	CCGI - CIM	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI / Contact Center	0	23/10/26 13:52:17,000000000	23/10/26 13:53:11,000000000	+00 00:43:00.000000	1
-334	CHAT DANI	Sem Chamado	ABERTO	P3	EM ANÁLISE	B2C	Chat encerra a conversa antes do atendimento (fictício)	"4field confirmou instabilidade no servidor de sessões do chat.
-Análise em andamento com o fornecedor."	23/10/26 12:20:00,000000000		LENTIDÃO	4FIELD - CHAT DANI	CENTRALIZADA, CENTRO DE OPERAÇÕES	4field	0	23/10/26 13:40:17,000000000	23/10/26 13:41:11,000000000	+00 02:03:00.000000	1
-333	SDU	INC5284155	ABERTO	P3	EM ANÁLISE	B2C	Sistema fora do ar para consulta de faturas (fictício)	"Banco de faturas indisponível após atualização de versão.
-Fornecedor acionado; rollback em andamento.
-Previsão de retorno: 15h30."	23/10/26 11:40:00,000000000		INDISPONIBILIDADE TOTAL	CCGI - CIM	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI	1	23/10/26 14:15:17,000000000	23/10/26 14:16:11,000000000	+00 02:43:00.000000	1
+338	PORTAL INTEGRA	INC5284402	ABERTO	P3	EM ANÁLISE	B2B, B2C	Erro ao salvar protocolos de atendimento (fictício)	"Chamado aberto e encaminhado para DEVOPS INTEGRA.
+Equipe realizando análise inicial do problema."	23/10/26 18:55:00,000000000		INDISPONIBILIDADE TOTAL	DEVOPS INTEGRA	CENTRALIZADA, CENTRO DE OPERAÇÕES	Devops Integra	1	23/10/26 19:03:17,000000000	23/10/26 19:04:11,000000000	+00 00:19:00.000000	1
+337	SIGRES	Sem Chamado	ABERTO	P3	EM ANÁLISE	CAMPO, REGIONAIS	Falha ao reservar portas para novas instalações (fictício)	"Chamado aberto e encaminhado para OSS - ENGENHARIA.
+Equipe realizando análise inicial do problema."	23/10/26 18:30:00,000000000		INDISPONIBILIDADE PARCIAL	OSS - ENGENHARIA	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI / Engenharia	0	23/10/26 18:42:17,000000000	23/10/26 18:43:11,000000000	+00 00:44:00.000000	1
+336	WDE	INC5284355	ABERTO	P3	EM ANÁLISE	B2B, B2C	Lentidão para abrir a tela de atendimento (fictício)	"Chamado aberto e encaminhado para CCGI - CIM.
+Equipe realizando análise inicial do problema."	23/10/26 17:45:00,000000000		LENTIDÃO	CCGI - CIM	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI / Contact Center	0	23/10/26 17:56:17,000000000	23/10/26 17:57:11,000000000	+00 01:29:00.000000	1
+335	URA CO	INC5284233	ABERTO	P3	EM ANÁLISE	B2B, B2C	Ligações caindo após 2 minutos de espera (fictício)	"Engenharia isolou um dos troncos de voz.
+Quedas reduziram; monitorando por 1 hora."	23/10/26 13:40:00,000000000		INTERMITÊNCIA	CCGI - CIM	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI / Contact Center	1	23/10/26 18:40:17,000000000	23/10/26 18:41:11,000000000	+00 05:34:00.000000	1
+334	CHAT DANI	INC5284301	ABERTO	P3	REALIZANDO RESTART	B2C	Chat encerra a conversa antes do atendimento (fictício)	"Fornecedor liberou correção no servidor de sessões.
+Equipe 4field reiniciando o chat em etapas."	23/10/26 12:20:00,000000000		LENTIDÃO	4FIELD - CHAT DANI	CENTRALIZADA, CENTRO DE OPERAÇÕES	4field	0	23/10/26 18:10:17,000000000	23/10/26 18:11:11,000000000	+00 06:54:00.000000	1
+333	SDU	INC5284155	FECHADO	P3	NORMALIZADO	B2C	Sistema fora do ar para consulta de faturas (fictício)	"Normalizado
+Serviço restabelecido e validado com a operação. Sem novas ocorrências no monitoramento."	23/10/26 11:40:00,000000000	23/10/26 15:40:00,000000000	INDISPONIBILIDADE TOTAL	CCGI - CIM	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI	1	23/10/26 15:44:17,000000000	23/10/26 15:45:11,000000000	+00 04:00:00.000000	1
 332	GPS NEXT	INC5284120	FECHADO	P3	NORMALIZADO	CAMPO, REGIONAIS	Técnicos sem acesso à agenda do dia (fictício)	"Normalizado
 Serviço restabelecido e validado com a operação. Sem novas ocorrências no monitoramento."	23/10/26 11:05:00,000000000	23/10/26 12:10:00,000000000	INDISPONIBILIDADE PARCIAL	OSS - ENGENHARIA	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI / Engenharia	0	23/10/26 12:14:17,000000000	23/10/26 12:15:11,000000000	+00 01:05:00.000000	1
 331	HDM	INC5284066	FECHADO	P3	NORMALIZADO	B2B, B2C	Lentidão para gerar relatórios de atendimento (fictício)	"Normalizado
 Serviço restabelecido e validado com a operação. Sem novas ocorrências no monitoramento."	23/10/26 10:05:00,000000000	23/10/26 13:50:00,000000000	INTERMITÊNCIA	CCGI - CIM	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI	0	23/10/26 13:54:17,000000000	23/10/26 13:55:11,000000000	+00 03:45:00.000000	1
-330	WEB RADIUS	INC5284190	ABERTO	P3	EM ANÁLISE	B2C	Falha para realizar consulta e abrir a página (fictício)	"SOC Redes identificou falha em um dos servidores RADIUS.
-Tráfego sendo desviado para o servidor reserva."	23/10/26 09:12:00,000000000		INDISPONIBILIDADE PARCIAL	SOC REDES	CENTRALIZADA, CENTRO DE OPERAÇÕES	SOC REDES	1	23/10/26 14:10:17,000000000	23/10/26 14:11:11,000000000	+00 05:11:00.000000	1
-329	PORTAL INTEGRA - LEGADO	INC5283988	ABERTO	P3	REALIZANDO RESTART	B2B	Falha para realizar consulta no Terus Voip e no histórico do cliente (fictício)	"Devops Integra reiniciando o serviço de consulta do Terus Voip.
-Contorno: consultar pelo Portal Integra (novo)."	23/10/26 08:17:00,000000000		INDISPONIBILIDADE TOTAL	DEVOPS INTEGRA	CENTRALIZADA, CENTRO DE OPERAÇÕES	Devops Integra	1	23/10/26 13:55:17,000000000	23/10/26 13:56:11,000000000	+00 06:06:00.000000	1
+330	WEB RADIUS	INC5284190	FECHADO	P3	NORMALIZADO	B2C	Falha para realizar consulta e abrir a página (fictício)	"Normalizado
+Serviço restabelecido e validado com a operação. Sem novas ocorrências no monitoramento."	23/10/26 09:12:00,000000000	23/10/26 17:05:00,000000000	INDISPONIBILIDADE PARCIAL	SOC REDES	CENTRALIZADA, CENTRO DE OPERAÇÕES	SOC REDES	1	23/10/26 17:09:17,000000000	23/10/26 17:10:11,000000000	+00 07:53:00.000000	1
+329	PORTAL INTEGRA - LEGADO	INC5283988	ABERTO	P3	EM ANÁLISE	B2B	Falha para realizar consulta no Terus Voip e no histórico do cliente (fictício)	"Restart não resolveu.
+Devops Integra analisando os logs do Terus Voip com o fornecedor.
+Contorno segue valendo: Portal Integra (novo)."	23/10/26 08:17:00,000000000		INDISPONIBILIDADE TOTAL	DEVOPS INTEGRA	CENTRALIZADA, CENTRO DE OPERAÇÕES	Devops Integra	1	23/10/26 17:20:17,000000000	23/10/26 17:21:11,000000000	+00 10:57:00.000000	1
 328	EFIKA OSS	INC5283920	FECHADO	P3	NORMALIZADO	B2C	Diagnóstico de banda larga não retorna resultado (fictício)	"Normalizado
 Serviço restabelecido e validado com a operação. Sem novas ocorrências no monitoramento."	23/10/26 06:30:00,000000000	23/10/26 08:05:00,000000000	INDISPONIBILIDADE PARCIAL	DEVOPS EFIKA	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI	0	23/10/26 08:09:17,000000000	23/10/26 08:10:11,000000000	+00 01:35:00.000000	1
 327	CHAT DANI	INC5283877	INDEVIDO	P3	ENCERRADO	B2C	Respostas do chat demorando mais de 1 minuto (fictício)	"Encerrado como indevido
 Falha não confirmada pela equipe responsável (problema local do usuário)."	23/10/26 01:55:00,000000000	23/10/26 03:10:00,000000000	LENTIDÃO	4FIELD - CHAT DANI	CENTRALIZADA, CENTRO DE OPERAÇÕES	4field	0	23/10/26 03:14:17,000000000	23/10/26 03:15:11,000000000	+00 01:15:00.000000	1
-326	SIGMA FIBRA	INC5284012	ABERTO	P3	REALIZANDO RESTART	B2C, CAMPO, REGIONAIS	Falha na ativação de novos clientes de fibra (fictício)	"Restart concluído. Ativações voltando aos poucos em SP e PR.
-RS e SC ainda com falha.
-Próxima atualização às 15h."	23/10/26 01:20:00,000000000		INDISPONIBILIDADE PARCIAL	OPERACAO CIRE	CENTRALIZADA, CENTRO DE OPERAÇÕES	CIRE / Engenharia	1	23/10/26 14:05:17,000000000	23/10/26 14:06:11,000000000	+00 13:03:00.000000	1
+326	SIGMA FIBRA	INC5284012	FECHADO	P3	NORMALIZADO	B2C, CAMPO, REGIONAIS	Falha na ativação de novos clientes de fibra (fictício)	"Normalizado
+Serviço restabelecido e validado com a operação. Sem novas ocorrências no monitoramento."	23/10/26 01:20:00,000000000	23/10/26 16:30:00,000000000	INDISPONIBILIDADE PARCIAL	OPERACAO CIRE	CENTRALIZADA, CENTRO DE OPERAÇÕES	CIRE / Engenharia	1	23/10/26 16:34:17,000000000	23/10/26 16:35:11,000000000	+00 15:10:00.000000	1
 325	GPS NEXT	INC5283841	FECHADO	P3	NORMALIZADO SEM AÇÃO	B2C, CAMPO, REGIONAIS	Atividades de campo não sincronizam com o aplicativo do técnico (fictício)	"Normalizado
 Serviço restabelecido e validado com a operação. Sem novas ocorrências no monitoramento."	22/10/26 23:50:00,000000000	23/10/26 07:15:00,000000000	INTERMITÊNCIA	OSS - ENGENHARIA	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI / Engenharia	0	23/10/26 07:19:17,000000000	23/10/26 07:20:11,000000000	+00 07:25:00.000000	1
 324	SDU	INC5283790	FECHADO	P3	NORMALIZADO	B2C	Lentidão na consulta de contratos (fictício)	"Normalizado

@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.30.3';
+const VERSION = '1.31.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -542,7 +542,7 @@ function abrirEstagio(id) {
   const quando = c ? new Date(c.at) : r._upd;
   const qTxt = quando ? `${fDM(quando)}/${String(quando.getFullYear()).slice(2)} ${fHM(quando)}` : '';
   abrirInfo('Estágio', `<p class="al-sis"><span class="idc num">${esc(r.ID)}</span> <b>${esc(r.SISTEMA)}</b></p>
-      <div class="est-st"><small>Status</small><b>${esc(r.EVOLUCAO || cap(r.STATUS))}</b></div>
+      <div class="est-st"><b>${esc(r.EVOLUCAO || cap(r.STATUS))}</b></div>
       <div class="est-tx">${esc(r.ESTAGIO)}</div>
       <div class="est-qd num">${qTxt}</div>`, `<span class="ic-roxo ic-info">${INFO_SVG}</span>`);
 }
@@ -1066,9 +1066,9 @@ function freqTxt(a, curto) {
   if (curto) {   // janela do cronômetro: frase curta
     const dd = Math.round(a.dias), iv = a.dias / a.n;
     if (a.n === 1) return `Primeira ocorrência na base (${dd} dias).`;
-    if (iv < 1) return `Média de <b>${(a.n / a.dias).toFixed(1).replace('.', ',')} por dia</b> (${a.n} ocorrências em ${dd} dias).`;
+    if (iv < 1) return `Média de <b>${(a.n / a.dias).toFixed(1).replace('.', ',')} por dia</b> (${a.n} em ${dd} dias).`;
     const d = Math.round(iv);
-    return `Média a cada <b>${d} dia${d > 1 ? 's' : ''}</b> (${a.n} ocorrências em ${dd} dias).`;
+    return `Média a cada <b>${d} dia${d > 1 ? 's' : ''}</b> (${a.n} em ${dd} dias).`;
   }
   const intervalo = a.dias / a.n;
   const periodo = `${a.n} ocorrência${a.n > 1 ? 's' : ''} em ${Math.round(a.dias)} dias de base`;
@@ -1088,9 +1088,9 @@ function analiseHtml(r, now, semTitulo) {
   }
   const corpo = !a.nFech ? `<div class="empty" style="padding:0">Ainda não há chamado encerrado de ${esc(r.SISTEMA)} com ${esc(t.longo.toLowerCase())} na base para calcular os tempos.</div>`
     : `<div class="an-box">
-        <div><small>Tempo médio</small><b class="num">${fDur(a.media)}</b></div>
-        <div><small>Maior tempo</small><b class="num">${fDur(a.maior.ms)}</b>${quando(a.maior)}</div>
-        <div><small>Menor tempo</small><b class="num">${fDur(a.menor.ms)}</b>${quando(a.menor)}</div>
+        <div><small><span class="sl">Tempo </span>médio</small><b class="num">${fDur(a.media)}</b></div>
+        <div><small>Maior<span class="sl"> tempo</span></small><b class="num">${fDur(a.maior.ms)}</b>${quando(a.maior)}</div>
+        <div><small>Menor<span class="sl"> tempo</span></small><b class="num">${fDur(a.menor.ms)}</b>${quando(a.menor)}</div>
       </div>${cmp}`;
   return `${semTitulo ? '' : '<h4>Análise do histórico</h4>'}
     <div class="an">
