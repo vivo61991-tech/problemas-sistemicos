@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.21.0';
+const VERSION = '1.22.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -367,7 +367,7 @@ function hiRow(r, now, comDia) {
   const range = `${d0}${fHM(r._ini)}`;   // só o início (o fim fica no detalhe)
   const du = ab ? `<span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span>` : r._fim ? fDur(r._fim - r._ini) : '–';
   const st = ab ? 'em andamento' : ind ? 'Indevido' : cap(r.EVOLUCAO || r.STATUS);
-  return `<button class="hi${ind ? ' ind' : ''}${ab ? ' aberto' : ''}" data-id="${esc(r.ID)}" style="--fc:${t.c}"><span class="bar"></span>
+  return `<button class="hi k-${t.k}${ind ? ' ind' : ''}${ab ? ' aberto' : ''}" data-id="${esc(r.ID)}" style="--fc:${t.c}"><span class="bar"></span>
     <div style="min-width:0"><div class="s">${idCap(r.ID)}<span class="nm">${esc(r.SISTEMA)}</span></div><div class="d num"><span class="dr">${range}</span><span class="cap-t k-${t.k}">${esc(t.longo)}</span></div></div>
     <div class="du num">${du}<small>${esc(st)}</small></div></button>`;
 }
@@ -381,8 +381,8 @@ function renderOpen() {
   const bd = $('navBd'); bd.hidden = !open.length; bd.textContent = open.length;
   if (!open.length) {
     const last = S.rows.filter(r => !isInd(r) && r._fim).sort((a, b) => b._fim - a._fim)[0];
-    $('open').innerHTML = `<div class="calm-card" role="status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg><div><b>Nenhuma ocorrência ativa</b><span>Todos os sistemas operando.</span>` +
-      (last ? `<div class="ult"><small>Último normalizado:</small><span class="us">${esc(last.SISTEMA)} · ${sameDay(last._fim, new Date()) ? 'hoje' : fDM(last._fim)} às ${fHM(last._fim)}</span></div>` : '') + `</div></div>`;
+    $('open').innerHTML = `<div class="calm-card" role="status"><div class="cc-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg><div class="cc-tx"><b>Nenhuma ocorrência ativa</b><span>Todos os sistemas operando.</span></div></div>` +
+      (last ? `<div class="ult"><small>Último normalizado:</small><div class="us"><span class="cc-id num">${esc(last.ID)}</span><span class="cc-nm">${esc(last.SISTEMA)} · ${sameDay(last._fim, new Date()) ? 'hoje' : fDM(last._fim)} às ${fHM(last._fim)}</span></div></div>` : '') + `</div>`;
     return;
   }
   $('open').innerHTML = open.map(r => {
@@ -444,16 +444,23 @@ function feedItem(c, now) {
   const d = new Date(c.at);
   const hr = `<div class="hr num">${fHM(d)}${sameDay(d, new Date(now)) ? '' : `<small>${fDM(d)}</small>`}</div>`;
   let tx;
-  const nome = `<span class="fn">${idCap(c.id)}<b>${esc(c.sis)}</b></span>`;
-  if (c.kind === 'novo') tx = `${nome} · novo chamado<div class="tr">${statusTag(c.st)}${c.evo ? ' ' + esc(c.evo) : ''}</div>`;
-  else if (c.kind === 'muda') tx = `${nome}${c.inc ? ' · ' + esc(c.inc) : ''}` + c.ch.map(x => {
-    if (x.f === 'STATUS') return `<div class="tr">${statusTag(x.de)} → ${statusTag(x.para)}</div>`;
-    if (x.f === 'DATA_FIM') { const f = parseDate(x.para); return `<div class="tr">${f ? 'normalizado às ' + fHM(f) + (sameDay(f, new Date(now)) ? '' : ' de ' + fDM(f)) : 'fim retirado'}</div>`; }
-    return `<div class="tr">${esc(x.label)}: ${esc(x.de || '—')} → <b>${esc(x.para || '—')}</b></div>`;
-  }).join('');
-  else if (c.kind === 'dados') tx = `${nome}${c.inc ? ' · ' + esc(c.inc) : ''}<div class="tr">dados do chamado atualizados</div>`;
-  else if (c.kind === 'saiu') tx = `${nome}${c.inc ? ' · ' + esc(c.inc) : ''}<div class="tr">saiu do arquivo</div>`;
-  else tx = `<b>${c.n} chamados saíram do arquivo</b><div class="tr">IDs ${esc(c.ids.slice(0, 12).join(', '))}${c.ids.length > 12 ? '…' : ''}</div>`;
+  const nome = `<span class="fn">${idCap(c.id)}<span class="fs">${esc(c.sis)}</span></span>`;
+  // cada campo que mudou vira uma linha "• Campo: valor que entrou" (sem o valor anterior)
+  const li = (rot, val) => `<li><b>${esc(rot)}${val != null ? ':' : ''}</b>${val != null ? ' ' + esc(val) : ''}</li>`;
+  const valor = x => {
+    if (!x.para) return x.f === 'DATA_FIM' ? 'retirado' : '—';
+    if (x.f === 'DATA_FIM') { const f = parseDate(x.para); return f ? fDM(f) + ' ' + fHM(f) : x.para; }
+    if (x.f === 'TIPO_FALHA') return tipo({ TIPO_FALHA: x.para }).longo;
+    if (x.f === 'CRITICIDADE') return x.para;
+    return cap(x.para);
+  };
+  let itens;
+  if (c.kind === 'novo') itens = li('Novo chamado') + li('Status', cap(c.st)) + (c.evo ? li('Evolução', cap(c.evo)) : '');
+  else if (c.kind === 'muda') itens = c.ch.map(x => li(x.label, valor(x))).join('');
+  else if (c.kind === 'dados') itens = li('Dados do chamado atualizados');
+  else if (c.kind === 'saiu') itens = li('Saiu do arquivo');
+  if (c.kind === 'saiu-varios') tx = `<span class="fs">${c.n} chamados saíram do arquivo</span><ul class="lg">${li('IDs', c.ids.slice(0, 12).join(', ') + (c.ids.length > 12 ? '…' : ''))}</ul>`;
+  else tx = `${nome}<ul class="lg">${itens}</ul>`;
   const clickable = c.id && S.rows.some(r => r.ID === c.id);
   return `<button class="fi" ${clickable ? `data-id="${esc(c.id)}"` : 'disabled'}>${hr}<div class="tx">${tx}</div></button>`;
 }

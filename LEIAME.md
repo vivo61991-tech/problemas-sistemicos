@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.21.0)
+# Problemas Sistêmicos (v1.22.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -20,7 +20,7 @@ TXT do SQL Developer, separado por **tabulação**, cabeçalho na 1ª linha.
 ## Páginas (menu de baixo)
 A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fixa e visível ao rolar.
 
-1. **Ocorrências**: sem nenhum chamado em andamento, o card verde mostra "Nenhuma ocorrência ativa" e "Todos os sistemas operando."; mais abaixo, em letra menor, "Último normalizado:" e, na linha de baixo, o sistema e a hora ("PORTAL INTEGRA - LEGADO · hoje às 09:05"). Com chamado em andamento, no topo, um card grande para cada chamado em andamento, claro e "flutuando" sobre o fundo (sombra suave, cantos de 20px); a cor do tipo de falha fica na cápsula do tipo e na barra do dia:
+1. **Ocorrências**: sem nenhum chamado em andamento, o card verde mostra o ícone de check e, ao lado, "Nenhuma ocorrência ativa" e "Todos os sistemas operando.", centralizados na vertical; embaixo, num rodapé discreto (tudo verde), "Último normalizado:" e, em letra menor, o ID numa cápsula só com borda, o sistema e a hora ("312 PORTAL INTEGRA - LEGADO · hoje às 09:05"). Com chamado em andamento, no topo, um card grande para cada chamado em andamento, claro e "flutuando" sobre o fundo (sombra suave, cantos de 20px); a cor do tipo de falha fica na cápsula do tipo e na barra do dia:
    - nome do sistema numa linha só (nome grande termina em "…") e, à direita, o **ID** da solicitação no sistêmico (cápsula só com borda);
    - o impacto (até 2 linhas; o texto completo fica no detalhe) e a cápsula do tipo de falha por extenso seguida dos segmentos: "Indisponibilidade parcial **para B2B e B2C**";
    - o número do chamado não aparece no card, só no detalhe (toque no card);
@@ -30,7 +30,7 @@ A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fix
    - **detalhe do chamado** (toque no card): no alto, centralizada, uma **seta para baixo** que fecha o detalhe (não há mais ✕); o **nome do sistema** alinhado à esquerda (quebra linha se for grande) e o **ID** em cápsula só com borda na ponta direita; na linha de baixo, a cápsula do **tipo de falha** na cor dele à esquerda e o **status** na ponta direita (sem a criticidade); depois as caixas **Chamado | Duração** e **Início | Fim** (tocar no chamado copia o número para a área de transferência e aparece "Chamado … copiado"), tudo do chamado (na lista de campos: Segmento, No expediente, Área acionada, Grupos responsáveis, Grupos impactados, **Evolução**, **Impacto** e Alerta enviado) e, no fim, a **Análise do histórico** do mesmo sistema com o mesmo tipo de falha, usando a base inteira (6 meses fechados + mês atual): **tempo médio**, **maior** e **menor** tempo (início → fim dos chamados encerrados, indevidos fora), se o chamado aberto está dentro ou acima da média, e a **frequência** ("ocorre em média a cada 9 dias" = dias da base ÷ ocorrências, contando desde o 1º dia do mês mais antigo do arquivo).
 2. **Histórico**: todos os chamados por dia. Ao entrar mostra o **mês atual e o anterior**; no fim da lista, o botão **"Mostrar mês de Agosto"** traz o mês seguinte para trás que tiver chamado (depois "Julho", …; de outro ano aparece "Dezembro de 2025"). Mudar busca, filtro ou sistema volta para os 2 meses. Com:
    - em **todas as listas** (Chamados de hoje, Últimas mudanças, Histórico e listas do Painel) o **ID** aparece numa cápsula só com borda, à esquerda do nome do sistema;
-   - nas listas de chamados (Chamados de hoje, Histórico e listas do Painel) o fundo é sempre claro; a **barra da esquerda** é **laranja** quando o chamado está aberto e **roxo bem claro** quando está fechado (indevido: listrado no mesmo roxo); o tipo de falha aparece **por extenso, na cápsula da cor dele** (todas as cápsulas com a **mesma largura** e texto centralizado); a linha mostra só o **horário de início** (com a data quando não é do dia da lista); o fim e o número do chamado ficam no detalhe;
+   - nas listas de chamados (Chamados de hoje, Histórico e listas do Painel) o fundo é sempre claro; a **barra da esquerda** fica na **cor forte do tipo de falha** quando o chamado está aberto e **roxo bem claro** quando está fechado (indevido: listrado no mesmo roxo); o tipo de falha aparece **por extenso** numa cápsula **discreta** (a cor do tipo bem clara, letra escura; as cores fortes ficam só nos cards), todas com a **mesma largura** e texto centralizado; a linha mostra só o **horário de início** (com a data quando não é do dia da lista); o fim e o número do chamado ficam no detalhe;
    - **busca** por texto (campo com lupa);
    - **filtro de sistema** numa lista própria do app (não a do navegador): nome à esquerda e quantidade de ocorrências (sem indevidos) numa cápsula lilás à direita. Com um sistema escolhido, a caixa mostra o nome, a quantidade e um **✕ à esquerda** para remover o filtro na hora;
    - filtro por tipo de falha (ou só indevidos).
@@ -74,6 +74,7 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 - Ordem: criticidade (P0 primeiro) e, dentro dela, o aberto há mais tempo. Selo verde **NOVO** ou **MUDOU** fica 1 hora no card.
 
 ## Últimas mudanças
+- Funciona como um **log** discreto, para não concorrer com os chamados: hora (e data, se for de outro dia) à esquerda; em letra pequena o ID e o sistema; embaixo, em letra menor ainda, **uma linha com marcador para cada campo que mudou**: "• **Evolução:** Realizando restart", "• **Status:** Fechado", "• **Fim:** 22/10 12:40" (só o valor que entrou, sem o anterior). Chamado novo: "• **Novo chamado**", "• **Status:** Aberto". O número do chamado não aparece no log.
 - A cada arquivo novo, o app compara cada `ID` com o anterior e registra: chamado novo; mudança de `STATUS`, `EVOLUCAO`, `DATA_FIM`, `CRITICIDADE` ou `TIPO_FALHA`; dados atualizados; chamado que saiu do arquivo. Mais de 3 sumindo de uma vez vira alerta.
 - O registro fica **no aparelho** (últimas 300 mudanças).
 - 🔔 liga avisos do aparelho com o app aberto (mesmo em segundo plano). Com o app fechado não há aviso: isso exige um serviço de envio (push).
