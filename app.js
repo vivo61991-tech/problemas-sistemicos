@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.25.0';
+const VERSION = '1.26.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / MUDOU vale por 1 hora
@@ -358,6 +358,7 @@ function recentKind(id, now) {
   }
   return '';
 }
+const ordemAtivas = (open = openRows()) => S.pins.map(id => open.find(r => r.ID === id)).filter(Boolean).concat(open.filter(r => !S.pins.includes(r.ID)));
 const openRows = () => S.rows.filter(isOpen).sort((a, b) => critRank(a.CRITICIDADE) - critRank(b.CRITICIDADE) || a._ini - b._ini);
 
 // linha de chamado (Chamados de hoje, Histórico e listas do Painel)
@@ -387,8 +388,7 @@ function renderOpen() {
       (last ? `<div class="ult"><small>Último normalizado:</small><div class="us"><span class="cc-id num">${esc(last.ID)}</span><span class="cc-nm">${esc(last.SISTEMA)} · ${sameDay(last._fim, new Date()) ? 'hoje' : fDM(last._fim)} às ${fHM(last._fim)}</span></div></div>` : '') + `</div>`;
     return;
   }
-  const fixos = S.pins.map(id => open.find(r => r.ID === id)).filter(Boolean);
-  const ordem = fixos.concat(open.filter(r => !S.pins.includes(r.ID)));
+  const ordem = ordemAtivas(open);
   $('open').innerHTML = ordem.map(r => {
     const t = tipo(r), rk = recentKind(r.ID, now), fx = S.pins.includes(r.ID), al = r.ALERTA_ENVIADO === '1';
     const ini = sameDay(r._ini, new Date()) ? 'hoje' : fDM(r._ini);
@@ -422,7 +422,7 @@ function alternarPin(id) {
 // janela informativa do alerta enviado
 const AL = { aberto: false, hist: false, ignorarPop: false };
 // janela informativa (mesma caixa para o alerta enviado e para as últimas mudanças do card)
-function abrirInfo(titulo, corpo) {
+function abrirInfo(titulo, corpo, icone, acoes) {
   let bg = $('alBg');
   if (!bg) {
     bg = document.createElement('div'); bg.id = 'alBg'; bg.className = 'nt-bg'; bg.hidden = true;
@@ -430,10 +430,11 @@ function abrirInfo(titulo, corpo) {
     bg.addEventListener('click', e => { if (e.target === bg) fecharAlerta(); });
     document.body.appendChild(bg);
   }
-  const ic = window.PSNotif && PSNotif.icone ? PSNotif.icone('INFORMACAO') : '';
-  $('alBox').innerHTML = `<div class="nt-h"><span class="nt-ic">${ic}</span><h3 id="alTit">${titulo}</h3></div>
+  const ic = icone != null ? icone : (window.PSNotif && PSNotif.icone ? PSNotif.icone('INFORMACAO') : '');
+  $('alBox').className = 'nt ' + (icone != null ? 't-INTERROGACAO' : 't-INFORMACAO');   // compartilhar: faixa roxa do app; avisos: verde de informação
+  $('alBox').innerHTML = `<div class="nt-h">${ic ? `<span class="nt-ic">${ic}</span>` : ''}<h3 id="alTit">${titulo}</h3></div>
     <div class="nt-corpo">${corpo}</div>
-    <div class="nt-acoes"><button class="nt-bt" id="alX" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg><span>Fechar</span></button></div>`;
+    <div class="nt-acoes">${acoes || ''}<button class="nt-bt" id="alX" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg><span>Fechar</span></button></div>`;
   $('alX').onclick = () => fecharAlerta();
   bg.hidden = false; document.body.classList.add('al-on'); document.documentElement.classList.add('trava');
   if (!AL.aberto) { try { history.pushState({ alerta: 1 }, ''); AL.hist = true; } catch (e) { AL.hist = false; } }
@@ -668,6 +669,7 @@ function setTab(t) {
   S.tab = t;
   if (t === 'painel' && window.PSPainel && PSPainel.recolher) PSPainel.recolher();   // matriz de sistemas sempre começa fechada
   Object.entries(TABS).forEach(([k, id]) => { $(id).hidden = k !== t; });
+  $('btShare').hidden = t !== 'oc';
   document.querySelectorAll('#tabs button').forEach(b => { const on = b.dataset.v === t; b.classList.toggle('on', on); b.setAttribute('aria-current', on ? 'page' : 'false'); });
   renderTab();
   window.scrollTo(0, 0);
@@ -741,8 +743,8 @@ function drawDet(id, list) {
   const extra = S.cols.filter(c => !KNOWN.includes(c) && !OCULTAS.includes(c));
   const hist = S.log.filter(c => c.id === id);
   const msExp = window.PSPainel ? PSPainel.msExpediente({ ini: r._ini, fimCalc: new Date(endOf(r, now)) }) : null;
-  $('sheet').innerHTML = `<button class="fechar" id="shX" aria-label="Fechar" title="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-    <button class="shr" id="shShare" aria-label="Compartilhar as informações do chamado" title="Compartilhar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button>
+  $('sheet').innerHTML = `<div class="sh-top"><button class="fechar" id="shX" aria-label="Fechar" title="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+    <button class="shr" id="shShare" aria-label="Compartilhar as informações do chamado" title="Compartilhar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button></div>
     ${list ? '<button class="volta" id="shVolta">‹ Voltar à lista</button>' : ''}
     <h3 id="shTitle" class="dt-h"><span class="nm">${esc(r.SISTEMA)}</span><span class="cap-id num" title="ID da solicitação no sistêmico">ID ${esc(r.ID)}</span><span class="stl"><span class="cap-t k-${t.k}">${esc(t.longo)}</span>${statusTag(r.STATUS)}</span></h3>
     <div class="big">
@@ -808,6 +810,146 @@ async function compartilhar(r) {
   }
   toast(ok ? 'Informações do chamado copiadas. Cole no WhatsApp, Teams ou Outlook.' : 'Não foi possível compartilhar neste aparelho.', false, ok ? 3500 : 5000);
 }
+/* ---------- compartilhar o painel (imagem dos cards) ou o app (QR Code e link) ---------- */
+const APP_LINK = 'https://vivo61991-tech.github.io/problemas-sistemicos/';
+const ICO = {
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>',
+  painel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4.5-4.5L6 21"/></svg>',
+  app: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg>',
+  copiar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  baixar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>',
+  conversa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>',
+  equipe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17.5" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 6 4.8"/></svg>',
+  email: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></svg>',
+  voltar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>'
+};
+const icoRoxo = svg => `<span class="ic-roxo">${svg}</span>`;
+function menuCompartilhar() {
+  abrirInfo('Compartilhar', `<div class="cp-op">
+      <button class="cp-it" id="cpPainel"><span class="ci">${ICO.painel}</span><span><b>Compartilhar painel</b><small>Imagem das ocorrências ativas + link do app</small></span></button>
+      <button class="cp-it" id="cpApp"><span class="ci">${ICO.app}</span><span><b>Compartilhar app</b><small>QR Code e link para abrir o app</small></span></button>
+    </div>`, icoRoxo(ICO.share));
+  $('cpPainel').onclick = () => compartilharPainel();
+  $('cpApp').onclick = () => compartilharApp();
+}
+const BT_VOLTAR = `<button class="nt-bt" id="cpVolta" aria-label="Voltar">${ICO.voltar}<span>Voltar</span></button>`;
+function ligarVoltar() { const v = $('cpVolta'); if (v) v.onclick = () => menuCompartilhar(); }
+async function copiarTexto(t) {
+  try { await navigator.clipboard.writeText(t); return true; } catch (e) {
+    try { const ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch (e2) { return false; }
+  }
+}
+// ---- app: QR Code, link, copiar e redes
+function compartilharApp() {
+  const msg = 'Problemas Sistêmicos: acompanhe em tempo real os problemas sistêmicos e o andamento dos chamados.';
+  const tx = encodeURIComponent(msg + '\n' + APP_LINK);
+  abrirInfo('Compartilhar app', `<div class="cp-app">
+      <img class="qr" src="icons/qrcode.svg" width="176" height="176" alt="QR Code do app Problemas Sistêmicos">
+      <div class="lk"><span class="num" id="cpLink">${APP_LINK}</span></div>
+      <button class="cp-copiar" id="cpCopiar">${ICO.copiar}<span>Copiar link</span></button>
+      <div class="cp-redes">
+        <a class="cp-rede" id="cpWa" href="https://wa.me/?text=${tx}" target="_blank" rel="noopener">${ICO.conversa}<span>WhatsApp</span></a>
+        <a class="cp-rede" id="cpTeams" href="https://teams.microsoft.com/share?href=${encodeURIComponent(APP_LINK)}&msgText=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${ICO.equipe}<span>Teams</span></a>
+        <a class="cp-rede" id="cpMail" href="mailto:?subject=${encodeURIComponent('App Problemas Sistêmicos')}&body=${tx}">${ICO.email}<span>Outlook</span></a>
+      </div>
+      ${navigator.share ? `<button class="cp-mais" id="cpMais">${ICO.share}<span>Outras opções</span></button>` : ''}
+    </div>`, icoRoxo(ICO.app), BT_VOLTAR);
+  ligarVoltar();
+  $('cpCopiar').onclick = async () => { const ok = await copiarTexto(APP_LINK); toast(ok ? 'Link do app copiado.' : 'Não foi possível copiar. Link: ' + APP_LINK, false, ok ? 2500 : 6000); };
+  if ($('cpMais')) $('cpMais').onclick = async () => { try { await navigator.share({ title: 'Problemas Sistêmicos', text: msg, url: APP_LINK }); } catch (e) { /* cancelado */ } };
+}
+// ---- painel: imagem dos cards (desenhada no canvas, igual em qualquer aparelho) + link
+function quebraLinhas(ctx, texto, larg, max) {
+  const pal = String(texto || '').split(/\s+/).filter(Boolean), out = []; let lin = '';
+  for (const p of pal) { const t = lin ? lin + ' ' + p : p; if (ctx.measureText(t).width <= larg || !lin) lin = t; else { out.push(lin); lin = p; } }
+  if (lin) out.push(lin);
+  if (max && out.length > max) { out.length = max; let u = out[max - 1]; while (u && ctx.measureText(u + '…').width > larg) u = u.slice(0, -1); out[max - 1] = u.trimEnd() + '…'; }
+  return out;
+}
+function corta(ctx, t, larg) { if (ctx.measureText(t).width <= larg) return t; while (t && ctx.measureText(t + '…').width > larg) t = t.slice(0, -1); return t + '…'; }
+function pilula(ctx, x, y, w, h, fundo, borda) { ctx.beginPath(); ctx.roundRect(x, y, w, h, h / 2); if (fundo) { ctx.fillStyle = fundo; ctx.fill(); } if (borda) { ctx.strokeStyle = borda; ctx.lineWidth = 1.5; ctx.stroke(); } }
+const COR_TIPO = { total: '#D61F4F', parcial: '#F2603E', interm: '#FF9901', lent: '#FFC629', outro: '#7d7190' };
+function desenharPainel(now = Date.now()) {
+  const W = 540, P = 16, CW = W - 2 * P, ESC = 2, FONTE = 'system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
+  const f = (peso, tam) => `${peso} ${tam}px ${FONTE}`;
+  const ativos = ordemAtivas(), d = new Date(now);
+  const cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+  // 1ª passada: mede a altura de cada card
+  const cards = ativos.map(r => {
+    const t = tipo(r), seg = segTxt(r.SEGMENTO);
+    ctx.font = f(400, 14); const imp = r.IMPACTO_OPERACIONAL ? quebraLinhas(ctx, r.IMPACTO_OPERACIONAL, CW - 32, 2) : [];
+    ctx.font = f(700, 12); const capW = ctx.measureText(t.longo).width + 22;
+    ctx.font = f(400, 13); const paraW = seg ? ctx.measureText('para ' + seg).width : 0;
+    const tipoLinhas = seg && capW + 8 + paraW > CW - 32 ? 2 : 1;
+    const h = 16 + 24 + imp.length * 19 + 8 + tipoLinhas * 24 + 10 + 44 + 14;
+    return { r, t, seg, imp, capW, tipoLinhas, h };
+  });
+  const TOPO = 86, RODAPE = 54, VAZIO = 96;
+  const H = TOPO + (cards.length ? cards.reduce((s, c) => s + c.h + 14, 0) : VAZIO + 14) + RODAPE;
+  cv.width = W * ESC; cv.height = H * ESC; ctx.scale(ESC, ESC);
+  ctx.fillStyle = '#F1ECF6'; ctx.fillRect(0, 0, W, H);
+  const g = ctx.createLinearGradient(0, 0, W, 72); g.addColorStop(0, '#52227a'); g.addColorStop(.6, '#642A90'); g.addColorStop(1, '#8549b5');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, 72);
+  ctx.fillStyle = '#fff'; ctx.font = f(800, 21); ctx.textBaseline = 'alphabetic'; ctx.fillText('Problemas Sistêmicos', P, 32);
+  ctx.font = f(500, 13); ctx.globalAlpha = .9;
+  ctx.fillText(`Ocorrências ativas: ${ativos.length} · ${fDM(d)}/${d.getFullYear()} às ${fHM(d)}`, P, 54); ctx.globalAlpha = 1;
+  let y = TOPO;
+  const sombra = () => { ctx.shadowColor = 'rgba(58,22,88,.10)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 4; }, semSombra = () => { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; };
+  if (!cards.length) {
+    sombra(); ctx.fillStyle = '#EEF7DC'; ctx.beginPath(); ctx.roundRect(P, y, CW, VAZIO, 20); ctx.fill(); semSombra();
+    ctx.fillStyle = '#5F8A12'; ctx.font = f(800, 17); ctx.fillText('Nenhuma ocorrência ativa', P + 20, y + 42);
+    ctx.font = f(400, 13); ctx.fillText('Todos os sistemas operando.', P + 20, y + 64);
+    y += VAZIO + 14;
+  }
+  for (const c of cards) {
+    const { r, t } = c, x = P + 16, lw = CW - 32;
+    sombra(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(P, y, CW, c.h, 20); ctx.fill(); semSombra();
+    let yy = y + 16;
+    // ID à direita (cápsula com borda), nome do sistema à esquerda
+    ctx.font = f(700, 12); const idT = 'ID ' + r.ID, idW = ctx.measureText(idT).width + 20;
+    pilula(ctx, x + lw - idW, yy, idW, 22, null, '#1f1530'); ctx.fillStyle = '#1f1530'; ctx.fillText(idT, x + lw - idW + 10, yy + 15.5);
+    ctx.font = f(800, 18); ctx.fillText(corta(ctx, r.SISTEMA, lw - idW - 12), x, yy + 17);
+    yy += 24;
+    ctx.font = f(400, 14); ctx.fillStyle = '#1f1530'; c.imp.forEach(l => { ctx.fillText(l, x, yy + 15); yy += 19; });
+    yy += 8;
+    pilula(ctx, x, yy, c.capW, 22, COR_TIPO[t.k] || COR_TIPO.outro); ctx.font = f(700, 12);
+    ctx.fillStyle = t.k === 'interm' || t.k === 'lent' ? '#2b1a00' : '#fff'; ctx.fillText(t.longo, x + 11, yy + 15.5);
+    if (c.seg) { ctx.fillStyle = '#1f1530'; ctx.font = f(400, 13); const px = c.tipoLinhas === 2 ? x : x + c.capW + 8, py = c.tipoLinhas === 2 ? yy + 24 : yy; ctx.fillText('para ' + c.seg, px, py + 15.5); }
+    yy += c.tipoLinhas * 24 + 10;
+    ctx.fillStyle = '#5b5068'; ctx.font = f(600, 11); ctx.fillText('aberto há', x, yy + 10);
+    ctx.fillStyle = '#1f1530'; ctx.font = f(800, 19); ctx.fillText(fDur(now - r._ini), x, yy + 33);
+    const ini = (sameDay(r._ini, d) ? 'hoje' : fDM(r._ini)) + ' ' + fHM(r._ini);
+    ctx.font = f(400, 12); ctx.fillStyle = '#5b5068'; const iniT = 'início ' + ini; ctx.fillText(iniT, x + lw - ctx.measureText(iniT).width, yy + 36);
+    if (r.EVOLUCAO) { ctx.font = f(700, 11.5); const ev = corta(ctx, r.EVOLUCAO, lw * .6), ew = ctx.measureText(ev).width + 18; pilula(ctx, x + lw - ew, yy, ew, 20, '#EEE6F5'); ctx.fillStyle = '#1f1530'; ctx.fillText(ev, x + lw - ew + 9, yy + 14); }
+    if (r.ALERTA_ENVIADO === '1') {   // sirene na quina superior direita, como no card
+      const cx = P + CW - 3, cy = y + 1; ctx.beginPath(); ctx.arc(cx, cy, 12, 0, Math.PI * 2); ctx.fillStyle = '#D61F4F'; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#fff'; ctx.stroke();
+      ctx.save(); ctx.translate(cx - 7.5, cy - 7.5); ctx.scale(15 / 24, 15 / 24); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ['M7 18v-5a5 5 0 0 1 10 0v5', 'M5 21a1 1 0 0 1-1-1v-1a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1z', 'M12 2v1.5M3.5 6.5l1.2 1M20.5 6.5l-1.2 1'].forEach(p => ctx.stroke(new Path2D(p))); ctx.restore();
+    }
+    y += c.h + 14;
+  }
+  ctx.fillStyle = '#5b5068'; ctx.font = f(600, 12); const rod = 'Acompanhe no app: ' + APP_LINK.replace(/^https:\/\//, '').replace(/\/$/, '');
+  ctx.fillText(rod, (W - ctx.measureText(rod).width) / 2, H - 22);
+  return cv;
+}
+function dataUrlParaBlob(u) { const [cab, b64] = u.split(','), bin = atob(b64), arr = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i); return new Blob([arr], { type: cab.slice(5, cab.indexOf(';')) }); }
+function compartilharPainel() {
+  const now = Date.now(), d = new Date(now), url = desenharPainel(now).toDataURL('image/png');
+  const nome = `problemas-sistemicos_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}_${fHM(d).replace(':', '')}.png`;
+  const n = openRows().length;
+  const texto = `Problemas Sistêmicos: ${n ? n + ' ocorrência' + (n > 1 ? 's' : '') + ' ativa' + (n > 1 ? 's' : '') : 'nenhuma ocorrência ativa'} em ${fDM(d)} às ${fHM(d)}.\n${APP_LINK}`;
+  let arq = null; try { arq = new File([dataUrlParaBlob(url)], nome, { type: 'image/png' }); } catch (e) { arq = null; }
+  const podeArq = !!(arq && navigator.canShare && navigator.canShare({ files: [arq] }));
+  abrirInfo('Compartilhar painel', `<div class="cp-pre"><img id="cpImg" src="${url}" alt="Imagem das ocorrências ativas"></div>
+      <p class="cp-obs">${podeArq ? 'A imagem vai junto com o link do app.' : 'Este aparelho não envia imagem direto: baixe a imagem e copie o link para colar junto.'}</p>
+      <div class="cp-acts">${podeArq ? `<button class="cp-copiar" id="cpEnviar">${ICO.share}<span>Compartilhar</span></button>` : ''}
+        <a class="cp-copiar sec" id="cpBaixar" href="${url}" download="${nome}">${ICO.baixar}<span>Baixar imagem</span></a>
+        <button class="cp-copiar sec" id="cpCopLink">${ICO.copiar}<span>Copiar link</span></button></div>`, icoRoxo(ICO.painel), BT_VOLTAR);
+  ligarVoltar();
+  if ($('cpEnviar')) $('cpEnviar').onclick = async () => { try { await navigator.share({ files: [arq], title: 'Problemas Sistêmicos', text: texto }); } catch (e) { /* cancelado */ } };
+  $('cpCopLink').onclick = async () => { const ok = await copiarTexto(APP_LINK); toast(ok ? 'Link do app copiado.' : 'Não foi possível copiar. Link: ' + APP_LINK, false, ok ? 2500 : 6000); };
+}
+
 /* ---------- análise do histórico (detalhe) ----------
    Amostra: todo o arquivo (6 meses fechados + o mês atual), mesmo SISTEMA e mesmo tipo de falha.
    Tempo = duração total (início → fim) dos chamados encerrados; indevidos ficam fora.
@@ -929,6 +1071,7 @@ function init() {
   document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => setTab(b.dataset.v));
   $('btFeed').onclick = () => { S.feedAll = !S.feedAll; renderFeed(); };
   $('btRefresh').onclick = () => poll(true);
+  $('btShare').onclick = () => menuCompartilhar();
   $('btBell').onclick = toggleBell;
   let qT; $('q').addEventListener('input', e => { clearTimeout(qT); qT = setTimeout(() => { S.q = e.target.value; S.histCorte = null; renderHist(); }, 150); });
   $('pick').addEventListener('click', e => {
