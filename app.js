@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.32.0';
+const VERSION = '1.33.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -24,7 +24,7 @@ const TRACK = [['SISTEMA', 'Sistema'], ['CHAMADO', 'Chamado'], ['STATUS', 'Statu
 // colunas que continuam sendo lidas (mudanças, conferência), mas não aparecem nos cards nem no detalhe
 const OCULTAS = ['FLAG', 'TEMPO_DECORRIDO', 'DADO_ATUALIZADO', 'DATA_ATUALIZACAO'];
 
-const K = { data: 'ps.data', snap: 'ps.snap', log: 'ps.log', bell: 'ps.bell', pins: 'ps.pins' };
+const K = { data: 'ps.data', snap: 'ps.snap', log: 'ps.log', bell: 'ps.bell', pins: 'ps.pins', pend: 'ps.pend' };
 
 /* ---------- armazenamento no aparelho ---------- */
 function load(key, fallback) {
@@ -285,6 +285,8 @@ const S = {
 };
 if (!Array.isArray(S.log)) S.log = [];
 S.pins = load(K.pins, []); if (!Array.isArray(S.pins)) S.pins = [];   // cards fixados: o mais recente primeiro
+S.pend = load(K.pend, []); if (!Array.isArray(S.pend)) S.pend = [];   // sino ligado: atualizações ainda sem Ciente (a mais recente primeiro)
+S.pendMostrado = 0;   // quantas já foram mostradas nesta sessão (Fechar não reabre sem novidade)
 // limpeza de restos de leitura errada: versões antigas (antes da 1.30) partiam o arquivo quando um campo livre
 // tinha quebra de linha, e pedaços de texto viravam "chamados" (ID = texto). ID válido não tem espaço nem aspas.
 const idOk = id => /^[^\s"]{1,30}$/.test(String(id == null ? '' : id));
@@ -293,6 +295,7 @@ const idOk = id => /^[^\s"]{1,30}$/.test(String(id == null ? '' : id));
     if (S.snap && Object.keys(S.snap).some(k => !idOk(k))) { S.snap = null; S.limparSaiu = true; localStorage.removeItem(K.snap); }   // cópia de comparação corrompida: recomeça do próximo arquivo, sem mudanças falsas
     const antes = S.log.length;
     S.log = S.log.filter(c => c.id == null ? (c.kind !== 'saiu-varios' || (c.ids || []).every(idOk)) : idOk(c.id));
+    S.pend = S.pend.filter(c => c.id == null ? (c.kind !== 'saiu-varios' || (c.ids || []).every(idOk)) : idOk(c.id));
     if (S.log.length !== antes) save(K.log, S.log);
     const pins = S.pins.filter(idOk); if (pins.length !== S.pins.length) { S.pins = pins; save(K.pins, S.pins); }
   } catch (e) { /* armazenamento indisponível: segue sem limpar */ }
@@ -374,7 +377,10 @@ function changeText(c) {
 function announce(changes) {
   const imp = changes.filter(c => c.kind !== 'dados');
   if (!imp.length) return;
-  toast(imp.length === 1 ? changeText(imp[0]) : imp.length + ' mudanças nos chamados · toque para ver', true);
+  const sino = load(K.bell, false);
+  if (sino) { S.pend = imp.concat(S.pend).slice(0, PEND_MAX); save(K.pend, S.pend); renderBell(); }
+  if (!(sino && podeAbrirAtual())) toast(imp.length === 1 ? changeText(imp[0]) : imp.length + ' mudanças nos chamados · toque para ver', true);
+  if (sino) setTimeout(() => abrirAtualizacoes(false), 50);
   if (document.hidden && load(K.bell, false) && 'Notification' in window && Notification.permission === 'granted') {
     const title = imp.length === 1 ? changeText(imp[0]) : imp.length + ' mudanças nos chamados';
     const body = imp.length === 1 ? (imp[0].inc || '') : imp.slice(0, 4).map(changeText).join('\n');
@@ -478,7 +484,7 @@ function alternarPin(id) {
 const AL = { aberto: false, hist: false, ignorarPop: false };
 // janela informativa (mesma caixa para o alerta enviado e para as últimas mudanças do card)
 function abrirInfo(titulo, corpo, icone, acoes, faixa) {
-  clearInterval(AL.tick);
+  clearInterval(AL.tick); AL.tipo = '';
   let bg = $('alBg');
   if (!bg) {
     bg = document.createElement('div'); bg.id = 'alBg'; bg.className = 'nt-bg'; bg.hidden = true;
@@ -562,7 +568,7 @@ function abrirLog(id) {
 }
 function fecharAlerta(porHistorico) {
   if (!AL.aberto) return;
-  AL.aberto = false; clearInterval(AL.tick); $('alBg').hidden = true; document.body.classList.remove('al-on');
+  AL.aberto = false; AL.tipo = ''; clearInterval(AL.tick); $('alBg').hidden = true; document.body.classList.remove('al-on');
   if (!document.body.matches('.nt-on, .sheet-on')) document.documentElement.classList.remove('trava');
   if (!porHistorico && AL.hist) { AL.ignorarPop = true; history.back(); }
   AL.hist = false;
@@ -786,6 +792,7 @@ function render() {
 
 function tick() {
   const now = Date.now();
+  if (S.pend.length && load(K.bell, false)) abrirAtualizacoes(false);
   document.querySelectorAll('[data-since]').forEach(el => { el.textContent = fDur(now - +el.dataset.since); });
   document.querySelectorAll('[data-ago]').forEach(el => { el.textContent = fAgo(now - +el.dataset.ago); });
   document.querySelectorAll('[data-dia]').forEach(el => {
@@ -1140,21 +1147,49 @@ function closeSheet() {
 
 /* ---------- avisos no aparelho ---------- */
 function renderBell() {
-  const on = load(K.bell, false) && 'Notification' in window && Notification.permission === 'granted';
-  $('btBell').classList.toggle('on', !!on);
+  const on = !!load(K.bell, false), n = on ? S.pend.length : 0;
+  $('btBell').classList.toggle('on', on);
   $('btBell').setAttribute('aria-pressed', on ? 'true' : 'false');
+  let bd = $('bellBd'); if (!bd) { bd = document.createElement('span'); bd.id = 'bellBd'; bd.className = 'nbd num'; $('btBell').appendChild(bd); }
+  bd.hidden = !n; bd.textContent = n > 99 ? '99+' : n;
+  $('btBell').title = on ? (n ? `${n} atualização${n > 1 ? 'ões' : ''} sem Ciente` : 'Atualizações detalhadas ligadas (toque para desligar)') : 'Ligar atualizações detalhadas';
 }
 async function toggleBell() {
-  if (!('Notification' in window)) { toast('Este aparelho não permite avisos pelo navegador. As mudanças continuam aparecendo no app.'); return; }
-  if (load(K.bell, false) && Notification.permission === 'granted') {
-    save(K.bell, false); renderBell(); toast('Avisos no aparelho desligados.'); return;
+  if (load(K.bell, false)) {
+    if (S.pend.length) { abrirAtualizacoes(true); return; }   // tem atualização sem Ciente: mostra a janela
+    desligarSino(); return;
   }
-  let p = Notification.permission;
-  if (p === 'default') { try { p = await Notification.requestPermission(); } catch (e) { p = 'denied'; } }
-  if (p !== 'granted') { toast('Os avisos estão bloqueados nas configurações do navegador para este site.'); renderBell(); return; }
   if (!save(K.bell, true)) { toast('Não foi possível guardar essa escolha no aparelho.'); return; }
-  renderBell();
-  toast('Avisos ligados: com o app aberto em segundo plano, cada mudança de status gera um aviso.');
+  S.pend = []; save(K.pend, S.pend); S.pendMostrado = 0; renderBell();
+  toast('Atualizações detalhadas ligadas: cada mudança abre uma janela para você confirmar.', false, 4500);
+  // extra: se o navegador permitir, também avisa na barra do aparelho quando o app estiver aberto em segundo plano
+  try { if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission(); } catch (e) { /* sem permissão: segue só com a janela */ }
+}
+function desligarSino() {
+  save(K.bell, false); S.pend = []; save(K.pend, S.pend); S.pendMostrado = 0; renderBell();
+  toast('Atualizações detalhadas desligadas. Você continua vendo o resumo das mudanças.', false, 4500);
+}
+// janela "Atualizações": mesma caixa das outras janelas, com o sino; junta tudo até o Ciente
+const PEND_MAX = 100;
+const SINO_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
+const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+function podeAbrirAtual() {
+  return !document.hidden && !S.sheet && !(window.PSNotif && PSNotif.aberto()) && (!AL.aberto || AL.tipo === 'atual');
+}
+function abrirAtualizacoes(manual) {
+  if (!load(K.bell, false) || !S.pend.length) return;
+  if (!manual && (!podeAbrirAtual() || (S.pend.length <= S.pendMostrado && !(AL.aberto && AL.tipo === 'atual')))) return;
+  if (manual && !podeAbrirAtual() && !(AL.aberto && AL.tipo === 'atual')) return;
+  const now = Date.now(), n = S.pend.length;
+  clearTimeout(toastT); $('toast').classList.remove('show');
+  abrirInfo(`Atualizações <span class="nt-cont num">(${n})</span>`,
+    `<p class="at-sub">Mudanças nos chamados desde o último Ciente. Toque num item para ver o detalhe.</p>
+      <div class="feed log-jan at-lista">${S.pend.map(c => feedItem(c, now)).join('')}</div>
+      <button class="at-desl" id="atDesl">Desligar atualizações detalhadas</button>`,
+    icoRoxo(SINO_SVG), `<button class="nt-bt nt-ciente" id="atCiente">${CHECK_SVG}<span>Ciente</span></button>`);
+  AL.tipo = 'atual'; S.pendMostrado = n;
+  $('atCiente').onclick = () => { S.pend = []; save(K.pend, S.pend); S.pendMostrado = 0; renderBell(); fecharAlerta(); };
+  $('atDesl').onclick = () => { fecharAlerta(); desligarSino(); };
 }
 
 /* ---------- início ---------- */
@@ -1188,6 +1223,7 @@ function init() {
         return;
       }
       if (it.closest('#pgOc') || it.closest('#pgHist')) { openSheet(it.dataset.id); return; }
+      if (it.closest('#alBox')) { abrirOcorrencia(it.dataset.id); return; }
     }
     const ch = e.target.closest('#chips .chip');
     if (ch) { S.filter = ch.dataset.f; S.histCorte = null; renderChips(); renderHist(); return; }

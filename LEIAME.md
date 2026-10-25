@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.32.0)
+# Problemas Sistêmicos (v1.33.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -89,7 +89,9 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 - A cada arquivo novo, o app compara cada `ID` com o anterior e registra: chamado novo; mudança em **qualquer campo** do chamado (sistema, chamado, status, criticidade, evolução, segmento, impacto, início, fim, tipo de falha, grupos responsáveis, grupos impactados, área acionada e alerta enviado; só ficam de fora os campos de controle `DATA_ATUALIZACAO`, `DADO_ATUALIZADO`, `TEMPO_DECORRIDO` e `FLAG`); dados atualizados; chamado que saiu do arquivo. Mais de 3 sumindo de uma vez vira alerta.
 - O registro fica **no aparelho** (últimas 300 mudanças).
 - Limpeza automática: registros com ID inválido (com espaço ou aspas — restos de versões anteriores à 1.30, que partiam o arquivo quando o estágio tinha quebra de linha) são apagados ao abrir o app; se a cópia de comparação estiver corrompida, ela é descartada e a comparação recomeça no próximo arquivo, sem gerar mudanças falsas.
-- 🔔 liga avisos do aparelho com o app aberto (mesmo em segundo plano). Com o app fechado não há aviso: isso exige um serviço de envio (push).
+- **Resumo (sempre, para todos):** a cada conferência com mudança, o balão roxo embaixo mostra a mudança (ou "N mudanças · toque para ver") e some sozinho.
+- **🔔 Atualizações detalhadas (opcional):** com o sino ligado, cada mudança entra numa janela **"Atualizações (n)"** no mesmo padrão das outras janelas (ícone do sino num círculo roxo), com os itens no formato do log (hora, ID, sistema e os campos que mudaram). As mudanças **se acumulam até o "✓ Ciente"**; "✕ Fechar" só fecha (a lista fica guardada, e o sino mostra um número com as pendentes — tocar no sino abre a janela de novo). Tocar num item abre o detalhe do chamado. A janela espera fechar outra janela que esteja aberta (notificação, detalhe, cronômetro). Embaixo, "Desligar atualizações detalhadas".
+- O sino **não depende da permissão de notificação do navegador**. Se o navegador permitir, também avisa na barra do aparelho enquanto o app estiver aberto em segundo plano. Com o app fechado (ou o celular bloqueado) não há como avisar: o celular pausa o app; ao voltar, a janela já mostra tudo o que mudou (só o resultado final de cada chamado, sem as versões intermediárias). Aviso com o app fechado exige um serviço de envio (Web Push).
 
 ## Conferência dos dados
 - Arquivo sem as colunas obrigatórias, sem tabulação ou sem linhas válidas: o app **não troca** os dados, mantém os últimos válidos e mostra alerta vermelho.
@@ -98,7 +100,7 @@ O `sistemas.txt` tem uma linha por chamado, então os períodos são montados pe
 - Sem internet, o app abre com a última cópia guardada.
 
 ## Dados fictícios (homologação)
-- O arquivo tem a coluna `ESTAGIO` (20 colunas). Linhas reais: estágio do arquivo de exemplo do Oracle (com quebras de linha entre aspas); o 311, aberto na nossa base, sem estágio. Linhas fictícias: estágios inventados que mudam ao longo da simulação. Último passo: 23/10/2026 19:14, com 7 em andamento (311, 329, 334, 335, 336, 337 e 338).
+- O arquivo tem a coluna `ESTAGIO` (20 colunas). Linhas reais: estágio do arquivo de exemplo do Oracle (com quebras de linha entre aspas); o 311, aberto na nossa base, sem estágio. Linhas fictícias: estágios inventados que mudam ao longo da simulação. Último passo: 24/10/2026 23:30, com 4 em andamento (343, 345, 346 e 347). Entre 23/10 20:10 e 24/10 23:30 são 10 arquivos: todos os que estavam abertos fecham (a maioria dentro do expediente; 311, 329, 336 e 337 atravessam a noite), e no dia 24 abrem e fecham chamados novos, com mudanças de estágio, alerta, tipo de falha e um indevido. O **311 (real)** recebe um **fechamento fictício** em 24/10 10:00 (o estágio diz "fechamento fictício para a simulação").
 - Enquanto a base não é atualizada, o `sistemas.txt` da raiz traz a base real **sem alteração** e, por cima, chamados **fictícios** a partir do ID 312 (todos com "(fictício)" no fim do `IMPACTO_OPERACIONAL`), até 23/10/2026 02:11: 6 em andamento (311 real + 322, 323, 325, 326 e 327), 3 deles com alerta enviado (322, 323 e 326). Trocar pelo arquivo real antes de ir para produção.
 
 ## Pré-visualização do link

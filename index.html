@@ -628,6 +628,14 @@ table.tdias tbody tr.sel td.c1 .pa{color:var(--selink)}
 /* contador de notificações não lidas (cor do tipo mais grave entre as não lidas) */
 .nbd{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;border-radius:999px;padding:0 5px;font-size:11px;font-weight:800;line-height:15px;text-align:center;border:2px solid var(--p700);background:#D61F4F;color:#fff}
 .nbd[hidden]{display:none}
+#bellBd{background:#EC357D;color:#fff}
+/* janela "Atualizações" (sino): mesma caixa das outras janelas; itens no formato do log, com ID e sistema */
+.at-sub{margin:0 0 10px !important;font-size:12.5px;color:var(--ink2)}
+.nt-corpo .log-jan.at-lista .fn{display:inline-flex}
+.nt-corpo .log-jan.at-lista ul.lg{margin-top:4px}
+.nt-corpo .log-jan.at-lista .fi{cursor:pointer}
+.nt-corpo .log-jan.at-lista .fi:disabled{cursor:default}
+.at-desl{display:block;margin:12px auto 0;border:0;background:none;color:var(--ink3);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer}
 /* janela de notificação: por cima de tudo, fundo do cartão (branco no tema claro) */
 .nt-bg{position:fixed;inset:0;z-index:60;overflow:hidden;background:rgba(20,12,29,.5);display:flex;align-items:center;justify-content:center;padding:16px}
 .nt-bg[hidden]{display:none}
@@ -712,7 +720,7 @@ html.trava{overflow:hidden}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
       <span class="nbd num" hidden></span>
     </button>
-    <button class="ib" id="btBell" aria-label="Avisos no aparelho" title="Avisar no aparelho quando um chamado mudar">
+    <button class="ib" id="btBell" aria-label="Atualizações detalhadas" title="Ligar atualizações detalhadas">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
     </button>
     <button class="ib" id="btRefresh" aria-label="Atualizar agora" title="Atualizar agora">
@@ -766,8 +774,8 @@ html.trava{overflow:hidden}
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="painel.js?v=1.32.0"></script>
-<script src="notif.js?v=1.32.0"></script>
-<script src="app.js?v=1.32.0"></script>
+<script src="painel.js?v=1.33.0"></script>
+<script src="notif.js?v=1.33.0"></script>
+<script src="app.js?v=1.33.0"></script>
 </body>
 </html>
