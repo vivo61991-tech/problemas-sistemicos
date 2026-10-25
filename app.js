@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.33.1';
+const VERSION = '1.33.2';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -485,6 +485,7 @@ const AL = { aberto: false, hist: false, ignorarPop: false };
 // janela informativa (mesma caixa para o alerta enviado e para as últimas mudanças do card)
 function abrirInfo(titulo, corpo, icone, acoes, faixa) {
   clearInterval(AL.tick); AL.tipo = '';
+  clearTimeout(toastT); $('toast').classList.remove('show');   // o balão não fica por cima da janela
   let bg = $('alBg');
   if (!bg) {
     bg = document.createElement('div'); bg.id = 'alBg'; bg.className = 'nt-bg'; bg.hidden = true;
@@ -565,7 +566,7 @@ function abrirLog(id) {
   const r = S.rows.find(x => x.ID === id); if (!r) return;
   const now = Date.now(), ult = S.log.find(c => c.id === id && (c.kind === 'novo' || c.kind === 'muda')) || S.log.find(c => c.id === id);
   abrirInfo(ult && ult.kind === 'novo' ? 'Novo chamado' : 'Última mudança', `<p class="al-sis"><span class="idc num">${esc(r.ID)}</span> <b>${esc(r.SISTEMA)}</b></p>` +
-    (ult ? `<div class="feed log-jan">${feedItem(ult, now).replace(/data-id="[^"]*"/, 'disabled')}</div>` : '<p>Nenhuma mudança registrada neste aparelho.</p>'));
+    (ult ? `<div class="feed log-jan">${feedItem(ult, now, true).replace(/data-id="[^"]*"/, 'disabled')}</div>` : '<p>Nenhuma mudança registrada neste aparelho.</p>'));
 }
 function fecharAlerta(porHistorico) {
   if (!AL.aberto) return;
@@ -614,7 +615,8 @@ function renderHoje() {
     : `<div class="lst"><div class="empty okt">Nenhum chamado hoje.</div></div>`;
 }
 
-function feedItem(c, now) {
+// completo = true: o estágio aparece inteiro (com as quebras de linha); nas listas fica abreviado numa linha
+function feedItem(c, now, completo) {
   const d = new Date(c.at);
   const hr = `<div class="hr num">${fHM(d)}${sameDay(d, new Date(now)) ? '' : `<small>${fDM(d)}</small>`}</div>`;
   let tx;
@@ -632,7 +634,7 @@ function feedItem(c, now) {
   };
   let itens;
   if (c.kind === 'novo') itens = li('Novo chamado') + li('Status', cap(c.st)) + (c.evo ? li('Evolução', cap(c.evo)) : '');
-  else if (c.kind === 'muda') itens = c.ch.map(x => x.f === 'ESTAGIO' ? li('Estágio', resumoEst(x.para), 'est') : li(x.label, valor(x))).join('');
+  else if (c.kind === 'muda') itens = c.ch.map(x => x.f === 'ESTAGIO' ? (completo ? li('Estágio', String(x.para || '').trim() || '—', 'est est-full') : li('Estágio', resumoEst(x.para), 'est')) : li(x.label, valor(x))).join('');
   else if (c.kind === 'dados') itens = li('Dados do chamado atualizados');
   else if (c.kind === 'saiu') itens = li('Saiu do arquivo');
   if (c.kind === 'saiu-varios') tx = `<span class="fs">${c.n} chamados saíram do arquivo</span><ul class="lg">${li('IDs', c.ids.slice(0, 12).join(', ') + (c.ids.length > 12 ? '…' : ''))}</ul>`;
@@ -1184,7 +1186,6 @@ function abrirAtualizacoes(manual) {
   if (!manual && (!podeAbrirAtual() || (S.pend.length <= S.pendMostrado && !(AL.aberto && AL.tipo === 'atual')))) return;
   if (manual && !podeAbrirAtual() && !(AL.aberto && AL.tipo === 'atual')) return;
   const now = Date.now(), n = S.pend.length;
-  clearTimeout(toastT); $('toast').classList.remove('show');
   abrirInfo(`Atualizações <span class="nt-cont num">(${n})</span>`,
     `<p class="at-sub">Mudanças nos chamados desde o último Ciente. Toque num item para ver o detalhe.</p>
       <div class="feed log-jan at-lista">${S.pend.map(c => feedItem(c, now)).join('')}</div>

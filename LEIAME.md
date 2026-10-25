@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.33.1)
+# Problemas Sistêmicos (v1.33.2)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -26,7 +26,7 @@ A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fix
    - nome do sistema numa linha só (nome grande termina em "…") e, à direita, o **ID** da solicitação no sistêmico (cápsula só com borda);
    - o impacto (até 2 linhas; o texto completo fica no detalhe) e a cápsula do tipo de falha por extenso seguida dos segmentos: "Indisponibilidade parcial **para B2B e B2C**";
    - o número do chamado não aparece no card, só no detalhe (toque no card);
-   - selo verde **NOVO** (ou **ALTERAÇÕES**) metade dentro e metade fora do card, no canto inferior esquerdo, por 1 hora. **Tocar no selo** abre uma janela só com a **mudança mais recente** desse chamado (a que o selo anuncia), em vez do detalhe;
+   - selo verde **NOVO** (ou **ALTERAÇÕES**) metade dentro e metade fora do card, no canto inferior esquerdo, por 1 hora. **Tocar no selo** abre uma janela só com a **mudança mais recente** desse chamado (a que o selo anuncia), em vez do detalhe. Nessa janela o **Estágio aparece completo** (com as quebras de linha); nas listas ele continua abreviado numa linha com "…";
    - o tempo "aberto há" correndo ao vivo e, à direita, o status (evolução) acima do início;
    - **cronômetro** (ícone à esquerda do tempo "aberto há"; tocar no ícone **ou no próprio tempo**): abre uma janela com o tempo decorrido **correndo a cada segundo**, em horas acumuladas (ex.: `74:12:05`, sem virar dias), desde quando abriu, e embaixo a **análise do histórico** do mesmo sistema com o mesmo tipo de falha (tempo médio, maior e menor tempo), em frases curtas: "Aberto há 6h 42min: ultrapassou o maior tempo da base." e "Média a cada 34 dias (6 em 206 dias)." (sem a nota da base, para a janela ficar mais baixa) e as **últimas 3 ocorrências** desse mesmo problema numa tabelinha só com números: data e hora, tempo decorrido e **impacto no CO** (tempo dentro do expediente 08h–21h). Tocar numa linha abre o **detalhe** daquela ocorrência **por cima** da janela; ao fechar o detalhe você volta para a janela, que só fecha no botão **Fechar**. Sem ocorrências anteriores: "Não há ocorrências anteriores deste problema na base.";
    - **estágio** (`ESTAGIO`, texto do operador para o campo): enquanto o chamado está aberto e tem estágio, a cápsula do status ganha um ícone **(i)** à esquerda; tocar no status abre o status (linha inteira, sem rótulo), o estágio completo (com as quebras de linha) e, embaixo, centralizadas, a data e a hora da última mudança. No detalhe, "Estágio" aparece logo abaixo de "Alerta enviado", só com o chamado aberto. Mudança de estágio entra em "Últimas mudanças" abreviada numa linha ("• **Estágio:** Restart concluído. Ativações…");
