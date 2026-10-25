@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.33.2';
+const VERSION = '1.33.3';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -615,7 +615,7 @@ function renderHoje() {
     : `<div class="lst"><div class="empty okt">Nenhum chamado hoje.</div></div>`;
 }
 
-// completo = true: o estágio aparece inteiro (com as quebras de linha); nas listas fica abreviado numa linha
+// completo = true (janela do selo e "Mudanças registradas" do detalhe): o estágio aparece inteiro, com as quebras de linha; nas listas fica abreviado numa linha
 function feedItem(c, now, completo) {
   const d = new Date(c.at);
   const hr = `<div class="hr num">${fHM(d)}${sameDay(d, new Date(now)) ? '' : `<small>${fDM(d)}</small>`}</div>`;
@@ -881,7 +881,7 @@ function drawDet(id, list) {
     </dl>
     ${extra.length ? `<h4>Outras colunas</h4><dl class="kv">${extra.map(c => row(esc(c), esc(r[c]) || '—')).join('')}</dl>` : ''}
     <h4>Mudanças registradas</h4>
-    ${hist.length ? `<div class="feed">${hist.map(c => feedItem(c, now).replace(/data-id="[^"]*"/, 'disabled')).join('')}</div>` : '<div class="empty" style="padding:0">Nenhuma mudança registrada neste aparelho.</div>'}
+    ${hist.length ? `<div class="feed">${hist.map(c => feedItem(c, now, true).replace(/data-id="[^"]*"/, 'disabled')).join('')}</div>` : '<div class="empty" style="padding:0">Nenhuma mudança registrada neste aparelho.</div>'}
     ${analiseHtml(r, now)}`;
   $('shX').onclick = () => history.back();
   $('shShare').onclick = () => compartilhar(r);
