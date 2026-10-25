@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.33.3';
+const VERSION = '1.33.4';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -1183,8 +1183,12 @@ function podeAbrirAtual() {
 }
 function abrirAtualizacoes(manual) {
   if (!load(K.bell, false) || !S.pend.length) return;
-  if (!manual && (!podeAbrirAtual() || (S.pend.length <= S.pendMostrado && !(AL.aberto && AL.tipo === 'atual')))) return;
-  if (manual && !podeAbrirAtual() && !(AL.aberto && AL.tipo === 'atual')) return;
+  const aberta = AL.aberto && AL.tipo === 'atual';
+  if (aberta ? (S.sheet || document.hidden) : !podeAbrirAtual()) return;   // detalhe por cima ou outra janela aberta: espera
+  if (!manual && S.pend.length <= S.pendMostrado) return;   // nada novo: não redesenha (a rolagem fica onde está)
+  if (aberta && manual) return;                             // já está aberta
+  // já aberta e chegou mudança nova: redesenha mantendo os mesmos itens na tela (os novos entram em cima)
+  const bx = $('alBox'), y = aberta ? bx.scrollTop : 0, h0 = aberta ? bx.scrollHeight : 0;
   const now = Date.now(), n = S.pend.length;
   abrirInfo(`Atualizações <span class="nt-cont num">(${n})</span>`,
     `<p class="at-sub">Mudanças nos chamados desde o último Ciente. Toque num item para ver o detalhe.</p>
@@ -1192,6 +1196,7 @@ function abrirAtualizacoes(manual) {
       <button class="at-desl" id="atDesl">Desligar atualizações detalhadas</button>`,
     icoRoxo(SINO_SVG), `<button class="nt-bt nt-ciente" id="atCiente">${CHECK_SVG}<span>Ciente</span></button>`);
   AL.tipo = 'atual'; S.pendMostrado = n;
+  if (aberta && y > 4) bx.scrollTop = y + (bx.scrollHeight - h0);
   $('atCiente').onclick = () => { S.pend = []; save(K.pend, S.pend); S.pendMostrado = 0; renderBell(); fecharAlerta(); };
   $('atDesl').onclick = () => { fecharAlerta(); desligarSino(); };
 }

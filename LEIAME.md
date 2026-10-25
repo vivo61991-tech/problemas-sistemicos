@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.33.3)
+# Problemas Sistêmicos (v1.33.4)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
