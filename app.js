@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.31.1';
+const VERSION = '1.32.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -529,9 +529,16 @@ function ultimasOcorr(r, now) {
   const exp = x => window.PSPainel ? PSPainel.msExpediente({ ini: x._ini, fimCalc: new Date(endOf(x, now)) }) : null;
   return `<h5 class="uo-t">Últimas ocorrências</h5>` + (ant.length
     ? `<table class="uo"><thead><tr><th>Data e hora</th><th>Tempo decorrido</th><th>Impacto no CO</th></tr></thead><tbody>${ant.map(x => { const e = exp(x);
-        return `<tr><td class="num">${fDM(x._ini)}/${String(x._ini.getFullYear()).slice(2)} ${fHM(x._ini)}</td><td class="num">${fDur(endOf(x, now) - x._ini)}${isOpen(x) ? ' <small>em andamento</small>' : ''}</td><td class="num">${e == null ? '—' : e ? fDur(e) : 'fora do expediente'}</td></tr>`; }).join('')}</tbody></table>
-      <p class="uo-obs">Impacto no CO = tempo dentro do expediente (08h–21h).</p>`
+        return `<tr data-uo="${esc(x.ID)}" tabindex="0" role="button" aria-label="Ver o detalhe da ocorrência de ${fDM(x._ini)} às ${fHM(x._ini)}" title="Ver o detalhe"><td class="num">${fDM(x._ini)}/${String(x._ini.getFullYear()).slice(2)} ${fHM(x._ini)}</td><td class="num">${fDur(endOf(x, now) - x._ini)}${isOpen(x) ? ' <small>em andamento</small>' : ''}</td><td class="num">${e == null ? '—' : e ? fDur(e) : 'fora do expediente'}</td></tr>`; }).join('')}</tbody></table>
+      <p class="uo-obs">Impacto no CO = tempo dentro do expediente (08h–21h). Toque numa linha para ver o detalhe.</p>`
     : `<p class="uo-vazio">Não há ocorrências anteriores deste problema na base.</p>`);
+}
+// linha das últimas ocorrências: fecha a janela do tempo decorrido e abre o detalhe daquela ocorrência
+function abrirOcorrencia(id) {
+  if (!S.rows.some(r => r.ID === id)) return;
+  const abre = () => setTimeout(() => openSheet(id), 30);
+  if (AL.aberto && AL.hist) { window.addEventListener('popstate', abre, { once: true }); fecharAlerta(); }
+  else { fecharAlerta(); abre(); }
 }
 // estágio: texto livre do operador para o campo; só vale enquanto o chamado está aberto
 const INFO_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-5M12 8h.01"/></svg>';
@@ -946,12 +953,19 @@ function compartilharApp() {
       <button class="cp-copiar" id="cpCopiar">${ICO.copiar}<span>Copiar link</span></button>
       <div class="cp-redes">
         <a class="cp-rede" id="cpWa" href="https://wa.me/?text=${tx}" target="_blank" rel="noopener">${ICO.conversa}<span>WhatsApp</span></a>
-        <a class="cp-rede" id="cpTeams" href="https://teams.microsoft.com/share?href=${encodeURIComponent(APP_LINK)}&msgText=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${ICO.equipe}<span>Teams</span></a>
+        <button class="cp-rede" id="cpTeams" title="Copia o link e abre o aplicativo do Teams">${ICO.equipe}<span>Teams</span></button>
         <a class="cp-rede" id="cpMail" href="mailto:?subject=${encodeURIComponent('App Problemas Sistêmicos')}&body=${tx}">${ICO.email}<span>Outlook</span></a>
       </div>
       ${navigator.share ? `<button class="cp-mais" id="cpMais">${ICO.share}<span>Outras opções</span></button>` : ''}
     </div>`, icoRoxo(ICO.app), BT_VOLTAR);
   ligarVoltar();
+  // Teams da empresa bloqueia o compartilhamento pela web (pede login no navegador):
+  // copia o link e abre o aplicativo do Teams pelo atalho próprio dele (msteams:); a pessoa só escolhe a conversa e cola
+  $('cpTeams').onclick = async () => {
+    const ok = await copiarTexto(APP_LINK);
+    toast(ok ? 'Link copiado. Cole na conversa do Teams.' : 'Não foi possível copiar. Link: ' + APP_LINK, false, ok ? 6000 : 8000);
+    const a = document.createElement('a'); a.href = 'msteams://'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
+  };
   $('cpCopiar').onclick = async () => { const ok = await copiarTexto(APP_LINK); toast(ok ? 'Link do app copiado.' : 'Não foi possível copiar. Link: ' + APP_LINK, false, ok ? 2500 : 6000); };
   if ($('cpMais')) $('cpMais').onclick = async () => { try { await navigator.share({ title: 'Problemas Sistêmicos', text: msg, url: APP_LINK }); } catch (e) { /* cancelado */ } };
 }
@@ -1159,6 +1173,8 @@ function init() {
     if (pn) { e.preventDefault(); alternarPin(pn.dataset.pin); return; }
     const ale = e.target.closest('[data-alerta]');
     if (ale) { e.preventDefault(); abrirAlerta(ale.dataset.alerta); return; }
+    const uo = e.target.closest('[data-uo]');
+    if (uo) { e.preventDefault(); abrirOcorrencia(uo.dataset.uo); return; }
     const cr = e.target.closest('[data-crono]');
     if (cr) { e.preventDefault(); abrirCrono(cr.dataset.crono); return; }
     const es = e.target.closest('[data-est]');
@@ -1198,7 +1214,7 @@ function init() {
   // Enter/Espaço no alfinete e na sirene (estão dentro do card)
   document.addEventListener('keydown', e => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
-    const x = e.target.closest && e.target.closest('[data-pin], [data-alerta], [data-log], [data-crono], [data-est]');
+    const x = e.target.closest && e.target.closest('[data-pin], [data-alerta], [data-log], [data-crono], [data-est], [data-uo]');
     if (x) { e.preventDefault(); e.stopPropagation(); x.click(); }
   }, true);
   window.addEventListener('popstate', () => {
