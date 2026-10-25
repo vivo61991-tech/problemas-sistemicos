@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.33.0';
+const VERSION = '1.33.1';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -539,12 +539,13 @@ function ultimasOcorr(r, now) {
       <p class="uo-obs">Impacto no CO = tempo dentro do expediente (08h–21h). Toque numa linha para ver o detalhe.</p>`
     : `<p class="uo-vazio">Não há ocorrências anteriores deste problema na base.</p>`);
 }
-// linha das últimas ocorrências: fecha a janela do tempo decorrido e abre o detalhe daquela ocorrência
+// linha das últimas ocorrências / item das Atualizações: abre o detalhe POR CIMA da janela.
+// A janela continua aberta embaixo; ao fechar o detalhe você volta para ela. Ela só fecha no botão Fechar (ou Ciente).
 function abrirOcorrencia(id) {
   if (!S.rows.some(r => r.ID === id)) return;
-  const abre = () => setTimeout(() => openSheet(id), 30);
-  if (AL.aberto && AL.hist) { window.addEventListener('popstate', abre, { once: true }); fecharAlerta(); }
-  else { fecharAlerta(); abre(); }
+  if (AL.aberto) document.body.classList.add('sheet-sobre');
+  openSheet(id);
+  if (!S.sheet) document.body.classList.remove('sheet-sobre');
 }
 // estágio: texto livre do operador para o campo; só vale enquanto o chamado está aberto
 const INFO_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-5M12 8h.01"/></svg>';
@@ -1141,7 +1142,9 @@ function closeSheet() {
   S.sheet = null;
   $('sheet').classList.remove('show'); $('sheet').scrollTop = 0;
   $('sheetBg').style.display = 'none';
-  document.body.classList.remove('sheet-on'); if (!document.body.matches('.nt-on, .al-on')) document.documentElement.classList.remove('trava');
+  const sobre = document.body.classList.contains('sheet-sobre');
+  document.body.classList.remove('sheet-on', 'sheet-sobre'); if (!document.body.matches('.nt-on, .al-on')) document.documentElement.classList.remove('trava');
+  if (sobre && AL.aberto && $('alBox')) $('alBox').focus({ preventScroll: true });   // volta para a janela que estava embaixo
   if (l && l.onClose) l.onClose();
 }
 
@@ -1255,12 +1258,13 @@ function init() {
   }, true);
   window.addEventListener('popstate', () => {
     if (AL.ignorarPop) { AL.ignorarPop = false; return; }
+    if (S.sheet && document.body.classList.contains('sheet-sobre')) { closeSheet(); return; }   // detalhe aberto por cima da janela: fecha só o detalhe
     if (AL.aberto) { fecharAlerta(true); return; }
     if (window.PSNotif && PSNotif.consumirPop()) return;          // a própria janela de notificação voltou o histórico
     if (window.PSNotif && PSNotif.aberto()) { PSNotif.fechar(true); return; }
     if (S.sheet) closeSheet();
   });
-  document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (AL.aberto) fecharAlerta(); else if (window.PSNotif && PSNotif.aberto()) PSNotif.fechar(); else if (S.sheet) history.back(); });
+  document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (S.sheet && document.body.classList.contains('sheet-sobre')) history.back(); else if (AL.aberto) fecharAlerta(); else if (window.PSNotif && PSNotif.aberto()) PSNotif.fechar(); else if (S.sheet) history.back(); });
   if (window.PSPainel) PSPainel.gesto($('pgPainel'), () => S.tab === 'painel');
 
   document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - S.checkedAt > 15000) poll(); });
