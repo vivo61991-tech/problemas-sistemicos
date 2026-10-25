@@ -1,6 +1,7 @@
 ID	SISTEMA	CHAMADO	STATUS	CRITICIDADE	EVOLUCAO	SEGMENTO	IMPACTO_OPERACIONAL	ESTAGIO	DATA_INICIO	DATA_FIM	TIPO_FALHA	GRUPOS_RESPONSAVEIS	GRUPOS_IMPACTADOS	AREA_ACIONADA	ALERTA_ENVIADO	DATA_ATUALIZACAO	DADO_ATUALIZADO	TEMPO_DECORRIDO	FLAG
-350	WEB RADIUS	INC5284815	ABERTO	P3	EM ANÁLISE	B2C	Técnicos não conseguem consultar a sessão do cliente no Web Radius (fictício)	"Chamado aberto e encaminhado para o SOC Redes.
-Equipe verificando a comunicação do Web Radius com os servidores de autenticação."	25/10/26 17:05:00,000000000		INDISPONIBILIDADE PARCIAL	SOC REDES	CENTRALIZADA, CENTRO DE OPERAÇÕES	SOC REDES	0	25/10/26 17:12:17,000000000	25/10/26 17:13:11,000000000	+00 00:07:00.000000	1
+350	WEB RADIUS	INC5284815	ABERTO	P3	EM ANÁLISE	B2C	Técnicos não conseguem consultar a sessão do cliente no Web Radius (fictício)	"Alerta enviado às 18h00 ao SOC Redes e à gerência de Redes, reforçando a urgência: falha ativa há quase 1 hora sem previsão de normalização.
+Fornecedor do Web Radius acionado para análise conjunta.
+Próxima atualização prevista para as 18h30."	25/10/26 17:05:00,000000000		INDISPONIBILIDADE PARCIAL	SOC REDES	CENTRALIZADA, CENTRO DE OPERAÇÕES	SOC REDES	1	25/10/26 18:05:17,000000000	25/10/26 18:06:11,000000000	+00 01:00:00.000000	1
 349	URA CO	INC5284760	FECHADO	P3	NORMALIZADO	B2B, B2C	Menu de autoatendimento não reconhece o CPF digitado (fictício)	"Normalizado
 Rollback concluído pelo fornecedor; consulta de CPF da URA validada com a operação. Sem novas ocorrências no monitoramento."	25/10/26 09:30:00,000000000	25/10/26 10:48:00,000000000	INDISPONIBILIDADE PARCIAL	CCGI - CIM	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI / Contact Center	0	25/10/26 10:48:17,000000000	25/10/26 10:48:41,000000000	+00 01:18:00.000000	1
 348	CHAT DANI	INC5284702	FECHADO	P3	NORMALIZADO	B2C	Clientes não conseguem iniciar atendimento pelo chat (fictício)	"Normalizado
