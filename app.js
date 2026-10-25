@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.34.0';
+const VERSION = '1.34.1';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -1191,14 +1191,14 @@ function abrirAtualizacoes(manual) {
   if (!aberta) S.atFiltro = '';                             // janela nova começa sem filtro
   desenharAtual(aberta);
 }
-// cápsulas dos IDs acima da lista: número de atualizações "elevado" fora da cápsula; tocar filtra, tocar de novo tira o filtro
+// cápsulas dos IDs acima da lista: bolinha com o número de atualizações encostada no canto (como a do sino); tocar filtra, tocar de novo tira o filtro
 function atualIds() {
   const cont = new Map();
   S.pend.forEach(c => { if (c.id) cont.set(c.id, (cont.get(c.id) || 0) + 1); });   // ordem: mais recente primeiro
   if (!cont.size) return '';
   const f = S.atFiltro;
   return `<div class="at-ids" role="group" aria-label="Filtrar por chamado">${f ? `<button class="at-limpa" data-atf="" aria-label="Remover filtro" title="Remover filtro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>` : ''}${
-    [...cont].map(([id, n]) => `<button class="at-ch${id === f ? ' on' : ''}" data-atf="${esc(id)}" aria-pressed="${id === f}" aria-label="Chamado ${esc(id)}: ${n} atualizaç${n > 1 ? 'ões' : 'ão'}${id === f ? ' (filtrado; toque para tirar o filtro)' : ''}"><span class="idc num">${esc(id)}</span><sup class="num">${n}</sup></button>`).join('')}</div>`;
+    [...cont].map(([id, n]) => `<button class="at-ch${id === f ? ' on' : ''}" data-atf="${esc(id)}" aria-pressed="${id === f}" aria-label="Chamado ${esc(id)}: ${n} atualizaç${n > 1 ? 'ões' : 'ão'}${id === f ? ' (filtrado; toque para tirar o filtro)' : ''}"><span class="idc num">${esc(id)}</span><span class="at-n num" aria-hidden="true">${n}</span></button>`).join('')}</div>`;
 }
 // desenha a janela; manter = já estava aberta (mantém na tela os itens que estavam sendo lidos)
 function desenharAtual(manter) {

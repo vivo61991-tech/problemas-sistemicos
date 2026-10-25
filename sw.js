@@ -1,5 +1,5 @@
 /* Problemas Sistêmicos — service worker */
-const VERSION = '1.34.0';
+const VERSION = '1.34.1';
 const CACHE = 'sistemicos-v' + VERSION;
 const CORE = ['./', 'index.html', 'painel.js', 'notif.js', 'app.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/qrcode.svg'];
 
