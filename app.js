@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.33.4';
+const VERSION = '1.34.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -287,6 +287,7 @@ if (!Array.isArray(S.log)) S.log = [];
 S.pins = load(K.pins, []); if (!Array.isArray(S.pins)) S.pins = [];   // cards fixados: o mais recente primeiro
 S.pend = load(K.pend, []); if (!Array.isArray(S.pend)) S.pend = [];   // sino ligado: atualizações ainda sem Ciente (a mais recente primeiro)
 S.pendMostrado = 0;   // quantas já foram mostradas nesta sessão (Fechar não reabre sem novidade)
+S.atFiltro = '';      // ID filtrado na janela Atualizações ('' = todos)
 // limpeza de restos de leitura errada: versões antigas (antes da 1.30) partiam o arquivo quando um campo livre
 // tinha quebra de linha, e pedaços de texto viravam "chamados" (ID = texto). ID válido não tem espaço nem aspas.
 const idOk = id => /^[^\s"]{1,30}$/.test(String(id == null ? '' : id));
@@ -1187,17 +1188,46 @@ function abrirAtualizacoes(manual) {
   if (aberta ? (S.sheet || document.hidden) : !podeAbrirAtual()) return;   // detalhe por cima ou outra janela aberta: espera
   if (!manual && S.pend.length <= S.pendMostrado) return;   // nada novo: não redesenha (a rolagem fica onde está)
   if (aberta && manual) return;                             // já está aberta
-  // já aberta e chegou mudança nova: redesenha mantendo os mesmos itens na tela (os novos entram em cima)
-  const bx = $('alBox'), y = aberta ? bx.scrollTop : 0, h0 = aberta ? bx.scrollHeight : 0;
-  const now = Date.now(), n = S.pend.length;
+  if (!aberta) S.atFiltro = '';                             // janela nova começa sem filtro
+  desenharAtual(aberta);
+}
+// cápsulas dos IDs acima da lista: número de atualizações "elevado" fora da cápsula; tocar filtra, tocar de novo tira o filtro
+function atualIds() {
+  const cont = new Map();
+  S.pend.forEach(c => { if (c.id) cont.set(c.id, (cont.get(c.id) || 0) + 1); });   // ordem: mais recente primeiro
+  if (!cont.size) return '';
+  const f = S.atFiltro;
+  return `<div class="at-ids" role="group" aria-label="Filtrar por chamado">${f ? `<button class="at-limpa" data-atf="" aria-label="Remover filtro" title="Remover filtro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>` : ''}${
+    [...cont].map(([id, n]) => `<button class="at-ch${id === f ? ' on' : ''}" data-atf="${esc(id)}" aria-pressed="${id === f}" aria-label="Chamado ${esc(id)}: ${n} atualizaç${n > 1 ? 'ões' : 'ão'}${id === f ? ' (filtrado; toque para tirar o filtro)' : ''}"><span class="idc num">${esc(id)}</span><sup class="num">${n}</sup></button>`).join('')}</div>`;
+}
+// desenha a janela; manter = já estava aberta (mantém na tela os itens que estavam sendo lidos)
+function desenharAtual(manter) {
+  if (S.atFiltro && !S.pend.some(c => c.id === S.atFiltro)) S.atFiltro = '';
+  const bx = $('alBox'), y = manter && bx ? bx.scrollTop : 0, h0 = manter && bx ? bx.scrollHeight : 0;
+  const now = Date.now(), n = S.pend.length, f = S.atFiltro;
+  const lista = f ? S.pend.filter(c => c.id === f) : S.pend;
   abrirInfo(`Atualizações <span class="nt-cont num">(${n})</span>`,
-    `<p class="at-sub">Mudanças nos chamados desde o último Ciente. Toque num item para ver o detalhe.</p>
-      <div class="feed log-jan at-lista">${S.pend.map(c => feedItem(c, now)).join('')}</div>
+    `<p class="at-sub">${f ? `Mostrando só o chamado <b>${esc(f)}</b>. O Ciente confirma só estas ${lista.length > 1 ? `${lista.length} atualizações` : 'atualização'}.` : 'Mudanças nos chamados desde o último Ciente. Toque num ID para filtrar ou num item para ver o detalhe.'}</p>
+      ${atualIds()}
+      <div class="feed log-jan at-lista">${lista.map(c => feedItem(c, now)).join('')}</div>
       <button class="at-desl" id="atDesl">Desligar atualizações detalhadas</button>`,
     icoRoxo(SINO_SVG), `<button class="nt-bt nt-ciente" id="atCiente">${CHECK_SVG}<span>Ciente</span></button>`);
   AL.tipo = 'atual'; S.pendMostrado = n;
-  if (aberta && y > 4) bx.scrollTop = y + (bx.scrollHeight - h0);
-  $('atCiente').onclick = () => { S.pend = []; save(K.pend, S.pend); S.pendMostrado = 0; renderBell(); fecharAlerta(); };
+  if (manter && y > 4) $('alBox').scrollTop = y + ($('alBox').scrollHeight - h0);
+  $('alBox').querySelectorAll('[data-atf]').forEach(b => b.onclick = () => {
+    const id = b.dataset.atf;
+    S.atFiltro = id && id !== S.atFiltro ? id : '';   // tocar no filtrado (ou no X) tira o filtro
+    desenharAtual(false);
+  });
+  $('atCiente').onclick = () => {
+    if (S.atFiltro) {   // filtrado: Ciente só no que está na tela; os outros continuam
+      const id = S.atFiltro;
+      S.pend = S.pend.filter(c => c.id !== id); save(K.pend, S.pend); S.atFiltro = ''; S.pendMostrado = S.pend.length; renderBell();
+      if (S.pend.length) desenharAtual(false); else fecharAlerta();
+      return;
+    }
+    S.pend = []; save(K.pend, S.pend); S.pendMostrado = 0; renderBell(); fecharAlerta();
+  };
   $('atDesl').onclick = () => { fecharAlerta(); desligarSino(); };
 }
 
