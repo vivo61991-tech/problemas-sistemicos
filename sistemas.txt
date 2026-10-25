@@ -1,8 +1,6 @@
 ID	SISTEMA	CHAMADO	STATUS	CRITICIDADE	EVOLUCAO	SEGMENTO	IMPACTO_OPERACIONAL	ESTAGIO	DATA_INICIO	DATA_FIM	TIPO_FALHA	GRUPOS_RESPONSAVEIS	GRUPOS_IMPACTADOS	AREA_ACIONADA	ALERTA_ENVIADO	DATA_ATUALIZACAO	DADO_ATUALIZADO	TEMPO_DECORRIDO	FLAG
-349	URA CO	INC5284760	ABERTO	P3	EM ANÁLISE	B2B, B2C	Menu de autoatendimento não reconhece o CPF digitado (fictício)	"CCGI identificou falha na consulta de CPF da URA após atualização no serviço de validação cadastral, aplicada às 09h15.
-Fornecedor acionado e rollback da versão em andamento.
-Enquanto isso, os clientes estão sendo direcionados para o atendimento humano.
-Próxima atualização prevista para as 11h00."	25/10/26 09:30:00,000000000		INDISPONIBILIDADE PARCIAL	CCGI - CIM	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI / Contact Center	0	25/10/26 10:26:17,000000000	25/10/26 10:27:11,000000000	+00 00:56:00.000000	1
+349	URA CO	INC5284760	FECHADO	P3	NORMALIZADO	B2B, B2C	Menu de autoatendimento não reconhece o CPF digitado (fictício)	"Normalizado
+Rollback concluído pelo fornecedor; consulta de CPF da URA validada com a operação. Sem novas ocorrências no monitoramento."	25/10/26 09:30:00,000000000	25/10/26 10:48:00,000000000	INDISPONIBILIDADE PARCIAL	CCGI - CIM	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI / Contact Center	0	25/10/26 10:48:17,000000000	25/10/26 10:48:41,000000000	+00 01:18:00.000000	1
 348	CHAT DANI	INC5284702	FECHADO	P3	NORMALIZADO	B2C	Clientes não conseguem iniciar atendimento pelo chat (fictício)	"Normalizado
 Chat voltou a iniciar atendimentos após reinício do serviço pela 4field. Sem novas ocorrências no monitoramento."	25/10/26 03:35:00,000000000	25/10/26 08:20:00,000000000	INDISPONIBILIDADE PARCIAL	4FIELD - CHAT DANI	CENTRALIZADA, CENTRO DE OPERAÇÕES	4field	0	25/10/26 08:24:17,000000000	25/10/26 08:25:11,000000000	+00 04:45:00.000000	1
 347	CHAT DANI	Sem Chamado	FECHADO	P3	NORMALIZADO	B2C	Chat não envia a pesquisa de satisfação (fictício)	"Normalizado
