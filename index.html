@@ -370,6 +370,11 @@ h2.sec .rt{white-space:nowrap;font-size:12.5px;text-transform:none;letter-spacin
 .fi ul.lg li{position:relative;padding-left:11px;overflow-wrap:anywhere}
 .fi ul.lg li::before{content:"";position:absolute;left:1px;top:.6em;width:4px;height:4px;border-radius:50%;background:var(--ink3)}
 .fi ul.lg b{font-weight:700;color:var(--ink)}
+/* "Novo chamado" no log: cápsula verde com letra branca (destaca o chamado que entrou) */
+.fi ul.lg li.novo{padding-left:0;margin:1px 0 3px}
+.fi ul.lg li.novo::before{display:none}
+.cap-novo{display:inline-block;background:#5F8A12;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.3px;line-height:1.5;border-radius:999px;padding:1px 10px}
+@media (prefers-color-scheme: dark){.cap-novo{background:#6E9E17}}
 .st{border-radius:6px;padding:1px 6px;font-weight:700;font-size:11.5px;background:var(--neu);color:var(--neuInk)}
 .st.a{background:var(--fTotal);color:#fff}
 .st.e{background:var(--warnbg);color:var(--warn)}
@@ -644,7 +649,8 @@ body.sheet-sobre .toast{z-index:70}
 .nt-corpo .log-jan.at-lista .fi:disabled{cursor:default}
 .at-desl{display:block;margin:12px auto 0;border:0;background:none;color:var(--ink3);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer}
 /* janela Atualizações: cápsulas dos IDs (filtro) com a bolinha da quantidade encostada no canto superior direito, como a do sino */
-.at-ids{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:0 0 12px}
+.at-ids{display:flex;align-items:flex-start;gap:8px;margin:0 0 12px}
+.at-caps{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
 .at-ch{position:relative;display:inline-flex;align-items:center;border:0;background:none;padding:8px 10px 2px 0;margin:0;cursor:pointer;font:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
 .at-ch .idc{font-size:12.5px;line-height:1.5;padding:1px 12px 1px 10px;border-width:1.5px;transition:background .15s,color .15s}
 .at-n{position:absolute;top:0;right:0;min-width:19px;height:19px;border-radius:999px;padding:0 5px;box-sizing:border-box;font-size:10.5px;font-weight:800;line-height:15px;text-align:center;border:2px solid var(--card);background:var(--p700);color:#fff;transition:background .15s,color .15s}
@@ -652,8 +658,11 @@ body.sheet-sobre .toast{z-index:70}
 .at-ch.on .at-n{background:#EFEAF5;color:var(--p700)}
 .at-ch:focus-visible{outline:0}.at-ch:focus-visible .idc{outline:2px solid var(--p300);outline-offset:2px}
 .at-limpa{flex:none;width:24px;height:24px;margin-top:6px;border-radius:50%;border:0;padding:0;background:var(--p100);color:var(--p800);display:grid;place-items:center;cursor:pointer}
-.at-limpa svg{width:12px;height:12px}
-@media (prefers-color-scheme: dark){.at-n{background:var(--p500)}.at-ch.on .idc{background:var(--p500);border-color:var(--p500);color:#fff}.at-ch.on .at-n{background:#ebe0f4;color:var(--p700)}.at-limpa{background:#3a2356;color:#e6d6f5}}
+.at-limpa svg,.at-mais svg{width:12px;height:12px}
+/* + seleção múltipla: à direita, no começo da linha; desligado = clarinho como o ✕, ligado = roxo */
+.at-mais{flex:none;width:24px;height:24px;margin-top:6px;border-radius:50%;border:0;padding:0;background:var(--p100);color:var(--p800);display:grid;place-items:center;cursor:pointer;transition:background .15s,color .15s}
+.at-mais.on{background:var(--p700);color:#fff}
+@media (prefers-color-scheme: dark){.at-n{background:var(--p500)}.at-ch.on .idc{background:var(--p500);border-color:var(--p500);color:#fff}.at-ch.on .at-n{background:#ebe0f4;color:var(--p700)}.at-limpa,.at-mais{background:#3a2356;color:#e6d6f5}.at-mais.on{background:var(--p500);color:#fff}}
 /* janela de notificação: por cima de tudo, fundo do cartão (branco no tema claro) */
 .nt-bg{position:fixed;inset:0;z-index:60;overflow:hidden;background:rgba(20,12,29,.5);display:flex;align-items:center;justify-content:center;padding:16px}
 .nt-bg[hidden]{display:none}
@@ -792,8 +801,8 @@ html.trava{overflow:hidden}
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="painel.js?v=1.35.0"></script>
-<script src="notif.js?v=1.35.0"></script>
-<script src="app.js?v=1.35.0"></script>
+<script src="painel.js?v=1.36.0"></script>
+<script src="notif.js?v=1.36.0"></script>
+<script src="app.js?v=1.36.0"></script>
 </body>
 </html>

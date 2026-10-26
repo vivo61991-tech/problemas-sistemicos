@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.35.0';
+const VERSION = '1.36.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -287,7 +287,8 @@ if (!Array.isArray(S.log)) S.log = [];
 S.pins = load(K.pins, []); if (!Array.isArray(S.pins)) S.pins = [];   // cards fixados: o mais recente primeiro
 S.pend = load(K.pend, []); if (!Array.isArray(S.pend)) S.pend = [];   // sino ligado: atualizações ainda sem Ciente (a mais recente primeiro)
 S.pendMostrado = 0;   // quantas já foram mostradas nesta sessão (Fechar não reabre sem novidade)
-S.atFiltro = '';      // ID filtrado na janela Atualizações ('' = todos)
+S.atSel = [];         // IDs selecionados na janela Atualizações ([] = todos)
+S.atMulti = false;    // modo seleção múltipla (botão +)
 // limpeza de restos de leitura errada: versões antigas (antes da 1.30) partiam o arquivo quando um campo livre
 // tinha quebra de linha, e pedaços de texto viravam "chamados" (ID = texto). ID válido não tem espaço nem aspas.
 const idOk = id => /^[^\s"]{1,30}$/.test(String(id == null ? '' : id));
@@ -634,7 +635,7 @@ function feedItem(c, now, completo) {
     return x.para;   // demais campos: como vieram no arquivo
   };
   let itens;
-  if (c.kind === 'novo') itens = li('Novo chamado') + li('Status', cap(c.st)) + (c.evo ? li('Evolução', cap(c.evo)) : '');
+  if (c.kind === 'novo') itens = '<li class="novo"><span class="cap-novo">Novo chamado</span></li>' + li('Status', cap(c.st)) + (c.evo ? li('Evolução', cap(c.evo)) : '');
   else if (c.kind === 'muda') itens = c.ch.map(x => x.f === 'ESTAGIO' ? (completo ? li('Estágio', String(x.para || '').trim() || '—', 'est est-full') : li('Estágio', resumoEst(x.para), 'est')) : li(x.label, valor(x))).join('');
   else if (c.kind === 'dados') itens = li('Dados do chamado atualizados');
   else if (c.kind === 'saiu') itens = li('Saiu do arquivo');
@@ -1188,26 +1189,37 @@ function abrirAtualizacoes(manual) {
   if (aberta ? (S.sheet || document.hidden) : !podeAbrirAtual()) return;   // detalhe por cima ou outra janela aberta: espera
   if (!manual && S.pend.length <= S.pendMostrado) return;   // nada novo: não redesenha (a rolagem fica onde está)
   if (aberta && manual) return;                             // já está aberta
-  if (!aberta) S.atFiltro = '';                             // janela nova começa sem filtro
+  if (!aberta) { S.atSel = []; S.atMulti = false; }         // janela nova começa sem filtro
   desenharAtual(aberta);
 }
-// cápsulas dos IDs acima da lista: bolinha com o número de atualizações encostada no canto (como a do sino); tocar filtra, tocar de novo tira o filtro
+// cápsulas dos IDs acima da lista: bolinha com o número de atualizações encostada no canto (como a do sino);
+// tocar filtra; com o filtro ligado aparece o + à direita: ligado, cada ID tocado entra (ou sai) da seleção
+const MAIS_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+const X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 function atualIds() {
   const cont = new Map();
   S.pend.forEach(c => { if (c.id) cont.set(c.id, (cont.get(c.id) || 0) + 1); });   // ordem: mais recente primeiro
   if (!cont.size) return '';
-  const f = S.atFiltro;
-  return `<div class="at-ids" role="group" aria-label="Filtrar por chamado">${f ? `<button class="at-limpa" data-atf="" aria-label="Remover filtro" title="Remover filtro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>` : ''}${
-    [...cont].map(([id, n]) => `<button class="at-ch${id === f ? ' on' : ''}" data-atf="${esc(id)}" aria-pressed="${id === f}" aria-label="Chamado ${esc(id)}: ${n} atualizaç${n > 1 ? 'ões' : 'ão'}${id === f ? ' (filtrado; toque para tirar o filtro)' : ''}"><span class="idc num">${esc(id)}</span><span class="at-n num" aria-hidden="true">${n}</span></button>`).join('')}</div>`;
+  const sel = new Set(S.atSel), tem = sel.size > 0;
+  return `<div class="at-ids${tem ? ' com-filtro' : ''}" role="group" aria-label="Filtrar por chamado">${tem ? `<button class="at-limpa" data-atf="" aria-label="Remover filtro" title="Remover filtro">${X_SVG}</button>` : ''}<div class="at-caps">${
+    [...cont].map(([id, n]) => { const on = sel.has(id);
+      return `<button class="at-ch${on ? ' on' : ''}" data-atf="${esc(id)}" aria-pressed="${on}" aria-label="Chamado ${esc(id)}: ${n} atualizaç${n > 1 ? 'ões' : 'ão'}${on ? ' (selecionado; toque para tirar)' : ''}"><span class="idc num">${esc(id)}</span><span class="at-n num" aria-hidden="true">${n}</span></button>`; }).join('')}</div>${
+    tem ? `<button class="at-mais${S.atMulti ? ' on' : ''}" id="atMais" aria-pressed="${S.atMulti}" aria-label="${S.atMulti ? 'Seleção múltipla ligada: toque para desligar' : 'Selecionar vários chamados'}" title="${S.atMulti ? 'Seleção múltipla ligada' : 'Selecionar vários'}">${MAIS_SVG}</button>` : ''}</div>`;
 }
+const listaIds = l => l.length < 2 ? l.join('') : l.slice(0, -1).join(', ') + ' e ' + l[l.length - 1];
 // desenha a janela; manter = já estava aberta (mantém na tela os itens que estavam sendo lidos)
 function desenharAtual(manter) {
-  if (S.atFiltro && !S.pend.some(c => c.id === S.atFiltro)) S.atFiltro = '';
+  S.atSel = S.atSel.filter(id => S.pend.some(c => c.id === id));
+  if (!S.atSel.length) S.atMulti = false;
   const bx = $('alBox'), y = manter && bx ? bx.scrollTop : 0, h0 = manter && bx ? bx.scrollHeight : 0;
-  const now = Date.now(), n = S.pend.length, f = S.atFiltro;
-  const lista = f ? S.pend.filter(c => c.id === f) : S.pend;
+  const now = Date.now(), n = S.pend.length, sel = new Set(S.atSel);
+  const lista = sel.size ? S.pend.filter(c => sel.has(c.id)) : S.pend;
+  const qt = lista.length > 1 ? `estas ${lista.length} atualizações` : 'esta atualização';
+  const sub = !sel.size ? 'Mudanças nos chamados desde o último Ciente. Toque num ID para filtrar ou num item para ver o detalhe.'
+    : S.atMulti ? `Seleção múltipla: ${sel.size > 1 ? `chamados <b>${listaIds(S.atSel.map(esc))}</b>` : `chamado <b>${esc(S.atSel[0])}</b>`}. Toque em outros IDs para juntar. O Ciente confirma só ${qt}.`
+    : `Mostrando só o chamado <b>${esc(S.atSel[0])}</b>. O Ciente confirma só ${qt}. Toque no + para selecionar vários.`;
   abrirInfo(`Atualizações <span class="nt-cont num">(${n})</span>`,
-    `<p class="at-sub">${f ? `Mostrando só o chamado <b>${esc(f)}</b>. O Ciente confirma só estas ${lista.length > 1 ? `${lista.length} atualizações` : 'atualização'}.` : 'Mudanças nos chamados desde o último Ciente. Toque num ID para filtrar ou num item para ver o detalhe.'}</p>
+    `<p class="at-sub">${sub}</p>
       ${atualIds()}
       <div class="feed log-jan at-lista">${lista.map(c => feedItem(c, now)).join('')}</div>
       <button class="at-desl" id="atDesl">Desligar atualizações detalhadas</button>`,
@@ -1216,13 +1228,21 @@ function desenharAtual(manter) {
   if (manter && y > 4) $('alBox').scrollTop = y + ($('alBox').scrollHeight - h0);
   $('alBox').querySelectorAll('[data-atf]').forEach(b => b.onclick = () => {
     const id = b.dataset.atf;
-    S.atFiltro = id && id !== S.atFiltro ? id : '';   // tocar no filtrado (ou no X) tira o filtro
+    if (!id) { S.atSel = []; S.atMulti = false; }                                         // ✕: tira tudo
+    else if (S.atMulti) S.atSel = S.atSel.includes(id) ? S.atSel.filter(x => x !== id) : S.atSel.concat(id);   // vários: junta / tira
+    else S.atSel = S.atSel[0] === id ? [] : [id];                                          // um só: troca / tira
     desenharAtual(false);
   });
+  const mais = $('atMais');
+  if (mais) mais.onclick = () => {
+    S.atMulti = !S.atMulti;
+    if (!S.atMulti && S.atSel.length > 1) S.atSel = S.atSel.slice(0, 1);   // desligou: fica só o primeiro escolhido
+    desenharAtual(false);
+  };
   $('atCiente').onclick = () => {
-    if (S.atFiltro) {   // filtrado: Ciente só no que está na tela; os outros continuam
-      const id = S.atFiltro;
-      S.pend = S.pend.filter(c => c.id !== id); save(K.pend, S.pend); S.atFiltro = ''; S.pendMostrado = S.pend.length; renderBell();
+    if (S.atSel.length) {   // filtrado: Ciente só no que está na tela; os outros continuam
+      const fora = new Set(S.atSel);
+      S.pend = S.pend.filter(c => !fora.has(c.id)); save(K.pend, S.pend); S.atSel = []; S.atMulti = false; S.pendMostrado = S.pend.length; renderBell();
       if (S.pend.length) desenharAtual(false); else fecharAlerta();
       return;
     }
