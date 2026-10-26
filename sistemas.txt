@@ -1,6 +1,6 @@
 ID	SISTEMA	CHAMADO	STATUS	CRITICIDADE	EVOLUCAO	SEGMENTO	IMPACTO_OPERACIONAL	ESTAGIO	DATA_INICIO	DATA_FIM	TIPO_FALHA	GRUPOS_RESPONSAVEIS	GRUPOS_IMPACTADOS	AREA_ACIONADA	ALERTA_ENVIADO	DATA_ATUALIZACAO	DADO_ATUALIZADO	TEMPO_DECORRIDO	FLAG
-351	SDU	INC5284890	ABERTO	P3	EM ANÁLISE	B2C	Erro ao salvar alteração de plano do cliente (fictício)	"Chamado aberto e encaminhado para o CCGI.
-Equipe analisando o erro na gravação das alterações de plano."	26/10/26 09:00:00,000000000		INDISPONIBILIDADE PARCIAL	CCGI - CIM	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI	0	26/10/26 09:00:17,000000000	26/10/26 09:01:11,000000000	+00 00:00:00.000000	1
+351	SDU	INC5284890	FECHADO	P3	NORMALIZADO	B2C	Erro ao salvar alteração de plano do cliente (fictício)	"Normalizado
+CCGI corrigiu a gravação das alterações de plano; teste validado com a operação. Sem novas ocorrências no monitoramento."	26/10/26 09:00:00,000000000	26/10/26 12:35:00,000000000	INDISPONIBILIDADE PARCIAL	CCGI - CIM	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI	0	26/10/26 12:35:17,000000000	26/10/26 12:36:11,000000000	+00 03:35:00.000000	1
 350	WEB RADIUS	INC5284815	FECHADO	P3	NORMALIZADO	B2C	Técnicos não conseguem consultar a sessão do cliente no Web Radius (fictício)	"Normalizado
 Fornecedor corrigiu a comunicação do Web Radius com os servidores de autenticação; consulta de sessão validada com os técnicos. Sem novas ocorrências no monitoramento."	25/10/26 17:05:00,000000000	25/10/26 19:35:00,000000000	INDISPONIBILIDADE PARCIAL	SOC REDES	CENTRALIZADA, CENTRO DE OPERAÇÕES	SOC REDES	1	25/10/26 19:36:17,000000000	25/10/26 19:37:11,000000000	+00 02:30:00.000000	1
 349	URA CO	INC5284760	FECHADO	P3	NORMALIZADO	B2B, B2C	Menu de autoatendimento não reconhece o CPF digitado (fictício)	"Normalizado
