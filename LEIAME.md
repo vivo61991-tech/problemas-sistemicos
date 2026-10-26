@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.34.1)
+# Problemas Sistêmicos (v1.35.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -46,8 +46,8 @@ A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fix
    - filtro por tipo de falha (ou só indevidos).
 3. **Painel**: o mesmo painel do app de NS: Dia / Semana / Mês (botão ou arrastar para o lado), filtro do dia da semana no modo Dia, seleção de coluna (toque no gráfico, na tabela ou no cabeçalho da matriz) e:
    - **cards sem comparação** com o período anterior. Sem nada selecionado, mostram o **acumulado dos 7 períodos da tela**: chamados distintos ("em 7 dias"), tempo com falha somado e o **% do expediente**, sistemas afetados e o **Período** ("14/10 a 20/10") com as **horas de expediente** somadas (dias fechados = 13h cada; o dia em andamento conta só as horas que já passaram). Com uma coluna selecionada, os mesmos cards mostram só aquele período;
-   - gráfico **Tempo com falha no expediente** (o gráfico "Chamados por dia" saiu): o **fundo lilás claro** é o expediente de cada coluna (100% = expediente inteiro, todas as colunas fechadas alinhadas na mesma altura; no período em andamento o fundo sobe conforme as horas passam) e o **preenchimento** é o tempo afetado, na mesma escala;
-   - matriz **Sistemas × períodos** (sempre começa **fechada**, mostrando só Total e Chamados; abre na seta; volta a fechar ao sair e voltar para o Painel), com a linha **Chamados** embaixo do Total: quantidade de chamados de todos os sistemas (sem indevidos) em cada coluna e, à direita, os chamados distintos da tela inteira. Tocar no número abre a lista;
+   - gráfico **Tempo com falha no expediente** (o gráfico "Chamados por dia" saiu): o **fundo lilás claro** é o expediente de cada coluna (100% = expediente inteiro, todas as colunas fechadas alinhadas na mesma altura; no período em andamento o fundo sobe conforme as horas passam) e o **preenchimento** é o tempo afetado, na mesma escala. Coluna **sem falha**: uma **bolinha verde com check branco** em cima;
+   - matriz **Sistemas × períodos** (sempre começa **fechada**, mostrando só Total e Chamados; abre na seta; volta a fechar ao sair e voltar para o Painel), com a linha **Chamados** embaixo do Total: quantidade de chamados de todos os sistemas (sem indevidos) em cada coluna e, à direita, os chamados distintos da tela inteira. Tocar no número abre a lista. Coluna **sem chamado**: no lugar do 0, a mesma **bolinha verde com check branco**;
    - tabela com **CHAM.** (em cápsula), **TEMPO TOTAL** (tempo com falha no período em qualquer horário), **NO EXPED.** (a parte dentro de 08h–21h) e **% EXPED.** (com barrinha na mesma escala do gráfico), tudo centralizado; a 1ª coluna mostra a data em destaque e o dia da semana embaixo; o domingo aparece em vermelho, como no gráfico.
 
 ## Notificações (`notificacao.txt`)
