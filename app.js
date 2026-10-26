@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.37.0';
+const VERSION = '1.38.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -200,7 +200,7 @@ function diff(prev, rows, at) {
     seen.add(r.ID);
     const p = prev[r.ID];
     const base = { at, id: r.ID, sis: r.SISTEMA, inc: r.CHAMADO || '' };
-    if (!p) { out.push({ ...base, kind: 'novo', st: r.STATUS, evo: r.EVOLUCAO || '' }); continue; }
+    if (!p) { out.push({ ...base, kind: 'novo', st: r.STATUS, evo: r.EVOLUCAO || '', est: r.ESTAGIO || '' }); continue; }   // est: 1º estágio (histórico de estágios)
     const ch = [];
     for (const [f, label] of TRACK) {
       if (!(f in p)) continue;   // campo que a cópia anterior ainda não guardava (ex.: depois de atualizar o app): não é mudança
@@ -463,7 +463,7 @@ function renderOpen() {
       ${r.IMPACTO_OPERACIONAL ? `<div class="imp">${esc(r.IMPACTO_OPERACIONAL)}</div>` : ''}
       <div class="tl"><span class="cap-t k-${t.k}">${esc(t.longo)}</span>${seg ? `<span class="para">para <b>${esc(seg)}</b></span>` : ''}</div>
       <div class="ft"><div class="timer num"><small>aberto há</small><span class="tm" role="button" tabindex="0" data-crono="${esc(r.ID)}" aria-label="Tempo decorrido: abrir o cronômetro" title="Tempo decorrido"><span class="crn">${CRONO_SVG}</span><span data-since="${r._ini.getTime()}">${fDur(now - r._ini)}</span></span></div>
-        <div class="when">${r.ESTAGIO ? `<span class="evo tem-est" role="button" tabindex="0" data-est="${esc(r.ID)}" aria-label="${esc(r.EVOLUCAO || 'Estágio')}: ver o estágio" title="Ver o estágio">${INFO_SVG}<span>${esc(r.EVOLUCAO || 'Estágio')}</span></span>` : r.EVOLUCAO ? `<span class="evo">${esc(r.EVOLUCAO)}</span>` : ''}<span class="ini num">início ${ini} ${fHM(r._ini)}</span></div></div>
+        <div class="when">${r.ESTAGIO ? `<span class="evo tem-est" role="button" tabindex="0" data-est="${esc(r.ID)}" aria-label="${esc(r.EVOLUCAO || 'Estágio')}: ver ${nEst(r) > 1 ? `os ${nEst(r)} estágios` : 'o estágio'}" title="Ver o estágio">${INFO_SVG}<span>${esc(r.EVOLUCAO || 'Estágio')}</span><span class="est-n num" aria-hidden="true">${nEst(r)}</span></span>` : r.EVOLUCAO ? `<span class="evo">${esc(r.EVOLUCAO)}</span>` : ''}<span class="ini num">início ${ini} ${fHM(r._ini)}</span></div></div>
       ${barraDia(r, now)}
       ${rk ? `<span class="selo" role="button" tabindex="0" data-log="${esc(r.ID)}" aria-label="${rk === 'novo' ? 'Novo' : 'Alterações'}: ver a última mudança" title="Ver a última mudança">${rk === 'novo' ? 'NOVO' : 'ALTERAÇÕES'}</span>` : ''}
       ${al ? `<span class="alrt" role="button" tabindex="0" data-alerta="${esc(r.ID)}" aria-label="Alerta enviado" title="Alerta enviado">${SIRENE_SVG}</span>` : ''}
@@ -553,15 +553,28 @@ function abrirOcorrencia(id) {
 // estágio: texto livre do operador para o campo; só vale enquanto o chamado está aberto
 const INFO_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-5M12 8h.01"/></svg>';
 const resumoEst = t => String(t || '').replace(/\s+/g, ' ').trim() || '—';
+// histórico de estágios do chamado (mais recente primeiro), montado com as mudanças que este aparelho registrou:
+// o 1º estágio vem do "novo chamado"; cada troca de ESTAGIO entra com a hora em que foi vista.
+// Se o aparelho só conheceu o chamado depois de aberto, o estágio anterior à 1ª troca vista entra sem hora ("antes de …").
+function estagios(r) {
+  const ev = S.log.filter(c => c.id === r.ID && ((c.kind === 'muda' && c.ch.some(y => y.f === 'ESTAGIO')) || (c.kind === 'novo' && c.est)));
+  const out = ev.map(c => c.kind === 'novo' ? { txt: c.est, at: new Date(c.at) } : (y => ({ txt: y.para, at: new Date(c.at), de: y.de }))(c.ch.find(y => y.f === 'ESTAGIO')));
+  const velho = out[out.length - 1];
+  if (velho && velho.de && !ev.some(c => c.kind === 'novo')) out.push({ txt: velho.de, antes: velho.at });
+  const atual = String(r.ESTAGIO || '').trim();
+  if (atual && (!out.length || String(out[0].txt || '').trim() !== atual)) out.unshift({ txt: r.ESTAGIO, at: r._upd || null });
+  const lim = t => String(t || '').replace(/\s+/g, ' ').trim();
+  return out.filter(x => lim(x.txt)).filter((x, i, a) => i === 0 || lim(x.txt) !== lim(a[i - 1].txt));
+}
+const nEst = r => r.ESTAGIO ? Math.max(1, estagios(r).length) : 0;
+const dataHora = d => `${fDM(d)}/${String(d.getFullYear()).slice(2)} ${fHM(d)}`;
 function abrirEstagio(id) {
   const r = S.rows.find(x => x.ID === id); if (!r || !r.ESTAGIO) return;
-  const c = S.log.find(x => x.id === id && ((x.kind === 'muda' && x.ch.some(y => y.f === 'ESTAGIO')) || x.kind === 'novo'));
-  const quando = c ? new Date(c.at) : r._upd;
-  const qTxt = quando ? `${fDM(quando)}/${String(quando.getFullYear()).slice(2)} ${fHM(quando)}` : '';
-  abrirInfo('Estágio', `<p class="al-sis"><span class="idc num">${esc(r.ID)}</span> <b>${esc(r.SISTEMA)}</b></p>
+  const h = estagios(r), n = h.length;
+  abrirInfo(`Estágio${n > 1 ? ` <span class="nt-cont num">(${n})</span>` : ''}`, `<p class="al-sis"><span class="idc num">${esc(r.ID)}</span> <b>${esc(r.SISTEMA)}</b></p>
       <div class="est-st"><b>${esc(r.EVOLUCAO || cap(r.STATUS))}</b></div>
-      <div class="est-tx">${esc(r.ESTAGIO)}</div>
-      <div class="est-qd num">${qTxt}</div>`, `<span class="ic-roxo ic-info">${INFO_SVG}</span>`);
+      <ol class="est-hist">${h.map((x, i) => `<li${i ? '' : ' class="atual"'}><div class="est-qd num">${x.at ? dataHora(x.at) : x.antes ? `antes de ${dataHora(x.antes)}` : ''}${i ? '' : '<span class="est-at">atual</span>'}</div><div class="est-tx">${esc(x.txt)}</div></li>`).join('')}</ol>`,
+    `<span class="ic-roxo ic-info">${INFO_SVG}</span>`);
 }
 // selo NOVO / ALTERAÇÕES: mostra só a mudança mais recente desse chamado (a que o selo está anunciando)
 function abrirLog(id) {
