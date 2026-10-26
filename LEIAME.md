@@ -1,4 +1,4 @@
-# Problemas Sistêmicos (v1.38.1)
+# Problemas Sistêmicos (v1.39.0)
 
 PWA que mostra o andamento dos chamados de problemas sistêmicos em tempo real, a partir do `sistemas.txt` (o mesmo arquivo usado no Painel - Nível de Serviço). Mesmas cores da empresa do painel de NS.
 
@@ -49,6 +49,15 @@ A barra roxa do topo (título, situação "Ao vivo", 🔔 e ↻) fica sempre fix
    - gráfico **Tempo com falha no expediente** (o gráfico "Chamados por dia" saiu): o **fundo lilás claro** é o expediente de cada coluna (100% = expediente inteiro, todas as colunas fechadas alinhadas na mesma altura; no período em andamento o fundo sobe conforme as horas passam) e o **preenchimento** é o tempo afetado, na mesma escala. Coluna **sem falha**: uma **bolinha verde com check branco** em cima;
    - matriz **Sistemas × períodos** (sempre começa **fechada**, mostrando só Total e Chamados; abre na seta; volta a fechar ao sair e voltar para o Painel), com a linha **Chamados** embaixo do Total: quantidade de chamados de todos os sistemas (sem indevidos) em cada coluna e, à direita, os chamados distintos da tela inteira. Tocar no número abre a lista. Coluna **sem chamado**: no lugar do 0, a mesma **bolinha verde com check branco**;
    - tabela com **CHAM.** (em cápsula), **TEMPO TOTAL** (tempo com falha no período em qualquer horário), **NO EXPED.** (a parte dentro de 08h–21h) e **% EXPED.** (com barrinha na mesma escala do gráfico), tudo centralizado; a 1ª coluna mostra a data em destaque e o dia da semana embaixo; o domingo aparece em vermelho, como no gráfico.
+
+## Instalar o app (barra abaixo do título)
+
+- Aberto no **navegador** sem o app instalado, aparece abaixo do título uma barra com **Instalar** à esquerda e um **✕** à direita.
+  - **Instalar**: nos navegadores que oferecem instalação (Chrome, Edge, Samsung Internet…) abre a instalação do próprio navegador. No **iPhone/iPad** (Safari) mostra o passo a passo: Compartilhar → Adicionar à Tela de Início.
+  - **✕**: pergunta **Instalar mais tarde** (o aviso volta depois de 1 dia) ou **Nunca instalar** (não aparece mais neste aparelho).
+- Aberto no **navegador** com o app **já instalado** no aparelho, a barra mostra **Abrir aplicativo**. O navegador não deixa o site abrir o app sozinho, então o botão mostra onde tocar (ícone na tela inicial; no computador, "Abrir no app" na barra de endereço). O ✕ esconde esse aviso por 1 dia.
+- Aberto **como app** (instalado), a barra não aparece.
+- Como o app sabe que está instalado: quando ele é aberto como app (o navegador e o app instalado dividem o mesmo armazenamento no Android e no computador), pelo aviso de instalação concluída e, no Chrome/Edge, pelo `related_applications` do manifesto. No iPhone o app da tela inicial tem armazenamento separado, então o Safari não tem como saber.
 
 ## Notificações (`notificacao.txt`)
 - Arquivo **opcional** na raiz do repositório, ao lado do `sistemas.txt`, conferido junto com ele (a cada 1 minuto). Sem o arquivo, nada aparece e os chamados seguem normais.

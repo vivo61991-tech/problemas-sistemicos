@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.38.1';
+const VERSION = '1.39.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -24,7 +24,7 @@ const TRACK = [['SISTEMA', 'Sistema'], ['CHAMADO', 'Chamado'], ['STATUS', 'Statu
 // colunas que continuam sendo lidas (mudanças, conferência), mas não aparecem nos cards nem no detalhe
 const OCULTAS = ['FLAG', 'TEMPO_DECORRIDO', 'DADO_ATUALIZADO', 'DATA_ATUALIZACAO'];
 
-const K = { data: 'ps.data', snap: 'ps.snap', log: 'ps.log', bell: 'ps.bell', pins: 'ps.pins', pend: 'ps.pend' };
+const K = { data: 'ps.data', snap: 'ps.snap', log: 'ps.log', bell: 'ps.bell', pins: 'ps.pins', pend: 'ps.pend', inst: 'ps.inst', instAdiar: 'ps.inst.adiar', instNunca: 'ps.inst.nunca', instAbrirAdiar: 'ps.inst.abrir' };
 
 /* ---------- armazenamento no aparelho ---------- */
 function load(key, fallback) {
@@ -1263,9 +1263,79 @@ function desenharAtual(manter) {
   $('atDesl').onclick = () => { fecharAlerta(); desligarSino(); };
 }
 
+/* ---------- instalar o app (barra abaixo do título) ----------
+   - navegador que oferece instalação (Chrome, Edge, Samsung…): "Instalar" abre a instalação do próprio navegador;
+   - iPhone/iPad (Safari): "Instalar" mostra o passo a passo (Compartilhar → Adicionar à Tela de Início);
+   - já instalado e aberto no navegador: "Abrir aplicativo" (o navegador não deixa o site abrir o app sozinho: mostramos onde tocar);
+   - ✕: "Instalar mais tarde" (volta depois de 1 dia) ou "Nunca instalar" (não aparece mais neste aparelho). */
+const INST = { evt: null, modo: '' };
+const ADIAR_MS = 24 * 60 * 60 * 1000;
+const ehApp = () => { try { return matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: minimal-ui)').matches || matchMedia('(display-mode: window-controls-overlay)').matches || navigator.standalone === true; } catch (e) { return navigator.standalone === true; } };
+const ehIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const DL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>';
+const ABRIR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>';
+const IOS_SHARE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m8 7 4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>';
+function renderInst() {
+  const bar = $('instBar'); if (!bar) return;
+  let modo = '';
+  if (ehApp()) { save(K.inst, 1); modo = ''; }
+  else if (load(K.inst, 0) && !INST.evt) modo = Date.now() < load(K.instAbrirAdiar, 0) ? '' : 'abrir';
+  else if (!load(K.instNunca, false) && Date.now() >= load(K.instAdiar, 0) && (INST.evt || ehIOS())) modo = 'instalar';
+  INST.modo = modo;
+  bar.hidden = !modo;
+  if (!modo) { bar.innerHTML = ''; return; }
+  bar.innerHTML = modo === 'instalar'
+    ? `<button class="inst-bt" id="instBt"><span class="inst-ic">${DL_SVG}</span><span><b>Instalar</b><small>o app neste aparelho</small></span></button><button class="inst-x" id="instX" aria-label="Fechar o aviso de instalação" title="Fechar">${X_SVG}</button>`
+    : `<button class="inst-bt" id="instBt"><span class="inst-ic">${ABRIR_SVG}</span><span><b>Abrir aplicativo</b><small>o app já está instalado neste aparelho</small></span></button><button class="inst-x" id="instX" aria-label="Fechar o aviso" title="Fechar">${X_SVG}</button>`;
+  $('instBt').onclick = () => modo === 'instalar' ? instalar() : abrirAplicativo();
+  $('instX').onclick = () => modo === 'instalar' ? perguntarInstalar() : (save(K.instAbrirAdiar, Date.now() + ADIAR_MS), renderInst());
+}
+async function instalar() {
+  if (INST.evt) {
+    const e = INST.evt;
+    try {
+      await e.prompt();
+      const r = await e.userChoice;
+      if (r && r.outcome === 'accepted') { INST.evt = null; save(K.inst, 1); renderInst(); toast('App instalado. Ele fica na tela inicial do aparelho.', false, 4500); }
+    } catch (err) { /* o navegador recusou abrir de novo: segue com o passo a passo */ instrucoesInstalar(); }
+    return;
+  }
+  instrucoesInstalar();
+}
+function instrucoesInstalar() {
+  abrirInfo('Instalar o app', ehIOS()
+    ? `<ol class="inst-passos"><li>Toque em <b>Compartilhar</b> <span class="inst-sh">${IOS_SHARE_SVG}</span> na barra do Safari.</li><li>Escolha <b>Adicionar à Tela de Início</b>.</li><li>Toque em <b>Adicionar</b>. O ícone do app aparece na tela inicial.</li></ol>`
+    : `<ol class="inst-passos"><li>Abra o <b>menu do navegador</b> (⋮ ou ⋯).</li><li>Escolha <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li><li>Confirme. O ícone do app aparece na tela inicial.</li></ol>`, icoRoxo(DL_SVG));
+}
+function abrirAplicativo() {
+  const desk = !/android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
+  abrirInfo('Abrir aplicativo', `<p>O app <b>Problemas Sistêmicos</b> já está instalado neste aparelho.</p>
+      <p>${desk ? 'Abra pelo ícone <b>Abrir no app</b> na barra de endereço do navegador, ou pelo atalho <b>Problemas Sistêmicos</b> no menu Iniciar / na área de trabalho.' : 'Para abrir, toque no ícone <b>Problemas Sistêmicos</b> na tela inicial ou na lista de apps do aparelho.'}</p>
+      <p class="inst-obs">O navegador não deixa o site abrir o app sozinho, por isso o caminho é pelo ícone.</p>`, icoRoxo(ABRIR_SVG));
+}
+function perguntarInstalar() {
+  abrirInfo('Instalar o app', `<p class="inst-q">Quer instalar depois?</p><div class="cp-op">
+      <button class="cp-it" id="instDepois"><span class="ci">${DL_SVG}</span><span><b>Instalar mais tarde</b><small>O aviso volta daqui a 1 dia</small></span></button>
+      <button class="cp-it" id="instNunca"><span class="ci">${X_SVG}</span><span><b>Nunca instalar</b><small>O aviso não aparece mais neste aparelho</small></span></button>
+    </div>`, icoRoxo(DL_SVG));
+  $('instDepois').onclick = () => { save(K.instAdiar, Date.now() + ADIAR_MS); fecharAlerta(); renderInst(); };
+  $('instNunca').onclick = () => { save(K.instNunca, true); fecharAlerta(); renderInst(); };
+}
+function iniciarInstalar() {
+  window.addEventListener('beforeinstallprompt', e => {   // o navegador pode instalar (e o app NÃO está instalado)
+    e.preventDefault(); INST.evt = e; save(K.inst, 0); renderInst();
+  });
+  window.addEventListener('appinstalled', () => { INST.evt = null; save(K.inst, 1); renderInst(); });
+  try { matchMedia('(display-mode: standalone)').addEventListener('change', renderInst); } catch (e) { /* navegador antigo */ }
+  // Chrome/Edge: confere se o app está instalado (precisa de "related_applications" no manifesto)
+  if (!ehApp() && navigator.getInstalledRelatedApps) navigator.getInstalledRelatedApps().then(l => { if (l && l.length) { save(K.inst, 1); renderInst(); } }).catch(() => {});
+  renderInst();
+}
+
 /* ---------- início ---------- */
 function init() {
   $('ver').textContent = VERSION;
+  iniciarInstalar();
   const stored = load(K.data, null);
   if (stored && stored.text) {
     const p = applyText(stored.text, { etag: stored.etag, source: stored.source, loadedAt: stored.loadedAt }, true);
