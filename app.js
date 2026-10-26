@@ -3,7 +3,7 @@
    O app confere o arquivo a cada minuto e registra toda mudança de status por ID. */
 'use strict';
 
-const VERSION = '1.36.0';
+const VERSION = '1.37.0';
 const POLL_MS = 60 * 1000;           // conferência do arquivo
 const TICK_MS = 5 * 1000;            // relógio dos tempos em andamento
 const RECENT_MS = 60 * 60 * 1000;    // selo NOVO / ALTERAÇÕES vale por 1 hora
@@ -438,7 +438,7 @@ function hiRow(r, now, comDia) {
     <div class="du num">${du}<small>${esc(st)}</small></div></button>`;
 }
 
-/* ---- 1) Ocorrências: ativas (cards grandes) + chamados de hoje + últimas mudanças ---- */
+/* ---- 1) Ocorrências: ativas (cards grandes) + ocorrências de hoje + últimas alterações ---- */
 function renderOpen() {
   const now = Date.now();
   const open = openRows();
@@ -610,9 +610,7 @@ function renderHoje() {
   const d0 = new Date(); d0.setHours(0, 0, 0, 0);
   const list = S.rows.filter(r => r._ini >= d0 || isOpen(r) || (r._fim && r._fim >= d0))
     .sort((a, b) => (isOpen(b) - isOpen(a)) || b._ini - a._ini);
-  const val = list.filter(r => !isInd(r));
-  const ms = unionMs(val.map(r => [r._ini.getTime(), endOf(r, now)]), d0.getTime(), now);
-  $('hojeRes').innerHTML = list.length ? `${val.length} chamado${val.length === 1 ? '' : 's'}${ms ? ' · ' + fDur(ms) : ''}` : '';
+  $('ctHoje').textContent = list.length;   // mesma cápsula de contagem de "Ocorrências ativas"
   $('hoje').innerHTML = list.length ? `<div class="lst">${list.map(r => hiRow(r, now, !sameDay(r._ini, new Date(now)))).join('')}</div>`
     : `<div class="lst"><div class="empty okt">Nenhum chamado hoje.</div></div>`;
 }
@@ -648,7 +646,8 @@ function renderFeed() {
   const now = Date.now();
   const list = S.feedAll ? S.log : S.log.slice(0, 5);
   $('btFeed').hidden = S.log.length <= 5;
-  $('btFeed').textContent = S.feedAll ? 'Ver menos' : `Ver todas (${S.log.length})`;
+  $('btFeed').textContent = S.feedAll ? 'Ver menos' : 'Ver todas';
+  $('ctFeed').textContent = S.log.length;   // total de alterações registradas (mesma cápsula das outras seções)
   $('feed').innerHTML = list.length ? list.map(c => feedItem(c, now)).join('')
     : `<div class="empty">As mudanças de status aparecem aqui assim que acontecerem. O app confere o arquivo a cada minuto.</div>`;
 }

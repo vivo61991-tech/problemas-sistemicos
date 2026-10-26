@@ -318,6 +318,10 @@ h2.sec .rt{white-space:nowrap;font-size:12.5px;text-transform:none;letter-spacin
 .hi .bar{align-self:stretch;border-radius:4px;background:var(--barF)}
 .hi.aberto.k-total .bar{background:#D61F4F}.hi.aberto.k-parcial .bar{background:#F2603E}.hi.aberto.k-interm .bar{background:#FF9901}.hi.aberto.k-lent .bar{background:#FFC629}.hi.aberto.k-outro .bar{background:#7d7190}
 .hi.ind .bar{background:repeating-linear-gradient(45deg,var(--barF) 0 3px,transparent 3px 6px)}
+/* Ocorrências de hoje: as já fechadas ficam com um toque roxo bem leve no fundo e o texto um pouco mais apagado */
+#hoje .hi:not(.aberto){background:color-mix(in srgb,var(--p100) 28%,var(--card))}
+#hoje .hi:not(.aberto) > div{opacity:.74}
+@media (prefers-color-scheme: dark){#hoje .hi:not(.aberto){background:color-mix(in srgb,var(--p500) 8%,var(--card))}}
 :root{--barF:#D5BFE7}
 @media (prefers-color-scheme: dark){:root{--barF:#5B4378}}
 .hi .s{font-weight:700;font-size:14.5px;min-width:0;display:flex;align-items:center;gap:7px}
@@ -763,9 +767,9 @@ html.trava{overflow:hidden}
   <section class="page" id="pgOc">
     <h2 class="sec">Ocorrências ativas <span class="ct num" id="ctOpen">0</span></h2>
     <div class="open" id="open"></div>
-    <h2 class="sec"><span class="lb">Chamados de hoje</span> <span class="sp"></span><span class="rt num" id="hojeRes"></span></h2>
+    <h2 class="sec"><span class="lb">Ocorrências de hoje</span> <span class="ct num" id="ctHoje">0</span></h2>
     <div id="hoje"></div>
-    <h2 class="sec">Últimas mudanças <span class="sp"></span><button class="lnk" id="btFeed" hidden>Ver todas</button></h2>
+    <h2 class="sec"><span class="lb">Últimas alterações</span> <span class="ct num" id="ctFeed">0</span><span class="sp"></span><button class="lnk" id="btFeed" hidden>Ver todas</button></h2>
     <div class="feed" id="feed"></div>
   </section>
 
@@ -801,8 +805,8 @@ html.trava{overflow:hidden}
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="painel.js?v=1.36.0"></script>
-<script src="notif.js?v=1.36.0"></script>
-<script src="app.js?v=1.36.0"></script>
+<script src="painel.js?v=1.37.0"></script>
+<script src="notif.js?v=1.37.0"></script>
+<script src="app.js?v=1.37.0"></script>
 </body>
 </html>
