@@ -1,4 +1,8 @@
 ID	SISTEMA	CHAMADO	STATUS	CRITICIDADE	EVOLUCAO	SEGMENTO	IMPACTO_OPERACIONAL	ESTAGIO	DATA_INICIO	DATA_FIM	TIPO_FALHA	GRUPOS_RESPONSAVEIS	GRUPOS_IMPACTADOS	AREA_ACIONADA	ALERTA_ENVIADO	DATA_ATUALIZACAO	DADO_ATUALIZADO	TEMPO_DECORRIDO	FLAG
+352	GPS NEXT	INC5284935	ABERTO	P3	EM ANÁLISE	CAMPO, REGIONAIS	Técnicos não conseguem baixar as ordens de serviço do dia (fictício)	"Técnicos de campo sem conseguir baixar as ordens de serviço no GPS Next desde as 13h05 de hoje.
+Alerta enviado à Engenharia OSS e à gerência regional pelo impacto em todas as regionais.
+Equipe reiniciando a integração com o barramento de ordens de serviço.
+Próxima atualização prevista para as 14h00."	26/10/26 13:05:00,000000000		INDISPONIBILIDADE PARCIAL	OSS - ENGENHARIA	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI / Engenharia	1	26/10/26 13:22:17,000000000	26/10/26 13:23:11,000000000	+00 00:17:00.000000	1
 351	SDU	INC5284890	FECHADO	P3	NORMALIZADO	B2C	Erro ao salvar alteração de plano do cliente (fictício)	"Normalizado
 CCGI corrigiu a gravação das alterações de plano; teste validado com a operação. Sem novas ocorrências no monitoramento."	26/10/26 09:00:00,000000000	26/10/26 12:35:00,000000000	INDISPONIBILIDADE PARCIAL	CCGI - CIM	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI	0	26/10/26 12:35:17,000000000	26/10/26 12:36:11,000000000	+00 03:35:00.000000	1
 350	WEB RADIUS	INC5284815	FECHADO	P3	NORMALIZADO	B2C	Técnicos não conseguem consultar a sessão do cliente no Web Radius (fictício)	"Normalizado
