@@ -1,4 +1,14 @@
 ID	SISTEMA	CHAMADO	STATUS	CRITICIDADE	EVOLUCAO	SEGMENTO	IMPACTO_OPERACIONAL	ESTAGIO	DATA_INICIO	DATA_FIM	TIPO_FALHA	GRUPOS_RESPONSAVEIS	GRUPOS_IMPACTADOS	AREA_ACIONADA	ALERTA_ENVIADO	DATA_ATUALIZACAO	DADO_ATUALIZADO	TEMPO_DECORRIDO	FLAG
+357	PORTAL INTEGRA	INC5285120	ABERTO	P3	REALIZANDO RESTART	B2B, B2C	Portal fora do ar para abertura de pedidos (fictício)	"Portal fora do ar para todos os usuários.
+Devops Integra realizando restart dos servidores de aplicação."	27/10/26 14:25:00,000000000		INDISPONIBILIDADE TOTAL	DEVOPS INTEGRA	CENTRALIZADA, CENTRO DE OPERAÇÕES	Devops Integra	1	27/10/26 14:29:17,000000000	27/10/26 14:30:11,000000000	+00 00:06:00.000000	1
+356	URA CO	INC5285096	ABERTO	P3	EM ANÁLISE	B2B, B2C	Opção de falar com atendente sem resposta em parte das ligações (fictício)	"Chamado aberto e encaminhado para o CCGI.
+Equipe analisando as filas de atendimento."	27/10/26 14:15:00,000000000		INDISPONIBILIDADE PARCIAL	CCGI - CIM	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI / Contact Center	0	27/10/26 14:29:17,000000000	27/10/26 14:30:11,000000000	+00 00:16:00.000000	1
+355	CHAT DANI	INC5285071	ABERTO	P3	EM ANÁLISE	B2C	Chat cai e reconecta durante o atendimento (fictício)	"Chamado aberto e encaminhado para a 4field.
+Quedas intermitentes sendo monitoradas."	27/10/26 14:05:00,000000000		INTERMITÊNCIA	4FIELD - CHAT DANI	CENTRALIZADA, CENTRO DE OPERAÇÕES	4field	0	27/10/26 14:29:17,000000000	27/10/26 14:30:11,000000000	+00 00:26:00.000000	1
+354	SIGMA FIBRA	INC5285048	ABERTO	P3	EM ANÁLISE	B2C, CAMPO	Consulta de viabilidade demorando mais de 1 minuto (fictício)	"Chamado aberto e encaminhado para a operação CIRE.
+Equipe verificando o desempenho do banco de dados."	27/10/26 13:55:00,000000000		LENTIDÃO	OPERACAO CIRE	CENTRALIZADA, CENTRO DE OPERAÇÕES	CIRE	0	27/10/26 14:29:17,000000000	27/10/26 14:30:11,000000000	+00 00:36:00.000000	1
+353	EFIKA OSS	INC5285022	ABERTO	P3	EM ANÁLISE	B2C	Atividades de reparo não aparecem para os técnicos (fictício)	"Chamado aberto e encaminhado para o Devops Efika.
+Falha funcional na regra de distribuição das atividades."	27/10/26 13:40:00,000000000		FALHA FUNCIONAL	DEVOPS EFIKA	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI	0	27/10/26 14:29:17,000000000	27/10/26 14:30:11,000000000	+00 00:51:00.000000	1
 352	GPS NEXT	INC5284935	FECHADO	P3	NORMALIZADO	CAMPO, REGIONAIS	Técnicos não conseguem baixar as ordens de serviço do dia (fictício)	"Normalizado
 Ordens de serviço voltaram a ser baixadas normalmente após o restart do banco de produção; validado com os técnicos de campo. Sem novas ocorrências no monitoramento."	26/10/26 13:05:00,000000000	26/10/26 16:10:00,000000000	INDISPONIBILIDADE PARCIAL	OSS - ENGENHARIA	CENTRALIZADA, CENTRO DE OPERAÇÕES	CCGI / Engenharia	1	26/10/26 16:14:17,000000000	26/10/26 16:15:11,000000000	+00 03:05:00.000000	1
 351	SDU	INC5284890	FECHADO	P3	NORMALIZADO	B2C	Erro ao salvar alteração de plano do cliente (fictício)	"Normalizado
